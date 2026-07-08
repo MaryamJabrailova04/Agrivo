@@ -33,3 +33,28 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "kubernetes_version" {
+  description = "AKS Kubernetes version."
+  type        = string
+}
+
+variable "node_vm_size" {
+  description = "VM size for AKS nodes."
+  type        = string
+}
+
+variable "node_count" {
+  description = "Initial AKS node count."
+  type        = number
+}
+
+variable "min_node_count" {
+  description = "Minimum AKS node count."
+  type        = number
+}
+
+variable "max_node_count" {
+  description = "Maximum AKS node count."
+  type        = number
+}

@@ -17,3 +17,13 @@ output "private_endpoint_subnet_id" {
   description = "Private endpoint subnet ID for the prod environment."
   value       = module.network.private_endpoint_subnet_id
 }
+
+output "aks_cluster_name" {
+  description = "Name of the prod AKS cluster."
+  value       = module.aks.cluster_name
+}
+
+output "aks_node_resource_group" {
+  description = "Node resource group for prod AKS."
+  value       = module.aks.node_resource_group
+}
