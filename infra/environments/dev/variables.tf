@@ -58,3 +58,14 @@ variable "max_node_count" {
   description = "Maximum AKS node count."
   type        = number
 }
+
+
+variable "tenant_id" {
+  description = "Azure tenant ID."
+  type        = string
+}
+
+variable "admin_object_id" {
+  description = "Object ID of the admin user or group for Key Vault access."
+  type        = string
+}

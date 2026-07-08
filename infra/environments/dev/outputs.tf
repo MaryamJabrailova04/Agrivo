@@ -27,3 +27,13 @@ output "aks_node_resource_group" {
   description = "Node resource group for dev AKS."
   value       = module.aks.node_resource_group
 }
+
+output "key_vault_name" {
+  description = "Name of the dev Key Vault."
+  value       = module.keyvault.key_vault_name
+}
+
+output "key_vault_uri" {
+  description = "URI of the dev Key Vault."
+  value       = module.keyvault.key_vault_uri
+}

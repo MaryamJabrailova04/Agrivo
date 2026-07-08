@@ -26,3 +26,15 @@ module "aks" {
   max_node_count      = var.max_node_count
   tags                = var.tags
 }
+
+module "keyvault" {
+  source = "../../modules/keyvault"
+
+  project_name        = var.project_name
+  environment         = var.environment
+  location            = var.location
+  resource_group_name = module.network.resource_group_name
+  tenant_id           = var.tenant_id
+  admin_object_id     = var.admin_object_id
+  tags                = var.tags
+}
