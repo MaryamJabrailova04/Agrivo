@@ -1,0 +1,34 @@
+replicaCount: 2
+
+image:
+  repository: harbor.example.com/agrivo/backend
+  tag: dev
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5000
+
+config:
+  nodeEnv: production
+  port: "5000"
+  jwtExpiresIn: 7d
+  frontendUrl: https://agrivo.example.com
+
+secret:
+  databaseUrl: postgresql://postgres:password@postgres:5432/agrivo_db?schema=public
+  jwtSecret: change-me-in-key-vault
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
