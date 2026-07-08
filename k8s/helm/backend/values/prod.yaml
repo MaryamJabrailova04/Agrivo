@@ -28,3 +28,17 @@ autoscaling:
   minReplicas: 3
   maxReplicas: 10
   targetCPUUtilizationPercentage: 65
+keyVault:
+  enabled: true
+  name: kv-agrivo-prod
+  tenantId: "00000000-0000-0000-0000-000000000000"
+  clientId: "00000000-0000-0000-0000-000000000000"
+  usePodIdentity: "false"
+  useVMManagedIdentity: "true"
+  secrets:
+    - objectName: DATABASE_URL
+      objectType: secret
+      envName: DATABASE_URL
+    - objectName: JWT_SECRET
+      objectType: secret
+      envName: JWT_SECRETxy

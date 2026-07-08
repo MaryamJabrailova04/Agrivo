@@ -37,3 +37,18 @@ spec:
             periodSeconds: 20
           resources:
 {{ toYaml .Values.resources | indent 12 }}
+{{- if .Values.keyVault.enabled }}
+          volumeMounts:
+            - name: secrets-store
+              mountPath: "/mnt/secrets-store"
+              readOnly: true
+{{- end }}
+{{- if .Values.keyVault.enabled }}
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: agrivo-backend-keyvault
+{{- end }}

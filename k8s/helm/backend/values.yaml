@@ -32,3 +32,17 @@ autoscaling:
   minReplicas: 2
   maxReplicas: 5
   targetCPUUtilizationPercentage: 70
+keyVault:
+  enabled: false
+  name: ""
+  tenantId: ""
+  clientId: ""
+  usePodIdentity: "false"
+  useVMManagedIdentity: "true"
+  secrets:
+    - objectName: DATABASE_URL
+      objectType: secret
+      envName: DATABASE_URL
+    - objectName: JWT_SECRET
+      objectType: secret
+      envName: JWT_SECRET
