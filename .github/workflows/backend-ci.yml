@@ -13,19 +13,19 @@ on:
       - main
     paths:
       - "backend/**"
+  workflow_dispatch:
 
 permissions:
   contents: read
   security-events: write
 
+env:
+  IMAGE_NAME: backend
+
 jobs:
   build:
-    name: Build backend
+    name: Build, test, scan, and publish backend
     runs-on: ubuntu-latest
-
-    defaults:
-      run:
-        working-directory: backend
 
     services:
       postgres:
@@ -61,18 +61,23 @@ jobs:
           cache-dependency-path: backend/package-lock.json
 
       - name: Install dependencies
+        working-directory: backend
         run: npm ci
 
       - name: Generate Prisma client
+        working-directory: backend
         run: npm run prisma:generate
 
       - name: Apply database migrations
+        working-directory: backend
         run: npm run prisma:migrate
 
       - name: Run npm audit
+        working-directory: backend
         run: npm audit --audit-level=high
 
       - name: Start backend health smoke test
+        working-directory: backend
         run: |
           npm start &
           sleep 10
@@ -80,3 +85,36 @@ jobs:
           curl --fail http://localhost:5000/api/health/live
           curl --fail http://localhost:5000/api/health/ready
           curl --fail http://localhost:5000/api/metrics
+
+      - name: Set image tag
+        id: image
+        run: |
+          echo "tag=${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "image=${{ secrets.HARBOR_REGISTRY }}/${{ secrets.HARBOR_PROJECT }}/${IMAGE_NAME}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -f backend/Dockerfile \
+            -t "${{ steps.image.outputs.image }}" \
+            .
+
+      - name: Scan Docker image with Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ steps.image.outputs.image }}
+          format: table
+          exit-code: "0"
+          severity: CRITICAL,HIGH
+
+      - name: Login to Harbor
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ secrets.HARBOR_REGISTRY }}
+          username: ${{ secrets.HARBOR_USERNAME }}
+          password: ${{ secrets.HARBOR_PASSWORD }}
+
+      - name: Push Docker image to Harbor
+        if: github.event_name != 'pull_request'
+        run: docker push "${{ steps.image.outputs.image }}"
