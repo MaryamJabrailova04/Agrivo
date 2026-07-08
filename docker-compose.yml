@@ -1,0 +1,62 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: agrivo-postgres-compose
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: agrivo_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - agrivo_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d agrivo_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - agrivo-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: agrivo-backend
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/agrivo_db?schema=public
+      JWT_SECRET: change_this_secret_for_local_docker_only
+      JWT_EXPIRES_IN: 7d
+      FRONTEND_URL: http://localhost:8090
+    ports:
+      - "5001:5000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: sh -c "npx prisma migrate deploy && npm run seed && npm start"
+    networks:
+      - agrivo-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_DATA_MODE: api
+    container_name: agrivo-frontend
+    ports:
+      - "8090:80"
+    depends_on:
+      - backend
+    networks:
+      - agrivo-network
+
+volumes:
+  agrivo_postgres_data:
+
+networks:
+  agrivo-network:
+    driver: bridge
