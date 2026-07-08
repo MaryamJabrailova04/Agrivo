@@ -28,3 +28,33 @@ resources:
   limits:
     cpu: 250m
     memory: 256Mi
+serviceAccount:
+  create: true
+  name: agrivo-frontend
+  automountServiceAccountToken: false
+
+rbac:
+  create: true
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 101
+  runAsGroup: 101
+  fsGroup: 101
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+networkPolicy:
+  enabled: true
+  ingress:
+    allowFromIngressController: true
+  egress:
+    allowBackend: true
+    backendAppLabel: agrivo-backend
