@@ -1,4 +1,6 @@
 import type { TransitDriver } from "../../../utils/inTransitStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { formatDriverRouteLabel, translateInTransitDriverStatus } from "../../../../i18n/inTransitHelpers";
 import { cn } from "../../ui/utils";
 
 const DOT_TONES: Record<TransitDriver["statusTone"], string> = {
@@ -9,10 +11,13 @@ const DOT_TONES: Record<TransitDriver["statusTone"], string> = {
 };
 
 export function ActiveDriversCard({ drivers }: { drivers: TransitDriver[] }) {
+  const { t, language } = useLanguage();
   return (
     <section className="agrivo-transit-side-card agrivo-dashboard-panel">
-      <h3 className="agrivo-heading text-base font-bold text-[#102018]">Active Drivers</h3>
-      <p className="mt-1 text-xs text-[#6b7a70]">Drivers currently on the road</p>
+      <h3 className="agrivo-heading text-base font-bold text-[#102018]">
+        {t("inTransitPage.sidebar.activeDriversTitle")}
+      </h3>
+      <p className="mt-1 text-xs text-[#6b7a70]">{t("inTransitPage.sidebar.activeDriversSubtitle")}</p>
       <ul className="agrivo-transit-drivers-list">
         {drivers.map((driver) => (
           <li key={driver.id} className="agrivo-transit-driver-item">
@@ -21,7 +26,7 @@ export function ActiveDriversCard({ drivers }: { drivers: TransitDriver[] }) {
               <p className="text-sm font-semibold text-[#102018]">{driver.name}</p>
               <p className="text-xs text-[#5F6F64]">{driver.vehicle}</p>
               <p className="mt-0.5 text-xs font-medium text-[#14532D]">
-                {driver.status} — {driver.routeLabel}
+                {translateInTransitDriverStatus(t, driver.status)} — {formatDriverRouteLabel(t, driver, language)}
               </p>
             </div>
           </li>

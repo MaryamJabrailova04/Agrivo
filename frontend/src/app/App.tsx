@@ -23,6 +23,8 @@ import { getRouteKey, resolveHashRoute } from "./routing/hashRoutes";
 import { scrollToTopForCurrentRoute } from "./utils/scrollRestoration";
 import { getAuthUser } from "./auth/authStorage";
 import { getDashboardHashForRole } from "./auth/authService";
+import { useLanguage } from "../i18n/LanguageContext";
+import { buildHash, parseHash, replaceHash } from "../i18n/localizedRoutes";
 
 function redirectToRoleDashboard(): string | null {
   const user = getAuthUser();
@@ -31,6 +33,7 @@ function redirectToRoleDashboard(): string | null {
 }
 
 export default function App() {
+  const { language, setLanguageFromUrl } = useLanguage();
   const [currentPage, setCurrentPage] = useState("home");
   const [farmerSlug, setFarmerSlug] = useState<string | null>(null);
   const [jobSlug, setJobSlug] = useState<string | null>(null);
@@ -39,18 +42,26 @@ export default function App() {
 
   useEffect(() => {
     const handleHashChange = () => {
-      let hash = window.location.hash.replace("#", "") || "home";
-      const route = resolveHashRoute(hash);
+      const parsed = parseHash(window.location.hash);
 
-      if (hash === "dashboard") {
-        const dashboardRoute = redirectToRoleDashboard();
-        if (dashboardRoute) {
-          window.location.hash = dashboardRoute;
-          return;
-        }
-        window.location.hash = "login";
+      if (!parsed.language) {
+        replaceHash(parsed.path, language);
         return;
       }
+
+      setLanguageFromUrl(parsed.language);
+
+      if (parsed.path === "dashboard") {
+        const dashboardRoute = redirectToRoleDashboard();
+        if (dashboardRoute) {
+          replaceHash(dashboardRoute, parsed.language);
+          return;
+        }
+        replaceHash("login", parsed.language);
+        return;
+      }
+
+      const route = resolveHashRoute(parsed.path);
 
       scrollToTopForCurrentRoute();
 
@@ -67,7 +78,7 @@ export default function App() {
     return () => {
       window.removeEventListener("hashchange", handleHashChange);
     };
-  }, []);
+  }, [language, setLanguageFromUrl]);
 
   const routeKey = useMemo(
     () =>
@@ -82,7 +93,7 @@ export default function App() {
   );
 
   const handleNavigate = (page: string) => {
-    window.location.hash = page;
+    replaceHash(page, language);
   };
 
   const renderPage = () => {

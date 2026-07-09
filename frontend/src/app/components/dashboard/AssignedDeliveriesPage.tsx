@@ -1,12 +1,13 @@
 import { CheckCircle2, ClipboardList, Info, RefreshCw, Route } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { translateAssignedStatus } from "../../../i18n/assignedDeliveriesHelpers";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   applyAssignedDeliveryAction,
-  ASSIGNED_STATUS_LABELS,
   computeAssignedDeliverySummary,
   filterAssignedDeliveries,
-  getActionLabel,
   getAssignedDeliveries,
   getAssignedDeliveryRegions,
   getLogisticsSectionHash,
@@ -25,10 +26,11 @@ import { DeliveryFilterBar } from "./logistics-assigned/DeliveryFilterBar";
 import { DeliveryRouteModal } from "./logistics-assigned/DeliveryRouteModal";
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 export function AssignedDeliveriesPage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const userId = resolveAssignedDeliveriesUserId(user);
 
@@ -56,6 +58,11 @@ export function AssignedDeliveriesPage() {
     window.setTimeout(() => setToast(null), 3200);
   }, []);
 
+  const handleRefresh = useCallback(() => {
+    refresh();
+    showToast(t("assignedDeliveries.feedback.tasksRefreshed"));
+  }, [refresh, showToast, t]);
+
   const summary = useMemo(() => computeAssignedDeliverySummary(deliveries), [deliveries]);
   const regions = useMemo(() => getAssignedDeliveryRegions(deliveries), [deliveries]);
 
@@ -74,11 +81,12 @@ export function AssignedDeliveriesPage() {
 
     if (action === "open_route") {
       setRouteDelivery(delivery);
+      showToast(t("assignedDeliveries.feedback.routeOpened"));
       return;
     }
 
     if (action === "contact") {
-      showToast(`Contact options for ${delivery.taskId}: ${delivery.farmerName} / ${delivery.buyerName}`);
+      showToast(t("assignedDeliveries.feedback.contactOptions"));
       return;
     }
 
@@ -87,11 +95,21 @@ export function AssignedDeliveriesPage() {
     const updated = next.find((item) => item.id === delivery.id);
     const nextStatus = updated?.status;
 
-    showToast(
-      nextStatus
-        ? `${delivery.taskId} updated to ${ASSIGNED_STATUS_LABELS[nextStatus]}.`
-        : `${delivery.taskId}: ${getActionLabel(action)} completed.`,
-    );
+    if (!updated) {
+      showToast(t("assignedDeliveries.feedback.couldNotUpdateStatus"));
+      return;
+    }
+
+    if (action === "start_pickup") {
+      showToast(t("assignedDeliveries.feedback.pickupStarted"));
+    } else {
+      showToast(
+        t("assignedDeliveries.feedback.statusUpdatedWithTask", {
+          taskId: delivery.taskId,
+          status: translateAssignedStatus(t, nextStatus ?? updated.status),
+        }),
+      );
+    }
 
     if (detailDelivery?.id === delivery.id && updated) {
       setDetailDelivery(updated);
@@ -112,10 +130,10 @@ export function AssignedDeliveriesPage() {
       <div className="agrivo-assigned-header">
         <div>
           <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
-            Assigned Deliveries
+            {t("assignedDeliveries.title")}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            View, prioritize, and manage all delivery tasks assigned to your logistics team.
+            {t("assignedDeliveries.subtitle")}
           </p>
         </div>
 
@@ -123,7 +141,7 @@ export function AssignedDeliveriesPage() {
           <div className="agrivo-assigned-helper-card">
             <Info className="h-4 w-4 shrink-0 text-[#15803d]" />
             <p className="text-sm font-medium text-[#14532D]">
-              Start with high-priority pickups first.
+              {t("assignedDeliveries.helper")}
             </p>
           </div>
 
@@ -131,17 +149,17 @@ export function AssignedDeliveriesPage() {
             <Button
               variant="outline"
               className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
-              onClick={refresh}
+              onClick={handleRefresh}
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Tasks
+              {t("assignedDeliveries.actions.refreshTasks")}
             </Button>
             <Button
               className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={() => navigate(getLogisticsSectionHash("overview"))}
             >
               <Route className="mr-2 h-4 w-4" />
-              View Route Plan
+              {t("assignedDeliveries.actions.viewRoutePlan")}
             </Button>
           </div>
         </div>
@@ -171,23 +189,23 @@ export function AssignedDeliveriesPage() {
         </div>
       ) : deliveries.length > 0 ? (
         <div className="agrivo-dashboard-panel agrivo-assigned-empty-filter">
-          <p className="text-sm text-[#5F6F64]">No deliveries match your current filters.</p>
+          <p className="text-sm text-[#5F6F64]">{t("assignedDeliveries.empty.noMatch")}</p>
         </div>
       ) : (
         <div className="agrivo-dashboard-panel">
           <div className="agrivo-dashboard-empty agrivo-assigned-empty">
             <ClipboardList className="h-10 w-10 text-[#86efac]" strokeWidth={1.5} />
             <h3 className="agrivo-heading mt-4 text-lg font-bold text-[#102018]">
-              No assigned deliveries
+              {t("assignedDeliveries.empty.noneTitle")}
             </h3>
             <p className="mt-2 max-w-md text-sm leading-6 text-[#5F6F64]">
-              When new delivery tasks are assigned to your logistics team, they will appear here.
+              {t("assignedDeliveries.empty.noneDescription")}
             </p>
             <Button
               className="mt-5 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={() => navigate(getLogisticsSectionHash("overview"))}
             >
-              Go to Overview
+              {t("assignedDeliveries.actions.goToOverview")}
             </Button>
           </div>
         </div>

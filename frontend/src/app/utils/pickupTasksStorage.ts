@@ -41,6 +41,12 @@ export interface PickupTask {
   driverName: string;
   vehicle: string;
   notes: string;
+  productKey?: string;
+  sortKey?: string;
+  pickupLocationLocalized?: { en: string; az: string };
+  destinationLocalized?: { en: string; az: string };
+  pickupAddressLocalized?: { en: string; az: string };
+  notesLocalized?: { en: string; az: string };
 }
 
 export interface PickupTaskSummary {

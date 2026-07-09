@@ -1,4 +1,5 @@
 import { Search, ArrowRight } from "lucide-react";
+import { navigateToHash } from "../../i18n/localizedRoutes";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
@@ -57,7 +58,7 @@ export default function Hero() {
               <Button 
                 size="lg" 
                 className="bg-green-600 hover:bg-green-700 text-white"
-                onClick={() => window.location.hash = 'products'}
+                onClick={() => navigateToHash('products')}
               >
                 Start Shopping
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -66,7 +67,7 @@ export default function Hero() {
                 variant="outline" 
                 size="lg" 
                 className="border-green-600 text-green-600 hover:bg-green-50"
-                onClick={() => window.location.hash = 'login'}
+                onClick={() => navigateToHash('login')}
               >
                 Join as Farmer
               </Button>

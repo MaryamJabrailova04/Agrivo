@@ -1,7 +1,7 @@
 import { Check } from "lucide-react";
-import { cn } from "../../ui/utils";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import type { WeekDay } from "../../../utils/workingSchedule";
-import { WEEKDAY_META } from "../../../utils/workingSchedule";
+import { cn } from "../../ui/utils";
 
 export function DayChip({
   day,
@@ -14,6 +14,8 @@ export function DayChip({
   disabled?: boolean;
   onClick: () => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <button
       type="button"
@@ -27,7 +29,7 @@ export function DayChip({
       aria-pressed={selected}
     >
       {selected ? <Check className="agrivo-schedule-day-chip__icon" aria-hidden /> : null}
-      <span>{WEEKDAY_META[day].short}</span>
+      <span>{t(`farmerDashboardProfile.weekdaysShort.${day}`)}</span>
     </button>
   );
 }

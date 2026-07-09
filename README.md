@@ -49,15 +49,6 @@ npm run dev:frontend
 npm run dev:backend
 ```
 
-## Demo accounts
-
-| Role | Email | Password |
-|------|-------|----------|
-| Buyer | `buyer@agrivo.az` | `buyer123` |
-| Farmer | `farmer@agrivo.az` | `farmer123` |
-| Logistics | `logistics@agrivo.az` | `logistics123` |
-| Admin | `admin@agrivo.az` | `admin123` |
-
 ## Documentation
 
 - [Frontend README](frontend/README.md)

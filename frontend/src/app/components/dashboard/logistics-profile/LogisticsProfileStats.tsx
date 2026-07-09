@@ -1,45 +1,48 @@
 import { Clock3, MapPin, Package, Truck, Users } from "lucide-react";
 import type { LogisticsProfileStats } from "../../../utils/logisticsProfileStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 
 const STAT_CARDS = [
   {
     key: "totalDeliveries" as const,
-    label: "Total Deliveries",
-    hint: "Completed shipments",
+    labelKey: "logisticsProfile.stats.totalDeliveries",
+    hintKey: "logisticsProfile.stats.completedShipments",
     icon: Package,
     tone: "green",
   },
   {
     key: "activeDrivers" as const,
-    label: "Active Drivers",
-    hint: "On your team",
+    labelKey: "logisticsProfile.stats.activeDrivers",
+    hintKey: "logisticsProfile.stats.onYourTeam",
     icon: Users,
     tone: "neutral",
   },
   {
     key: "fleetSize" as const,
-    label: "Fleet Size",
-    hint: "Registered vehicles",
+    labelKey: "logisticsProfile.stats.fleetSize",
+    hintKey: "logisticsProfile.stats.registeredVehicles",
     icon: Truck,
     tone: "teal",
   },
   {
     key: "serviceRegions" as const,
-    label: "Service Regions",
-    hint: "Coverage areas",
+    labelKey: "logisticsProfile.stats.serviceRegions",
+    hintKey: "logisticsProfile.stats.coverageAreas",
     icon: MapPin,
     tone: "blue",
   },
   {
     key: "onTimeRate" as const,
-    label: "On-Time Rate",
-    hint: "Delivery performance",
+    labelKey: "logisticsProfile.stats.onTimeRate",
+    hintKey: "logisticsProfile.stats.deliveryPerformance",
     icon: Clock3,
     tone: "ontime",
   },
 ];
 
 export function LogisticsProfileStats({ stats }: { stats: LogisticsProfileStats }) {
+  const { t } = useLanguage();
+
   return (
     <section className="agrivo-logistics-profile-stats">
       {STAT_CARDS.map((card) => {
@@ -49,15 +52,15 @@ export function LogisticsProfileStats({ stats }: { stats: LogisticsProfileStats 
 
         return (
           <div
-            key={card.label}
+            key={card.labelKey}
             className={`agrivo-logistics-profile-stat-card agrivo-logistics-profile-stat-card--${card.tone}`}
           >
             <div className="agrivo-logistics-profile-stat-icon">
               <Icon className="h-4 w-4" />
             </div>
             <p className="agrivo-logistics-profile-stat-value">{value}</p>
-            <p className="agrivo-logistics-profile-stat-label">{card.label}</p>
-            <p className="agrivo-logistics-profile-stat-hint">{card.hint}</p>
+            <p className="agrivo-logistics-profile-stat-label">{t(card.labelKey)}</p>
+            <p className="agrivo-logistics-profile-stat-hint">{t(card.hintKey)}</p>
           </div>
         );
       })}

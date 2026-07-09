@@ -1,10 +1,11 @@
 import { useMemo } from "react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { formatLocalizedScheduleSummary } from "../../../../i18n/farmerDashboardProfileHelpers";
 import {
   SCHEDULE_PRESETS,
   WEEKDAY_ORDER,
   applySchedulePreset,
   detectSchedulePreset,
-  formatScheduleSummary,
   toggleWorkingDay,
   validateSchedule,
   type WeekDay,
@@ -35,10 +36,11 @@ export function WorkingSchedulePicker({
   errors = {},
   onChange,
 }: WorkingSchedulePickerProps) {
+  const { t, language } = useLanguage();
   const activePreset = useMemo(() => detectSchedulePreset(workingDays), [workingDays]);
   const summary = useMemo(
-    () => formatScheduleSummary(workingDays, openingTime, closingTime),
-    [workingDays, openingTime, closingTime],
+    () => formatLocalizedScheduleSummary(t, language, workingDays, openingTime, closingTime),
+    [t, language, workingDays, openingTime, closingTime],
   );
   const liveErrors = useMemo(
     () => validateSchedule(workingDays, openingTime, closingTime),
@@ -46,6 +48,13 @@ export function WorkingSchedulePicker({
   );
 
   const displayErrors = { ...liveErrors, ...errors };
+
+  const presetLabels: Record<(typeof SCHEDULE_PRESETS)[number]["id"], string> = {
+    every_day: t("farmerDashboardProfile.schedule.presets.everyDay"),
+    mon_fri: t("farmerDashboardProfile.schedule.presets.monFri"),
+    mon_sat: t("farmerDashboardProfile.schedule.presets.monSat"),
+    custom: t("farmerDashboardProfile.schedule.presets.custom"),
+  };
 
   const handlePresetClick = (preset: (typeof SCHEDULE_PRESETS)[number]["id"]) => {
     if (preset === "custom") return;
@@ -66,7 +75,7 @@ export function WorkingSchedulePicker({
         {SCHEDULE_PRESETS.map((preset) => (
           <SchedulePresetButton
             key={preset.id}
-            label={preset.label}
+            label={presetLabels[preset.id]}
             active={activePreset === preset.id}
             onClick={() => handlePresetClick(preset.id)}
           />
@@ -86,7 +95,7 @@ export function WorkingSchedulePicker({
 
       <div className="agrivo-working-schedule-picker__times">
         <div>
-          <Label htmlFor="opening-time">Opening time</Label>
+          <Label htmlFor="opening-time">{t("farmerDashboardProfile.fields.openingTime")}</Label>
           <Input
             id="opening-time"
             type="time"
@@ -96,7 +105,7 @@ export function WorkingSchedulePicker({
           />
         </div>
         <div>
-          <Label htmlFor="closing-time">Closing time</Label>
+          <Label htmlFor="closing-time">{t("farmerDashboardProfile.fields.closingTime")}</Label>
           <Input
             id="closing-time"
             type="time"

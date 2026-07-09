@@ -5,6 +5,8 @@ import { useCart } from "../../context/CartContext";
 import { useAuth } from "../../auth/AuthContext";
 import { cn } from "../ui/utils";
 import type { SavedProduct } from "../../utils/savedProductsStorage";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
+import { useLanguage } from "../../../i18n/LanguageContext";
 
 type ButtonPhase = "idle" | "loading" | "success";
 
@@ -20,10 +22,13 @@ interface ProductAddToCartButtonProps {
 const SUCCESS_RESET_MS = 1800;
 const LOADING_MIN_MS = 220;
 
-function getSuccessLabel(outcome?: string): string {
-  if (outcome === "quantity_updated") return "Updated";
-  if (outcome === "already_at_max") return "In cart";
-  return "Added";
+function getSuccessLabel(
+  t: ReturnType<typeof useLanguage>["t"],
+  outcome?: string,
+): string {
+  if (outcome === "quantity_updated") return t("marketplace.card.updated", "Updated");
+  if (outcome === "already_at_max") return t("marketplace.card.inCart", "In cart");
+  return t("marketplace.card.added", "Added");
 }
 
 export function ProductAddToCartButton({
@@ -34,11 +39,12 @@ export function ProductAddToCartButton({
   variant = "button",
   label = "Add to cart",
 }: ProductAddToCartButtonProps) {
+  const { t } = useLanguage();
   const { addListingToCart, addSavedToCart, addSlugToCart } = useCart();
   const { isAuthenticated } = useAuth();
   const listing = listingProp ?? (slug ? getProductBySlug(slug) : undefined);
   const [phase, setPhase] = useState<ButtonPhase>("idle");
-  const [successLabel, setSuccessLabel] = useState("Added");
+  const [successLabel, setSuccessLabel] = useState(t("marketplace.card.added", "Added"));
 
   const handleClick = useCallback(
     async (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -73,16 +79,16 @@ export function ProductAddToCartButton({
       if (!result.ok) {
         setPhase("idle");
         if (!isAuthenticated) {
-          window.location.hash = "login";
+          navigateToHash("login");
         }
         return;
       }
 
-      setSuccessLabel(getSuccessLabel(result.outcome));
+      setSuccessLabel(getSuccessLabel(t, result.outcome));
       setPhase("success");
       window.setTimeout(() => setPhase("idle"), SUCCESS_RESET_MS);
     },
-    [addListingToCart, addSavedToCart, addSlugToCart, isAuthenticated, listing, phase, product, slug],
+    [addListingToCart, addSavedToCart, addSlugToCart, isAuthenticated, listing, phase, product, slug, t],
   );
 
   const isDisabled = phase === "loading" || (!listing && !product && !slug);
@@ -97,7 +103,7 @@ export function ProductAddToCartButton({
           isSuccess && "agrivo-product-cart-btn--success",
           className,
         )}
-        aria-label={isSuccess ? "Added to cart" : "Add to cart"}
+        aria-label={isSuccess ? t("marketplace.card.added", "Added") : t("marketplace.card.addToCart", "Add to cart")}
         onClick={handleClick}
         disabled={isDisabled}
       >
@@ -131,8 +137,8 @@ export function ProductAddToCartButton({
       ) : (
         <ShoppingCart className="h-4 w-4" />
       )}
-      <span>
-        {phase === "loading" ? "Adding…" : isSuccess ? successLabel : label}
+      <span className="whitespace-nowrap">
+        {phase === "loading" ? t("marketplace.card.adding", "Adding…") : isSuccess ? successLabel : label}
       </span>
     </button>
   );

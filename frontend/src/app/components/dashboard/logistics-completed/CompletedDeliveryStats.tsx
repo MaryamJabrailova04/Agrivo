@@ -6,53 +6,53 @@ import {
   Star,
   TrendingUp,
 } from "lucide-react";
-import {
-  formatDeliveredWeight,
-  type CompletedSummary,
-} from "../../../utils/completedDeliveriesStorage";
+import type { CompletedSummary } from "../../../utils/completedDeliveriesStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { formatDeliveredWeightLocalized } from "../../../../i18n/completedDeliveriesHelpers";
 
 interface StatCard {
-  label: string;
+  labelKey: string;
   value: string;
-  hint: string;
+  hintKey: string;
   icon: LucideIcon;
   accent: "today" | "week" | "weight" | "ontime" | "rating";
 }
 
 export function CompletedDeliveryStats({ summary }: { summary: CompletedSummary }) {
+  const { t } = useLanguage();
   const cards: StatCard[] = [
     {
-      label: "Completed Today",
+      labelKey: "completedDeliveries.stats.completedToday",
       value: String(summary.completedToday),
-      hint: "Delivered today",
+      hintKey: "completedDeliveries.stats.deliveredToday",
       icon: CheckCircle2,
       accent: "today",
     },
     {
-      label: "Completed This Week",
+      labelKey: "completedDeliveries.stats.completedThisWeek",
       value: String(summary.completedThisWeek),
-      hint: "Last 7 days",
+      hintKey: "completedDeliveries.stats.last7Days",
       icon: CalendarCheck,
       accent: "week",
     },
     {
-      label: "Total Delivered Weight",
-      value: formatDeliveredWeight(summary.totalDeliveredWeightKg),
-      hint: "All records",
+      labelKey: "completedDeliveries.stats.totalDeliveredWeight",
+      value: formatDeliveredWeightLocalized(t, summary.totalDeliveredWeightKg),
+      hintKey: "completedDeliveries.stats.allRecords",
       icon: Scale,
       accent: "weight",
     },
     {
-      label: "On-Time Rate",
+      labelKey: "completedDeliveries.stats.onTimeRate",
       value: `${summary.onTimeRate}%`,
-      hint: "Delivery punctuality",
+      hintKey: "completedDeliveries.stats.deliveryPunctuality",
       icon: TrendingUp,
       accent: "ontime",
     },
     {
-      label: "Average Rating",
+      labelKey: "completedDeliveries.stats.averageRating",
       value: summary.averageRating.toFixed(1),
-      hint: "Buyer satisfaction",
+      hintKey: "completedDeliveries.stats.buyerSatisfaction",
       icon: Star,
       accent: "rating",
     },
@@ -64,7 +64,7 @@ export function CompletedDeliveryStats({ summary }: { summary: CompletedSummary 
         const Icon = card.icon;
         return (
           <div
-            key={card.label}
+            key={card.labelKey}
             className={`agrivo-completed-stat-card agrivo-card agrivo-completed-stat-card--${card.accent}`}
           >
             <div className="flex items-start justify-between gap-3">
@@ -73,8 +73,8 @@ export function CompletedDeliveryStats({ summary }: { summary: CompletedSummary 
               </div>
               <span className="agrivo-heading text-2xl font-bold text-[#102018]">{card.value}</span>
             </div>
-            <p className="mt-3 text-sm font-semibold text-[#102018]">{card.label}</p>
-            <p className="mt-0.5 text-xs text-[#6b7a70]">{card.hint}</p>
+            <p className="mt-3 text-sm font-semibold text-[#102018]">{t(card.labelKey)}</p>
+            <p className="mt-0.5 text-xs text-[#6b7a70]">{t(card.hintKey)}</p>
           </div>
         );
       })}

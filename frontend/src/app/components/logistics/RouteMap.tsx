@@ -16,6 +16,13 @@ import {
   TileLayer,
   useMap,
 } from "react-leaflet";
+import { isMockMode } from "../../../config/dataMode";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import {
+  formatLogisticsEta,
+  translateLogisticsLocation,
+  translateLogisticsProduct,
+} from "../../../i18n/logisticsDashboardHelpers";
 import type { LogisticsRouteData, RouteStop } from "../../data/logisticsRoutes";
 import { getRoutePathCoordinates } from "../../data/logisticsRoutes";
 import {
@@ -57,23 +64,38 @@ function stopIcon(stop: RouteStop) {
 }
 
 function StopPopup({ stop }: { stop: RouteStop }) {
+  const { t, language } = useLanguage();
+  const stopName = translateLogisticsLocation(t, stop.name);
+
   if (stop.type === "pickup") {
+    const product = stop.product
+      ? translateLogisticsProduct(t, language, stop.product)
+      : stop.product;
     return (
       <div className="agrivo-route-map-popup">
-        <p className="agrivo-route-map-popup__title">{stop.name}</p>
+        <p className="agrivo-route-map-popup__title">{stopName}</p>
         <p className="agrivo-route-map-popup__line">
-          Pickup: {stop.product} • {stop.quantity}
+          {t("logisticsDashboard.route.pickupLine", {
+            product: product ?? "",
+            quantity: stop.quantity ?? "",
+          })}
         </p>
-        <p className="agrivo-route-map-popup__meta">Time: {stop.time}</p>
+        <p className="agrivo-route-map-popup__meta">
+          {t("logisticsDashboard.route.timeLabel", { time: stop.time ?? "" })}
+        </p>
       </div>
     );
   }
 
   return (
     <div className="agrivo-route-map-popup">
-      <p className="agrivo-route-map-popup__title">{stop.name}</p>
-      <p className="agrivo-route-map-popup__line">Delivery destination</p>
-      <p className="agrivo-route-map-popup__meta">ETA: {stop.eta}</p>
+      <p className="agrivo-route-map-popup__title">{stopName}</p>
+      <p className="agrivo-route-map-popup__line">
+        {t("logisticsDashboard.route.deliveryDestination")}
+      </p>
+      <p className="agrivo-route-map-popup__meta">
+        {stop.eta ? formatLogisticsEta(t, stop.eta) : null}
+      </p>
     </div>
   );
 }
@@ -134,6 +156,7 @@ export interface RouteMapProps {
 }
 
 export function RouteMap({ route, onProgressChange, className }: RouteMapProps) {
+  const { t } = useLanguage();
   const path = useMemo(() => getRoutePathCoordinates(route), [route]);
   const initialProgress = useMemo(
     () => getProgressFromPosition(path, [route.vehiclePosition.lat, route.vehiclePosition.lng]),
@@ -214,90 +237,106 @@ export function RouteMap({ route, onProgressChange, className }: RouteMapProps) 
           type="button"
           className="agrivo-route-map-control"
           onClick={handleCenterRoute}
-          title="Center route"
+          title={t("logisticsDashboard.route.centerRoute")}
         >
           <Crosshair className="h-3.5 w-3.5" />
-          <span>Center route</span>
+          <span>{t("logisticsDashboard.route.centerRoute")}</span>
         </button>
         <button
           type="button"
           className={`agrivo-route-map-control ${followVehicle ? "agrivo-route-map-control--active" : ""}`}
           onClick={handleFollowVehicle}
-          title="Follow vehicle"
+          title={t("logisticsDashboard.route.followVehicle")}
         >
           <LocateFixed className="h-3.5 w-3.5" />
-          <span>Follow vehicle</span>
+          <span>{t("logisticsDashboard.route.followVehicle")}</span>
         </button>
         <button
           type="button"
           className="agrivo-route-map-control"
           onClick={handleRefreshLocation}
-          title="Refresh location"
+          title={t("logisticsDashboard.route.refreshLocation")}
         >
           <RefreshCw className="h-3.5 w-3.5" />
-          <span>Refresh</span>
+          <span>{t("logisticsDashboard.route.refresh")}</span>
         </button>
         <button
           type="button"
           className="agrivo-route-map-control agrivo-route-map-control--icon"
           onClick={handleToggleFullscreen}
-          title={isFullscreen ? "Exit fullscreen" : "Fullscreen map preview"}
+          title={
+            isFullscreen
+              ? t("logisticsDashboard.route.exitFullscreen")
+              : t("logisticsDashboard.route.fullscreenMap")
+          }
         >
           {isFullscreen ? <Minimize2 className="h-3.5 w-3.5" /> : <Maximize2 className="h-3.5 w-3.5" />}
         </button>
       </div>
 
-      <span className="agrivo-route-map-live-label">
-        <Truck className="h-3 w-3" />
-        Mock live route tracking
-      </span>
+      <div className="agrivo-route-map-container">
+        <MapContainer
+          center={mapCenter}
+          zoom={8}
+          scrollWheelZoom
+          className="agrivo-route-map"
+          attributionControl
+        >
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
 
-      <MapContainer
-        center={mapCenter}
-        zoom={8}
-        scrollWheelZoom
-        className="agrivo-route-map"
-        attributionControl
-      >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        />
+          <FitRouteBounds positions={path} trigger={boundsTrigger} />
+          <FollowVehicle position={vehiclePosition} enabled={followVehicle} />
+          <MapResizeHandler isFullscreen={isFullscreen} />
 
-        <FitRouteBounds positions={path} trigger={boundsTrigger} />
-        <FollowVehicle position={vehiclePosition} enabled={followVehicle} />
-        <MapResizeHandler isFullscreen={isFullscreen} />
+          <Polyline
+            positions={path}
+            pathOptions={{
+              color: ROUTE_COLOR,
+              weight: ROUTE_WEIGHT,
+              opacity: 0.92,
+              lineCap: "round",
+              lineJoin: "round",
+            }}
+          />
 
-        <Polyline
-          positions={path}
-          pathOptions={{
-            color: ROUTE_COLOR,
-            weight: ROUTE_WEIGHT,
-            opacity: 0.92,
-            lineCap: "round",
-            lineJoin: "round",
-          }}
-        />
+          {route.stops.map((stop) => (
+            <Marker key={`${stop.type}-${stop.name}`} position={[stop.lat, stop.lng]} icon={stopIcon(stop)}>
+              <Popup className="agrivo-route-map-leaflet-popup">
+                <StopPopup stop={stop} />
+              </Popup>
+            </Marker>
+          ))}
 
-        {route.stops.map((stop) => (
-          <Marker key={`${stop.type}-${stop.name}`} position={[stop.lat, stop.lng]} icon={stopIcon(stop)}>
+          <Marker position={vehiclePosition} icon={vehicleIcon} zIndexOffset={1000}>
             <Popup className="agrivo-route-map-leaflet-popup">
-              <StopPopup stop={stop} />
+              <div className="agrivo-route-map-popup">
+                <p className="agrivo-route-map-popup__title">
+                  {t("logisticsDashboard.route.currentVehicleLocation")}
+                </p>
+                <p className="agrivo-route-map-popup__line">
+                  {t("logisticsDashboard.route.driver")}: {route.driver}
+                </p>
+                <p className="agrivo-route-map-popup__line">
+                  {t("logisticsDashboard.route.vehicle")}: {route.vehicle}
+                </p>
+                <p className="agrivo-route-map-popup__meta">
+                  {t("logisticsDashboard.route.statusInTransit")}
+                </p>
+              </div>
             </Popup>
           </Marker>
-        ))}
+        </MapContainer>
 
-        <Marker position={vehiclePosition} icon={vehicleIcon} zIndexOffset={1000}>
-          <Popup className="agrivo-route-map-leaflet-popup">
-            <div className="agrivo-route-map-popup">
-              <p className="agrivo-route-map-popup__title">Current vehicle location</p>
-              <p className="agrivo-route-map-popup__line">Driver: {route.driver}</p>
-              <p className="agrivo-route-map-popup__line">Vehicle: {route.vehicle}</p>
-              <p className="agrivo-route-map-popup__meta">Status: In transit</p>
-            </div>
-          </Popup>
-        </Marker>
-      </MapContainer>
+        {isMockMode ? (
+          <span className="agrivo-route-map-mock-badge" aria-hidden="true">
+            <Truck className="h-3 w-3" />
+            {t("logistics.mockLiveRouteTracking")}
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }

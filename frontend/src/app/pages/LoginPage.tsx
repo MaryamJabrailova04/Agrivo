@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   Eye,
@@ -23,61 +23,89 @@ import { Separator } from "../components/ui/separator";
 import { cn } from "../components/ui/utils";
 import { useAuth } from "../auth/AuthContext";
 import { DEMO_LOGIN_HINTS } from "../auth/demoUsers";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
 import { getDashboardHashForRole } from "../auth/authService";
+import { useLanguage } from "../../i18n/LanguageContext";
+import { getRoutePathFromHash, navigateToHash } from "../../i18n/localizedRoutes";
 
 type UserRole = "buyer" | "farmer" | "logistics";
 
-const roleOptions: Array<{
+const roleMeta: Array<{
   id: UserRole;
-  label: string;
-  description: string;
+  labelKey: string;
+  descriptionKey: string;
   icon: LucideIcon;
   iconTint: string;
 }> = [
   {
     id: "buyer",
-    label: "Buyer",
-    description: "Browse products and place orders from verified farmers.",
+    labelKey: "auth.buyer",
+    descriptionKey: "auth.buyerDesc",
     icon: ShoppingBasket,
     iconTint: "text-[#1f8d4b]",
   },
   {
     id: "farmer",
-    label: "Farmer",
-    description: "List your products and connect with buyers.",
+    labelKey: "auth.farmer",
+    descriptionKey: "auth.farmerDesc",
     icon: Sprout,
     iconTint: "text-[#43A047]",
   },
   {
     id: "logistics",
-    label: "Logistics Partner",
-    description: "Manage deliveries and order handoffs.",
+    labelKey: "auth.logisticsPartner",
+    descriptionKey: "auth.logisticsDesc",
     icon: Truck,
     iconTint: "text-[#14532D]",
   },
 ];
 
-const authStats: Array<{ value: string; label: string; icon: LucideIcon; iconTint: string }> = [
-  { value: "100+", label: "Farmers", icon: Users, iconTint: "text-[#1f8d4b]" },
-  { value: "1000+", label: "Orders", icon: Package, iconTint: "text-[#14532D]" },
-  { value: "50+", label: "Product Types", icon: Leaf, iconTint: "text-[#43A047]" },
-];
-
-const rolePreview: Array<{ label: string; text: string; icon: LucideIcon }> = [
-  { label: "Buyer", text: "Order fresh products", icon: ShoppingBasket },
-  { label: "Farmer", text: "Sell your harvest", icon: Sprout },
-  { label: "Logistics", text: "Deliver with ease", icon: Truck },
+const rolePreviewMeta: Array<{ labelKey: string; textKey: string; icon: LucideIcon }> = [
+  { labelKey: "auth.buyer", textKey: "auth.orderFresh", icon: ShoppingBasket },
+  { labelKey: "auth.farmer", textKey: "auth.sellHarvest", icon: Sprout },
+  { labelKey: "auth.logisticsPartner", textKey: "auth.deliverEase", icon: Truck },
 ];
 
 type AuthTab = "login" | "register";
 
 function getAuthTabFromHash(): AuthTab {
-  const hash = window.location.hash.replace("#", "");
-  return hash === "register" ? "register" : "login";
+  const path = getRoutePathFromHash();
+  return path === "register" ? "register" : "login";
 }
 
 export default function LoginPage() {
   const { login, register, isAuthenticated, user } = useAuth();
+  const { t, language } = useLanguage();
+
+  const roleOptions = useMemo(
+    () =>
+      roleMeta.map((role) => ({
+        ...role,
+        label: t(role.labelKey),
+        description: t(role.descriptionKey),
+      })),
+    [t],
+  );
+
+  const authStats = useMemo(
+    () => [
+      { value: "100+", label: t("hero.statFarmers"), icon: Users, iconTint: "text-[#1f8d4b]" },
+      { value: "1000+", label: t("hero.statOrders"), icon: Package, iconTint: "text-[#14532D]" },
+      { value: "50+", label: t("hero.statProductTypes"), icon: Leaf, iconTint: "text-[#43A047]" },
+    ],
+    [t],
+  );
+
+  const rolePreview = useMemo(
+    () =>
+      rolePreviewMeta.map((role) => ({
+        label: t(role.labelKey),
+        text: t(role.textKey),
+        icon: role.icon,
+      })),
+    [t],
+  );
+
   const [authTab, setAuthTab] = useState<AuthTab>(getAuthTabFromHash);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState("");
@@ -102,7 +130,7 @@ export default function LoginPage() {
 
   useEffect(() => {
     if (isAuthenticated && user) {
-      window.location.hash = getDashboardHashForRole(user.role);
+      navigateToHash(getDashboardHashForRole(user.role), language);
     }
   }, [isAuthenticated, user]);
 
@@ -119,8 +147,8 @@ export default function LoginPage() {
   const handleAuthTabChange = (value: string) => {
     const tab = value as AuthTab;
     setAuthTab(tab);
-    if (window.location.hash.replace("#", "") !== tab) {
-      window.location.hash = tab;
+    if (getRoutePathFromHash() !== tab) {
+      navigateToHash(tab, language);
     }
   };
 
@@ -137,7 +165,7 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.hash = getDashboardHashForRole(result.user.role);
+    navigateToHash(getDashboardHashForRole(result.user.role), language);
   };
 
   const handleRegister = async (e: React.FormEvent) => {
@@ -162,15 +190,15 @@ export default function LoginPage() {
       return;
     }
 
-    window.location.hash = getDashboardHashForRole(result.user.role);
+    navigateToHash(getDashboardHashForRole(result.user.role), language);
   };
 
   const fillDemoLogin = (email: string, password: string) => {
     setLoginForm({ email, password, rememberMe: false });
     setLoginError("");
     setAuthTab("login");
-    if (window.location.hash.replace("#", "") !== "login") {
-      window.location.hash = "login";
+    if (getRoutePathFromHash() !== "login") {
+      navigateToHash("login", language);
     }
   };
 
@@ -180,7 +208,7 @@ export default function LoginPage() {
   };
 
   const handleBackToHome = () => {
-    window.location.hash = "home";
+    navigateToHash("home", language);
   };
 
   const inputClassName = "auth-input w-full";
@@ -203,8 +231,11 @@ export default function LoginPage() {
         onClick={handleBackToHome}
       >
         <ArrowLeft className="mr-2 h-4 w-4" />
-        Back to Home
+        {t("auth.backToHome")}
       </Button>
+      <div className="absolute right-4 top-4 z-10">
+        <LanguageSwitcher variant="compact" />
+      </div>
 
       <div className="auth-layout">
         <div className="auth-brand-card">
@@ -274,17 +305,17 @@ export default function LoginPage() {
                 <img src={agrivoLogo} alt="Agrivo" />
               </div>
               <CardTitle className="text-xl font-semibold text-[#102018]">
-                {authTab === "register" ? "Create Account" : "Welcome Back"}
+                {authTab === "register" ? t("auth.createAccount") : t("auth.welcomeBack")}
               </CardTitle>
             </CardHeader>
             <CardContent className="px-6 pb-6 pt-4">
               <Tabs value={authTab} onValueChange={handleAuthTabChange} className="w-full">
                 <TabsList className="auth-tabs-list mb-5">
                   <TabsTrigger value="login" className="auth-tabs-trigger">
-                    Login
+                    {t("auth.login")}
                   </TabsTrigger>
                   <TabsTrigger value="register" className="auth-tabs-trigger">
-                    Register
+                    {t("auth.register")}
                   </TabsTrigger>
                 </TabsList>
 
@@ -307,11 +338,11 @@ export default function LoginPage() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#102018]">Password</label>
+                      <label className="mb-1 block text-sm font-medium text-[#102018]">{t("auth.password")}</label>
                       <div className="relative">
                         <Input
                           type={showPassword ? "text" : "password"}
-                          placeholder="Enter your password"
+                          placeholder={t("auth.enterPassword")}
                           value={loginForm.password}
                           onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
                           className={cn(inputClassName, "pr-10")}
@@ -338,7 +369,7 @@ export default function LoginPage() {
                           }
                         />
                         <label htmlFor="remember" className="text-xs text-[#5F6F64]">
-                          Remember me
+                          {t("auth.rememberMe")}
                         </label>
                       </div>
                       <a href="#" className="text-xs text-[#14532D] hover:text-[#1D6A3B]">
@@ -346,7 +377,7 @@ export default function LoginPage() {
                       </a>
                     </div>
                     <Button type="submit" className="auth-submit-btn w-full text-white" disabled={isSubmitting}>
-                      {isSubmitting ? "Logging in..." : "Login"}
+                      {isSubmitting ? t("auth.loggingIn") : t("auth.login")}
                     </Button>
 
                     <div className="rounded-xl border border-dashed border-[#dbe7d4] bg-[#f8faf4] px-3 py-3">
@@ -359,8 +390,12 @@ export default function LoginPage() {
                             className="block w-full text-left text-[0.6875rem] leading-5 text-[#5F6F64] transition hover:text-[#14532D]"
                             onClick={() => fillDemoLogin(demo.email, demo.password)}
                           >
-                            {demo.role === "buyer" ? "Buyer" : demo.role === "farmer" ? "Farmer" : "Logistics"}:{" "}
-                            {demo.email} / {demo.password}
+                            {demo.role === "buyer"
+                              ? t("auth.buyer")
+                              : demo.role === "farmer"
+                                ? t("auth.farmer")
+                                : t("auth.logisticsPartner")}
+                            : {demo.email} / {demo.password}
                           </button>
                         ))}
                       </div>
@@ -377,9 +412,9 @@ export default function LoginPage() {
                     ) : null}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#102018]">Full Name</label>
+                        <label className="mb-1 block text-sm font-medium text-[#102018]">{t("auth.fullName")}</label>
                         <Input
-                          placeholder="Your name"
+                          placeholder={t("auth.enterName")}
                           value={registerForm.name}
                           onChange={(e) => setRegisterForm({ ...registerForm, name: e.target.value })}
                           className={inputClassName}
@@ -387,7 +422,7 @@ export default function LoginPage() {
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#102018]">Phone</label>
+                        <label className="mb-1 block text-sm font-medium text-[#102018]">{t("auth.phone")}</label>
                         <Input
                           placeholder="+994 XX XXX XX XX"
                           value={registerForm.phone}
@@ -398,10 +433,10 @@ export default function LoginPage() {
                       </div>
                     </div>
                     <div>
-                      <label className="mb-1 block text-sm font-medium text-[#102018]">Email</label>
+                      <label className="mb-1 block text-sm font-medium text-[#102018]">{t("auth.email")}</label>
                       <Input
                         type="email"
-                        placeholder="Enter your email"
+                        placeholder={t("auth.enterEmail")}
                         value={registerForm.email}
                         onChange={(e) => setRegisterForm({ ...registerForm, email: e.target.value })}
                         className={inputClassName}
@@ -416,7 +451,7 @@ export default function LoginPage() {
                           const Icon = role.icon;
                           const isSelected = registerForm.userType === role.id;
                           const shortLabel =
-                            role.id === "logistics" ? "Logistics" : role.label;
+                            role.id === "logistics" ? t("auth.logisticsPartner") : role.label;
                           return (
                             <button
                               key={role.id}
@@ -450,10 +485,10 @@ export default function LoginPage() {
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#102018]">Password</label>
+                        <label className="mb-1 block text-sm font-medium text-[#102018]">{t("auth.password")}</label>
                         <Input
                           type="password"
-                          placeholder="Create password"
+                          placeholder={t("auth.enterPassword")}
                           value={registerForm.password}
                           onChange={(e) => setRegisterForm({ ...registerForm, password: e.target.value })}
                           className={inputClassName}
@@ -461,10 +496,10 @@ export default function LoginPage() {
                         />
                       </div>
                       <div>
-                        <label className="mb-1 block text-sm font-medium text-[#102018]">Confirm</label>
+                        <label className="mb-1 block text-sm font-medium text-[#102018]">{t("auth.confirmShort")}</label>
                         <Input
                           type="password"
-                          placeholder="Confirm password"
+                          placeholder={t("auth.confirmPasswordPlaceholder")}
                           value={registerForm.confirmPassword}
                           onChange={(e) =>
                             setRegisterForm({ ...registerForm, confirmPassword: e.target.value })
@@ -499,7 +534,7 @@ export default function LoginPage() {
                       className="auth-submit-btn w-full text-white"
                       disabled={!registerForm.agreeTerms || isSubmitting}
                     >
-                      {isSubmitting ? "Creating account..." : "Create Account"}
+                      {isSubmitting ? t("auth.creatingAccount") : t("auth.createAccount")}
                     </Button>
                   </form>
                 </TabsContent>
@@ -513,12 +548,12 @@ export default function LoginPage() {
                   onClick={handleWhatsAppLogin}
                 >
                   <MessageCircle className="mr-2 h-4 w-4" />
-                  Quick Login via WhatsApp
+                  {t("auth.quickWhatsapp")}
                 </Button>
               </div>
 
               <p className="mt-3 text-center text-[0.6875rem] leading-5 text-[#5F6F64]">
-                Need help? Contact Agrivo support via WhatsApp at +91-9876543200
+                {t("auth.needHelp")}
               </p>
             </CardContent>
           </Card>

@@ -27,6 +27,14 @@ import { FormField, formInputClass, formTextareaClass } from "./FormField";
 import { FormGrid, FormMediaGrid } from "./FormGrid";
 import { ImageUpload } from "./ImageUpload";
 import { QuantityInput } from "./QuantityInput";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  resolveLocalizedName,
+  resolveLocalizedVariety,
+  translateDeliveryOption,
+  translateFarmerCategory,
+  translateUnitLabel,
+} from "../../../../i18n/farmerProductHelpers";
 
 const CATEGORIES: ProductFormCategory[] = [
   "Fruits",
@@ -103,25 +111,29 @@ const initialValues: ProductFormValues = {
 
 type FormErrors = Partial<Record<keyof ProductFormValues | "submit", string>>;
 
-function validate(values: ProductFormValues, isPublish: boolean): FormErrors {
+function validateLocalized(
+  values: ProductFormValues,
+  isPublish: boolean,
+  t: ReturnType<typeof useLanguage>["t"],
+): FormErrors {
   const errors: FormErrors = {};
-  if (!values.name.trim()) errors.name = "Product name is required.";
-  if (!values.category) errors.category = "Select a category.";
-  if (!values.region) errors.region = "Select a region.";
-  if (!values.district) errors.district = "Select a district.";
+  if (!values.name.trim()) errors.name = t("farmerAddProduct.validation.productNameRequired");
+  if (!values.category) errors.category = t("farmerAddProduct.validation.categoryRequired");
+  if (!values.region) errors.region = t("farmerAddProduct.validation.regionRequired");
+  if (!values.district) errors.district = t("farmerAddProduct.validation.districtRequired");
   const price = Number(values.price);
   if (!values.price.trim() || !Number.isFinite(price) || price <= 0) {
-    errors.price = "Enter a valid price greater than 0.";
+    errors.price = t("farmerAddProduct.validation.priceRequired");
   }
   if (isPublish && values.quantity <= 0) {
-    errors.quantity = "Quantity must be at least 1 to publish.";
+    errors.quantity = t("farmerAddProduct.validation.quantityGreaterThanZero");
   }
-  if (!values.harvestDate) errors.harvestDate = "Harvest date is required.";
-  if (isPublish && !values.image) errors.image = "Add a product photo before publishing.";
+  if (!values.harvestDate) errors.harvestDate = t("farmerAddProduct.validation.harvestDateRequired");
+  if (isPublish && !values.image) errors.image = t("farmerAddProduct.validation.imageRequired");
   if (isPublish && !values.description.trim()) {
-    errors.description = "Description is required to publish.";
+    errors.description = t("farmerAddProduct.validation.descriptionRequired");
   }
-  if (!values.deliveryOption) errors.deliveryOption = "Select a delivery option.";
+  if (!values.deliveryOption) errors.deliveryOption = t("farmerAddProduct.validation.deliveryOptionRequired");
   return errors;
 }
 
@@ -130,7 +142,7 @@ function TagPill({
   selected,
   onClick,
 }: {
-  label: ProductFormTag;
+  label: string;
   selected: boolean;
   onClick: () => void;
 }) {
@@ -181,6 +193,7 @@ export function ProductForm({
 }) {
   const [values, setValues] = useState<ProductFormValues>({ ...initialValues, ...defaultValues });
   const [errors, setErrors] = useState<FormErrors>({});
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     if (defaultValues) {
@@ -229,7 +242,7 @@ export function ProductForm({
   };
 
   const handleSubmit = (mode: "draft" | "publish") => {
-    const nextErrors = validate(values, mode === "publish");
+    const nextErrors = validateLocalized(values, mode === "publish", t);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
@@ -256,6 +269,16 @@ export function ProductForm({
     );
   };
 
+  const localizeProductName = (name: string): string => {
+    const localized = resolveLocalizedName(name);
+    return localized?.[language] ?? name;
+  };
+
+  const localizeVariety = (variety: string): string => {
+    const localized = resolveLocalizedVariety(variety);
+    return localized?.[language] ?? variety;
+  };
+
   return (
     <form
       className="agrivo-product-form"
@@ -264,9 +287,12 @@ export function ProductForm({
         handleSubmit("publish");
       }}
     >
-      <FormSection title="Basic Product Info" subtitle="Category, name, variety, and location.">
+      <FormSection
+        title={t("farmerAddProduct.basic.title")}
+        subtitle={t("farmerAddProduct.basic.subtitle")}
+      >
         <FormGrid columns={3}>
-          <FormField label="Category" required error={errors.category}>
+          <FormField label={t("farmerAddProduct.fields.category")} required error={errors.category}>
             <Select
               value={values.category}
               onValueChange={(v) => {
@@ -277,19 +303,27 @@ export function ProductForm({
               disabled={isSaving}
             >
               <SelectTrigger className={filterSelectClass}>
-                <SelectValue placeholder="Select category" />
+                <SelectValue placeholder={t("farmerAddProduct.fields.selectCategory")} />
               </SelectTrigger>
               <SelectContent>
                 {CATEGORIES.map((cat) => (
                   <SelectItem key={cat} value={cat}>
-                    {cat}
+                    {translateFarmerCategory(
+                      t,
+                      cat === "Dairy" ? "Dairy Products" : cat,
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </FormField>
 
-          <FormField label="Product Name" htmlFor="product-name" required error={errors.name}>
+          <FormField
+            label={t("farmerAddProduct.fields.productName")}
+            htmlFor="product-name"
+            required
+            error={errors.name}
+          >
             {productNameOptions.length > 0 ? (
               <ComboboxInput
                 id="product-name"
@@ -298,18 +332,18 @@ export function ProductForm({
                   update("name", v);
                   update("variety", "");
                 }}
-                options={productNameOptions}
+                options={productNameOptions.map(localizeProductName)}
                 disabled={!values.category || isSaving}
-                placeholder="e.g. Apple, Tomato"
+                placeholder={t("farmerAddProduct.fields.productNamePlaceholder")}
                 className={formInputClass}
-                emptyHint="Select category first"
+                emptyHint={t("farmerAddProduct.fields.selectProductFirst")}
               />
             ) : (
               <Input
                 id="product-name"
                 value={values.name}
                 onChange={(e) => update("name", e.target.value)}
-                placeholder="e.g. Milk, Wheat"
+                placeholder={t("farmerAddProduct.fields.productNamePlaceholder")}
                 className={formInputClass}
                 disabled={!values.category || isSaving}
               />
@@ -317,7 +351,7 @@ export function ProductForm({
           </FormField>
 
           <FormField
-            label="Product Variety / Sort"
+            label={t("farmerAddProduct.fields.productVariety")}
             htmlFor="product-variety"
             error={errors.variety}
           >
@@ -325,20 +359,20 @@ export function ProductForm({
               id="product-variety"
               value={values.variety}
               onChange={(v) => update("variety", v)}
-              options={varietyOptions}
+              options={varietyOptions.map(localizeVariety)}
               disabled={varietyDisabled || isSaving}
-              placeholder="e.g. Qızıl Əhmədi"
+              placeholder={t("farmerAddProduct.fields.productVarietyPlaceholder")}
               className={formInputClass}
-              emptyHint="Select product first"
+              emptyHint={t("farmerAddProduct.fields.selectProductFirst")}
             />
             <p className="agrivo-form-helper">
               {hasVarietySupport
-                ? "Select a known variety or type your own."
-                : "Optional for this category."}
+                ? t("farmerAddProduct.fields.varietyHint")
+                : t("farmerAddProduct.fields.optionalForCategory")}
             </p>
           </FormField>
 
-          <FormField label="Region" required error={errors.region}>
+          <FormField label={t("farmerAddProduct.fields.region")} required error={errors.region}>
             <Select
               value={values.region}
               onValueChange={(v) => {
@@ -348,7 +382,7 @@ export function ProductForm({
               disabled={isSaving}
             >
               <SelectTrigger className={filterSelectClass}>
-                <SelectValue placeholder="Select region" />
+                <SelectValue placeholder={t("farmerAddProduct.fields.selectRegion")} />
               </SelectTrigger>
               <SelectContent>
                 {economicRegions.map((region) => (
@@ -360,14 +394,14 @@ export function ProductForm({
             </Select>
           </FormField>
 
-          <FormField label="District" required error={errors.district}>
+          <FormField label={t("farmerAddProduct.fields.district")} required error={errors.district}>
             <Select
               value={values.district}
               onValueChange={(v) => update("district", v)}
               disabled={!values.region || isSaving}
             >
               <SelectTrigger className={filterSelectClass}>
-                <SelectValue placeholder="Select district" />
+                <SelectValue placeholder={t("farmerAddProduct.fields.selectDistrict")} />
               </SelectTrigger>
               <SelectContent>
                 {districts.map((district) => (
@@ -379,7 +413,12 @@ export function ProductForm({
             </Select>
           </FormField>
 
-          <FormField label="Harvest Date" htmlFor="harvest-date" required error={errors.harvestDate}>
+          <FormField
+            label={t("farmerAddProduct.fields.harvestDate")}
+            htmlFor="harvest-date"
+            required
+            error={errors.harvestDate}
+          >
             <Input
               id="harvest-date"
               type="date"
@@ -392,9 +431,17 @@ export function ProductForm({
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Pricing & Stock" subtitle="Price, unit, and available quantity.">
+      <FormSection
+        title={t("farmerAddProduct.pricing.title")}
+        subtitle={t("farmerAddProduct.pricing.subtitle")}
+      >
         <FormGrid columns={3}>
-          <FormField label="Price (AZN)" htmlFor="product-price" required error={errors.price}>
+          <FormField
+            label={t("farmerAddProduct.fields.price")}
+            htmlFor="product-price"
+            required
+            error={errors.price}
+          >
             <Input
               id="product-price"
               type="number"
@@ -408,7 +455,7 @@ export function ProductForm({
             />
           </FormField>
 
-          <FormField label="Unit" required>
+          <FormField label={t("farmerAddProduct.fields.unit")} required>
             <Select
               value={values.unit}
               onValueChange={(v) => update("unit", v)}
@@ -420,14 +467,14 @@ export function ProductForm({
               <SelectContent>
                 {UNITS.map((unit) => (
                   <SelectItem key={unit} value={unit}>
-                    {unit}
+                    {translateUnitLabel(t, unit)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </FormField>
 
-          <FormField label="Quantity" required error={errors.quantity}>
+          <FormField label={t("farmerAddProduct.fields.quantity")} required error={errors.quantity}>
             <QuantityInput
               id="product-quantity"
               value={values.quantity}
@@ -438,9 +485,9 @@ export function ProductForm({
         </FormGrid>
       </FormSection>
 
-      <FormSection title="Media & Description" subtitle="Photo, description, tags, and delivery.">
+      <FormSection title={t("farmerAddProduct.media.title")} subtitle={t("farmerAddProduct.media.subtitle")}>
         <FormMediaGrid>
-          <FormField label="Product Image" required error={errors.image}>
+          <FormField label={t("farmerAddProduct.fields.productImage")} required error={errors.image}>
             <ImageUpload
               value={values.image}
               onChange={(v) => update("image", v)}
@@ -451,7 +498,7 @@ export function ProductForm({
 
           <div className="agrivo-form-media-fields">
             <FormField
-              label="Description"
+              label={t("farmerAddProduct.fields.description")}
               htmlFor="product-description"
               required
               error={errors.description}
@@ -460,19 +507,25 @@ export function ProductForm({
                 id="product-description"
                 value={values.description}
                 onChange={(e) => update("description", e.target.value)}
-                placeholder="Freshness, packaging, grading, availability..."
+                placeholder={t("farmerAddProduct.fields.descriptionPlaceholder")}
                 className={compactTextareaClass}
                 disabled={isSaving}
               />
             </FormField>
 
             <FormGrid columns={2}>
-              <FormField label="Product status">
+              <FormField label={t("farmerAddProduct.fields.productStatus")}>
                 <div className="agrivo-product-tag-group">
                   {TAGS.map((tag) => (
                     <TagPill
                       key={tag}
-                      label={tag}
+                      label={
+                        tag === "Fresh"
+                          ? t("farmerAddProduct.status.fresh")
+                          : tag === "Organic"
+                            ? t("farmerAddProduct.status.organic")
+                            : t("farmerAddProduct.status.availableNow")
+                      }
                       selected={values.tags.includes(tag)}
                       onClick={() => toggleTag(tag)}
                     />
@@ -480,19 +533,23 @@ export function ProductForm({
                 </div>
               </FormField>
 
-              <FormField label="Delivery option" required error={errors.deliveryOption}>
+              <FormField
+                label={t("farmerAddProduct.fields.deliveryOption")}
+                required
+                error={errors.deliveryOption}
+              >
                 <Select
                   value={values.deliveryOption}
                   onValueChange={(v) => update("deliveryOption", v as FarmerDeliveryOption)}
                   disabled={isSaving}
                 >
                   <SelectTrigger className={filterSelectClass}>
-                    <SelectValue placeholder="Delivery method" />
+                    <SelectValue placeholder={t("farmerAddProduct.fields.deliveryMethod")} />
                   </SelectTrigger>
                   <SelectContent>
                     {DELIVERY_OPTIONS.map((option) => (
                       <SelectItem key={option} value={option}>
-                        {option}
+                        {translateDeliveryOption(t, option)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -511,7 +568,11 @@ export function ProductForm({
           disabled={isSaving}
           onClick={() => handleSubmit("draft")}
         >
-          {isSaving ? "Saving..." : mode === "edit" ? "Save Draft" : "Save as Draft"}
+          {isSaving
+            ? t("farmerAddProduct.actions.saving")
+            : mode === "edit"
+              ? t("farmerAddProduct.actions.saveDraft")
+              : t("farmerAddProduct.actions.saveDraft")}
         </Button>
         <Button
           type="submit"
@@ -520,11 +581,11 @@ export function ProductForm({
         >
           {isSaving
             ? mode === "edit"
-              ? "Updating..."
-              : "Publishing..."
+              ? t("farmerAddProduct.actions.updating")
+              : t("farmerAddProduct.actions.publishing")
             : mode === "edit"
-              ? "Save Changes"
-              : "Publish Product"}
+              ? t("farmerAddProduct.actions.saveChanges")
+              : t("farmerAddProduct.actions.publishProduct")}
         </Button>
       </div>
     </form>

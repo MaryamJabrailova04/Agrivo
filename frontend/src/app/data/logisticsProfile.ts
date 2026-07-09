@@ -21,11 +21,14 @@ export const LOGISTICS_PROFILE_SEED: Omit<
   preferredContactMethod: "Phone",
   description:
     "We provide reliable agricultural transport services including farm pickups, market deliveries, refrigerated transport, and intercity logistics support.",
+  descriptionAz:
+    "Biz fermer təsərrüfatlarından məhsul götürülməsi, bazarlara çatdırılma, soyuduculu daşınma və şəhərlərarası logistika dəstəyi daxil olmaqla etibarlı kənd təsərrüfatı nəqliyyat xidmətləri göstəririk.",
+  addressAz: "Nərimanov rayonu, Bakı",
   driversCount: 12,
   vehiclesCount: 8,
-  vehicleTypes: ["Vans", "Mini Trucks", "Refrigerated Trucks"],
+  vehicleTypes: ["vans", "miniTrucks", "refrigeratedTrucks"],
   maxDailyCapacity: "10 tons",
-  supportedDeliveryTypes: ["Farm pickup", "Buyer delivery", "Intercity transfer"],
+  supportedDeliveryTypes: ["farmPickup", "buyerDelivery", "intercityTransfer"],
   coldChainSupport: true,
   sameDayDelivery: true,
   serviceRegions: [
@@ -35,7 +38,7 @@ export const LOGISTICS_PROFILE_SEED: Omit<
     "Quba-Xaçmaz",
     "Gəncə-Daşkəsən",
   ],
-  mainRoutes: ["Lənkəran → Baku", "Quba → Sumqayıt", "Gəncə → Baku"],
+  mainRoutes: ["lankaranBaku", "qubaSumgayit", "ganjaBaku"],
   deliveryRadius: "Up to 350 km",
   operatingHours: "08:00 - 20:00",
   workingDays: ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday"],

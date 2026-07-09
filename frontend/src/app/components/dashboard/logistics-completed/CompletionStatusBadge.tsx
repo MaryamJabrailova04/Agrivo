@@ -1,8 +1,6 @@
-import {
-  COMPLETION_STATUS_LABELS,
-  COMPLETION_STATUS_SHORT_LABELS,
-  type CompletionStatus,
-} from "../../../utils/completedDeliveriesStorage";
+import type { CompletionStatus } from "../../../utils/completedDeliveriesStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateCompletedStatus } from "../../../../i18n/completedDeliveriesHelpers";
 import { cn } from "../../ui/utils";
 
 const STATUS_TONES: Record<CompletionStatus, string> = {
@@ -20,9 +18,11 @@ export function CompletionStatusBadge({
   className?: string;
   short?: boolean;
 }) {
+  const { t } = useLanguage();
+
   return (
     <span className={cn("agrivo-completed-status", STATUS_TONES[status], className)}>
-      {short ? COMPLETION_STATUS_SHORT_LABELS[status] : COMPLETION_STATUS_LABELS[status]}
+      {translateCompletedStatus(t, status, short)}
     </span>
   );
 }

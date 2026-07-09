@@ -1,4 +1,5 @@
 import { SCROLL_SECTION_KEY } from "../components/AgrivoNavbar";
+import { getRoutePathFromHash } from "../../i18n/localizedRoutes";
 import { getRouteKey, resolveHashRoute } from "../routing/hashRoutes";
 
 const SCROLL_CONTAINER_SELECTORS = ["#root", "main", ".agrivo-shell"] as const;
@@ -9,8 +10,8 @@ export function shouldSkipScrollToTop(routeKey: string): boolean {
 }
 
 export function getCurrentRouteKey(): string {
-  const hash = window.location.hash.replace("#", "") || "home";
-  return getRouteKey(resolveHashRoute(hash));
+  const path = getRoutePathFromHash();
+  return getRouteKey(resolveHashRoute(path));
 }
 
 /**

@@ -1,7 +1,6 @@
-import {
-  DELIVERY_STATUS_LABELS,
-  type DeliveryTaskStatus,
-} from "../../../utils/logisticsDashboardStorage";
+import type { DeliveryTaskStatus } from "../../../utils/logisticsDashboardStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateLogisticsStatus } from "../../../../i18n/logisticsDashboardHelpers";
 import { cn } from "../../ui/utils";
 
 const STATUS_TONES: Record<DeliveryTaskStatus, string> = {
@@ -20,9 +19,11 @@ export function LogisticsDeliveryStatusBadge({
   status: DeliveryTaskStatus;
   className?: string;
 }) {
+  const { t } = useLanguage();
+
   return (
     <span className={cn("agrivo-logistics-status", STATUS_TONES[status], className)}>
-      {DELIVERY_STATUS_LABELS[status]}
+      {translateLogisticsStatus(t, status)}
     </span>
   );
 }

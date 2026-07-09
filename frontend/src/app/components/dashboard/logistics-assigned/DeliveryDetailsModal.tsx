@@ -1,4 +1,14 @@
 import { ProductVarietyBadge } from "../../products/ProductVarietyBadge";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  translateAssignedAddressValue,
+  translateAssignedBuyerTypeValue,
+  translateAssignedLocation,
+  translateAssignedNotes,
+  translateAssignedProduct,
+  translateAssignedRegion,
+  translateAssignedVariety,
+} from "../../../../i18n/assignedDeliveriesHelpers";
 import {
   formatAssignedQuantity,
   type AssignedDelivery,
@@ -27,6 +37,7 @@ export function DeliveryDetailsModal({
   open,
   onOpenChange,
 }: DeliveryDetailsModalProps) {
+  const { t, language } = useLanguage();
   if (!delivery) return null;
 
   return (
@@ -41,81 +52,115 @@ export function DeliveryDetailsModal({
             <PriorityBadge priority={delivery.priority} />
           </div>
           <DialogDescription className="text-sm text-[#5F6F64]">
-            {delivery.pickupLocation} → {delivery.dropoffLocation}
+            {translateAssignedLocation(
+              t,
+              delivery.pickupLocation,
+              language,
+              delivery.pickupLocationLocalized,
+            )}{" "}
+            →{" "}
+            {translateAssignedLocation(
+              t,
+              delivery.dropoffLocation,
+              language,
+              delivery.dropoffLocationLocalized,
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="agrivo-assigned-details-grid">
           <section>
-            <h4 className="agrivo-assigned-details-section-title">Parties</h4>
+            <h4 className="agrivo-assigned-details-section-title">
+              {t("assignedDeliveries.modal.parties")}
+            </h4>
             <dl className="agrivo-assigned-details-list">
               <div>
-                <dt>Farmer</dt>
+                <dt>{t("assignedDeliveries.modal.farmer")}</dt>
                 <dd>{delivery.farmerName}</dd>
               </div>
               <div>
-                <dt>Farmer contact</dt>
+                <dt>{t("assignedDeliveries.modal.farmerContact")}</dt>
                 <dd>{delivery.farmerPhone}</dd>
               </div>
               <div>
-                <dt>Buyer</dt>
+                <dt>{t("assignedDeliveries.modal.buyer")}</dt>
                 <dd>{delivery.buyerName}</dd>
               </div>
               <div>
-                <dt>Buyer contact</dt>
+                <dt>{t("assignedDeliveries.modal.buyerContact")}</dt>
                 <dd>{delivery.buyerPhone}</dd>
               </div>
               <div>
-                <dt>Buyer type</dt>
-                <dd>{delivery.buyerType}</dd>
+                <dt>{t("assignedDeliveries.modal.buyerType")}</dt>
+                <dd>{translateAssignedBuyerTypeValue(t, delivery)}</dd>
               </div>
             </dl>
           </section>
 
           <section>
-            <h4 className="agrivo-assigned-details-section-title">Route &amp; cargo</h4>
+            <h4 className="agrivo-assigned-details-section-title">
+              {t("assignedDeliveries.modal.routeAndCargo")}
+            </h4>
             <dl className="agrivo-assigned-details-list">
               <div>
-                <dt>Pickup address</dt>
-                <dd>{delivery.pickupAddress}</dd>
-              </div>
-              <div>
-                <dt>Drop-off address</dt>
-                <dd>{delivery.dropoffAddress}</dd>
-              </div>
-              <div>
-                <dt>Product</dt>
-                <dd>{delivery.productName}</dd>
-              </div>
-              <div>
-                <dt>Sort</dt>
+                <dt>{t("assignedDeliveries.modal.pickupAddress")}</dt>
                 <dd>
-                  <ProductVarietyBadge variety={delivery.variety} size="sm" />
+                  {translateAssignedAddressValue(
+                    t,
+                    delivery.pickupAddress,
+                    language,
+                    delivery.pickupAddressLocalized,
+                  )}
                 </dd>
               </div>
               <div>
-                <dt>Quantity</dt>
+                <dt>{t("assignedDeliveries.modal.dropoffAddress")}</dt>
+                <dd>
+                  {translateAssignedAddressValue(
+                    t,
+                    delivery.dropoffAddress,
+                    language,
+                    delivery.dropoffAddressLocalized,
+                  )}
+                </dd>
+              </div>
+              <div>
+                <dt>{t("assignedDeliveries.modal.product")}</dt>
+                <dd>{translateAssignedProduct(t, language, delivery)}</dd>
+              </div>
+              <div>
+                <dt>{t("assignedDeliveries.modal.sort")}</dt>
+                <dd>
+                  <ProductVarietyBadge
+                    variety={translateAssignedVariety(t, language, delivery.variety, delivery.sortKey)}
+                    size="sm"
+                    label={t("assignedDeliveries.modal.sort")}
+                  />
+                </dd>
+              </div>
+              <div>
+                <dt>{t("assignedDeliveries.modal.quantity")}</dt>
                 <dd>{formatAssignedQuantity(delivery)}</dd>
               </div>
               <div>
-                <dt>Pickup time</dt>
+                <dt>{t("assignedDeliveries.modal.pickupTime")}</dt>
                 <dd>{delivery.pickupTime}</dd>
               </div>
               <div>
-                <dt>ETA</dt>
+                <dt>{t("assignedDeliveries.modal.eta")}</dt>
                 <dd>{delivery.eta}</dd>
               </div>
               <div>
-                <dt>Driver</dt>
+                <dt>{t("assignedDeliveries.modal.driver")}</dt>
                 <dd>{delivery.driverName}</dd>
               </div>
               <div>
-                <dt>Vehicle</dt>
+                <dt>{t("assignedDeliveries.modal.vehicle")}</dt>
                 <dd>{delivery.vehicle}</dd>
               </div>
               <div>
-                <dt>Region</dt>
-                <dd>{delivery.region}</dd>
+                <dt>{t("assignedDeliveries.modal.region")}</dt>
+                <dd>{translateAssignedRegion(t, delivery.region)}</dd>
               </div>
             </dl>
           </section>
@@ -123,13 +168,19 @@ export function DeliveryDetailsModal({
 
         {delivery.notes ? (
           <div className="agrivo-assigned-details-notes">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">Notes</p>
-            <p className="mt-1 text-sm leading-6 text-[#33443a]">{delivery.notes}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+              {t("assignedDeliveries.modal.notes")}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-[#33443a]">
+              {translateAssignedNotes(t, delivery.notes)}
+            </p>
           </div>
         ) : null}
 
         <section>
-          <h4 className="agrivo-assigned-details-section-title">Delivery timeline</h4>
+          <h4 className="agrivo-assigned-details-section-title">
+            {t("assignedDeliveries.modal.deliveryTimeline")}
+          </h4>
           <DeliveryTimeline status={delivery.status} />
         </section>
 
@@ -139,7 +190,7 @@ export function DeliveryDetailsModal({
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => onOpenChange(false)}
           >
-            Close
+            {t("assignedDeliveries.actions.close")}
           </Button>
         </DialogFooter>
       </DialogContent>

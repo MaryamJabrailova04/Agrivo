@@ -1,9 +1,17 @@
 import { Search } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  translateAssignedDateFilter,
+  translateAssignedPriority,
+  translateAssignedRegion,
+  translateAssignedStatus,
+} from "../../../../i18n/assignedDeliveriesHelpers";
 import {
   ASSIGNED_PRIORITY_OPTIONS,
-  ASSIGNED_STATUS_LABELS,
   type AssignedDateFilter,
+  type AssignedDeliveryPriority,
   type AssignedPriorityFilter,
+  type AssignedDeliveryStatus,
   type AssignedStatusFilter,
 } from "../../../utils/assignedDeliveriesStorage";
 import { Input } from "../../ui/input";
@@ -42,6 +50,18 @@ export function DeliveryFilterBar({
   priority,
   onPriorityChange,
 }: DeliveryFilterBarProps) {
+  const { t } = useLanguage();
+
+  const statusValues: AssignedDeliveryStatus[] = [
+    "assigned",
+    "pickup_scheduled",
+    "picked_up",
+    "in_transit",
+    "delivered",
+    "delayed",
+    "cancelled",
+  ];
+
   return (
     <section className="agrivo-assigned-filters agrivo-dashboard-panel">
       <div className="agrivo-assigned-filters__search">
@@ -49,7 +69,7 @@ export function DeliveryFilterBar({
         <Input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search by delivery ID, farm, buyer, or product"
+          placeholder={t("assignedDeliveries.filters.searchPlaceholder")}
           className="agrivo-assigned-filters__input"
         />
       </div>
@@ -57,23 +77,13 @@ export function DeliveryFilterBar({
       <div className="agrivo-assigned-filters__controls">
         <Select value={status} onValueChange={(value) => onStatusChange(value as AssignedStatusFilter)}>
           <SelectTrigger className="agrivo-assigned-filters__select">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("assignedDeliveries.filters.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
-            {(
-              [
-                "assigned",
-                "pickup_scheduled",
-                "picked_up",
-                "in_transit",
-                "delivered",
-                "delayed",
-                "cancelled",
-              ] as const
-            ).map((item) => (
+            <SelectItem value="all">{t("assignedDeliveries.filters.allStatuses")}</SelectItem>
+            {statusValues.map((item) => (
               <SelectItem key={item} value={item}>
-                {ASSIGNED_STATUS_LABELS[item]}
+                {translateAssignedStatus(t, item)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -84,25 +94,33 @@ export function DeliveryFilterBar({
           onValueChange={(value) => onDateFilterChange(value as AssignedDateFilter)}
         >
           <SelectTrigger className="agrivo-assigned-filters__select">
-            <SelectValue placeholder="Date" />
+            <SelectValue placeholder={t("assignedDeliveries.filters.date")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="tomorrow">Tomorrow</SelectItem>
-            <SelectItem value="week">This week</SelectItem>
-            <SelectItem value="all">All time</SelectItem>
+            <SelectItem value="today">
+              {translateAssignedDateFilter(t, "today")}
+            </SelectItem>
+            <SelectItem value="tomorrow">
+              {translateAssignedDateFilter(t, "tomorrow")}
+            </SelectItem>
+            <SelectItem value="week">
+              {translateAssignedDateFilter(t, "week")}
+            </SelectItem>
+            <SelectItem value="all">
+              {translateAssignedDateFilter(t, "all")}
+            </SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={region} onValueChange={onRegionChange}>
           <SelectTrigger className="agrivo-assigned-filters__select">
-            <SelectValue placeholder="Region" />
+            <SelectValue placeholder={t("assignedDeliveries.filters.region")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All regions</SelectItem>
+            <SelectItem value="all">{t("assignedDeliveries.filters.allRegions")}</SelectItem>
             {regions.map((item) => (
               <SelectItem key={item} value={item}>
-                {item}
+                {translateAssignedRegion(t, item)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -113,13 +131,13 @@ export function DeliveryFilterBar({
           onValueChange={(value) => onPriorityChange(value as AssignedPriorityFilter)}
         >
           <SelectTrigger className="agrivo-assigned-filters__select">
-            <SelectValue placeholder="Priority" />
+            <SelectValue placeholder={t("assignedDeliveries.filters.priority")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All priorities</SelectItem>
+            <SelectItem value="all">{t("assignedDeliveries.filters.allPriorities")}</SelectItem>
             {ASSIGNED_PRIORITY_OPTIONS.map((item) => (
-              <SelectItem key={item} value={item}>
-                {item.charAt(0).toUpperCase() + item.slice(1)}
+              <SelectItem key={item} value={item as AssignedPriorityFilter}>
+                {translateAssignedPriority(t, item as AssignedDeliveryPriority)}
               </SelectItem>
             ))}
           </SelectContent>

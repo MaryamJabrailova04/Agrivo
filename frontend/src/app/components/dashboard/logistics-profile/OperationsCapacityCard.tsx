@@ -5,6 +5,13 @@ import {
   toggleArrayItem,
   type LogisticsDashboardProfile,
 } from "../../../utils/logisticsProfileStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  formatLocalizedCapacity,
+  translateDeliveryType,
+  translateVehicleType,
+  translateYesNo,
+} from "../../../../i18n/logisticsProfileHelpers";
 import { Input } from "../../ui/input";
 import { Switch } from "../../ui/switch";
 import { ChipToggle } from "../farmer-profile/ChipToggle";
@@ -25,13 +32,15 @@ export function OperationsCapacityCard({
   isEditing: boolean;
   onChange: (updates: Partial<LogisticsDashboardProfile>) => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <ProfileCard>
-      <ProfileCardHeader icon={Truck} title="Operations & Capacity" />
+      <ProfileCardHeader icon={Truck} title={t("logisticsProfile.sections.operationsCapacity")} />
       <ProfileCardBody className="agrivo-profile-info-card-body">
         <ProfileInfoGrid>
           <ProfileInfoField
-            label="Number of Drivers"
+            label={t("logisticsProfile.fields.numberOfDrivers")}
             emphasized
             isEditing={isEditing}
             edit={
@@ -49,7 +58,7 @@ export function OperationsCapacityCard({
           </ProfileInfoField>
 
           <ProfileInfoField
-            label="Number of Vehicles"
+            label={t("logisticsProfile.fields.numberOfVehicles")}
             emphasized
             isEditing={isEditing}
             edit={
@@ -67,7 +76,7 @@ export function OperationsCapacityCard({
           </ProfileInfoField>
 
           <ProfileInfoField
-            label="Maximum Daily Delivery Capacity"
+            label={t("logisticsProfile.fields.maxDailyCapacity")}
             emphasized
             fullWidth
             isEditing={isEditing}
@@ -75,22 +84,24 @@ export function OperationsCapacityCard({
               <Input
                 value={profile.maxDailyCapacity}
                 onChange={(e) => onChange({ maxDailyCapacity: e.target.value })}
-                placeholder="e.g. 10 tons"
+                placeholder={t("logisticsProfile.placeholders.capacityExample")}
                 className={profileInfoInputClassName}
               />
             }
           >
-            {profile.maxDailyCapacity || "Add delivery capacity"}
+            {profile.maxDailyCapacity
+              ? formatLocalizedCapacity(t, profile.maxDailyCapacity)
+              : t("logisticsProfile.placeholders.deliveryCapacity")}
           </ProfileInfoField>
         </ProfileInfoGrid>
 
-        <ProfileInfoGroup label="Vehicle Types">
+        <ProfileInfoGroup label={t("logisticsProfile.fields.vehicleTypes")}>
           {isEditing ? (
             <div className="agrivo-profile-chip-group">
               {LOGISTICS_VEHICLE_TYPES.map((type) => (
                 <ChipToggle
                   key={type}
-                  label={type}
+                  label={translateVehicleType(t, type)}
                   selected={profile.vehicleTypes.includes(type)}
                   onClick={() =>
                     onChange({
@@ -105,25 +116,25 @@ export function OperationsCapacityCard({
               {profile.vehicleTypes.length > 0 ? (
                 profile.vehicleTypes.map((type) => (
                   <span key={type} className="agrivo-logistics-preview-chip">
-                    {type}
+                    {translateVehicleType(t, type)}
                   </span>
                 ))
               ) : (
                 <span className="agrivo-profile-info-field__value--placeholder">
-                  Add vehicle types
+                  {t("logisticsProfile.placeholders.vehicleTypes")}
                 </span>
               )}
             </div>
           )}
         </ProfileInfoGroup>
 
-        <ProfileInfoGroup label="Supported Delivery Types">
+        <ProfileInfoGroup label={t("logisticsProfile.fields.supportedDeliveryTypes")}>
           {isEditing ? (
             <div className="agrivo-profile-chip-group">
               {LOGISTICS_DELIVERY_TYPES.map((type) => (
                 <ChipToggle
                   key={type}
-                  label={type}
+                  label={translateDeliveryType(t, type)}
                   selected={profile.supportedDeliveryTypes.includes(type)}
                   onClick={() =>
                     onChange({
@@ -141,12 +152,12 @@ export function OperationsCapacityCard({
               {profile.supportedDeliveryTypes.length > 0 ? (
                 profile.supportedDeliveryTypes.map((type) => (
                   <span key={type} className="agrivo-logistics-preview-chip">
-                    {type}
+                    {translateDeliveryType(t, type)}
                   </span>
                 ))
               ) : (
                 <span className="agrivo-profile-info-field__value--placeholder">
-                  Select delivery types
+                  {t("logisticsProfile.placeholders.deliveryTypes")}
                 </span>
               )}
             </div>
@@ -156,8 +167,12 @@ export function OperationsCapacityCard({
         <div className="agrivo-logistics-toggle-grid">
           <div className="agrivo-logistics-toggle-row">
             <div className="agrivo-profile-info-field">
-              <span className="agrivo-profile-info-field__label">Cold Chain Support</span>
-              <span className="agrivo-profile-info-field__hint">Refrigerated transport available</span>
+              <span className="agrivo-profile-info-field__label">
+                {t("logisticsProfile.fields.coldChainSupport")}
+              </span>
+              <span className="agrivo-profile-info-field__hint">
+                {t("logisticsProfile.hints.refrigeratedTransport")}
+              </span>
             </div>
             {isEditing ? (
               <Switch
@@ -166,15 +181,19 @@ export function OperationsCapacityCard({
               />
             ) : (
               <span className="agrivo-profile-info-field__value agrivo-profile-info-field__value--emphasized">
-                {profile.coldChainSupport ? "Yes" : "No"}
+                {translateYesNo(t, profile.coldChainSupport)}
               </span>
             )}
           </div>
 
           <div className="agrivo-logistics-toggle-row">
             <div className="agrivo-profile-info-field">
-              <span className="agrivo-profile-info-field__label">Same-Day Delivery</span>
-              <span className="agrivo-profile-info-field__hint">Express same-day routes</span>
+              <span className="agrivo-profile-info-field__label">
+                {t("logisticsProfile.fields.sameDayDelivery")}
+              </span>
+              <span className="agrivo-profile-info-field__hint">
+                {t("logisticsProfile.hints.expressSameDay")}
+              </span>
             </div>
             {isEditing ? (
               <Switch
@@ -183,7 +202,7 @@ export function OperationsCapacityCard({
               />
             ) : (
               <span className="agrivo-profile-info-field__value agrivo-profile-info-field__value--emphasized">
-                {profile.sameDayDelivery ? "Yes" : "No"}
+                {translateYesNo(t, profile.sameDayDelivery)}
               </span>
             )}
           </div>

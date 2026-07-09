@@ -1,26 +1,29 @@
 import { BarChart3, Clock3, Star, TrendingUp } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import type { LogisticsPerformance } from "../../../utils/logisticsDashboardStorage";
 
 export function PerformanceSummaryCard({ performance }: { performance: LogisticsPerformance }) {
+  const { t } = useLanguage();
+
   const metrics = [
     {
-      label: "On-time rate",
+      labelKey: "logisticsDashboard.performance.onTimeRate",
       value: `${performance.onTimeRate}%`,
       icon: TrendingUp,
       progress: performance.onTimeRate,
     },
     {
-      label: "Avg. delivery time",
+      labelKey: "logisticsDashboard.performance.avgDeliveryTime",
       value: performance.avgDeliveryTime,
       icon: Clock3,
     },
     {
-      label: "Completed this week",
+      labelKey: "logisticsDashboard.performance.completedThisWeek",
       value: String(performance.completedThisWeek),
       icon: BarChart3,
     },
     {
-      label: "Success rate",
+      labelKey: "logisticsDashboard.performance.successRate",
       value: `${performance.successRate}%`,
       icon: Star,
       progress: performance.successRate,
@@ -29,18 +32,20 @@ export function PerformanceSummaryCard({ performance }: { performance: Logistics
 
   return (
     <section className="agrivo-logistics-side-card agrivo-dashboard-panel">
-      <h3 className="agrivo-heading text-base font-bold text-[#102018]">Performance Summary</h3>
+      <h3 className="agrivo-heading text-base font-bold text-[#102018]">
+        {t("logisticsDashboard.performance.title")}
+      </h3>
       <div className="agrivo-logistics-performance mt-3">
         {metrics.map((metric) => {
           const Icon = metric.icon;
           return (
-            <div key={metric.label} className="agrivo-logistics-performance-item">
+            <div key={metric.labelKey} className="agrivo-logistics-performance-item">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className="agrivo-logistics-performance-icon">
                     <Icon className="h-3.5 w-3.5 text-[#14532D]" />
                   </span>
-                  <p className="text-xs font-medium text-[#5F6F64]">{metric.label}</p>
+                  <p className="text-xs font-medium text-[#5F6F64]">{t(metric.labelKey)}</p>
                 </div>
                 <p className="text-sm font-bold text-[#102018]">{metric.value}</p>
               </div>

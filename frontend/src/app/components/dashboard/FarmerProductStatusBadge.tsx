@@ -1,6 +1,9 @@
 import type { FarmerProductDisplayStatus } from "../../utils/farmerProductsStorage";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { translateFarmerProductStatus } from "../../../i18n/farmerProductHelpers";
 
 export function FarmerProductStatusBadge({ status }: { status: FarmerProductDisplayStatus }) {
+  const { t } = useLanguage();
   const tone =
     status === "Active"
       ? "bg-[#ecfdf5] text-[#166534] border-[#bbf7d0]"
@@ -14,7 +17,7 @@ export function FarmerProductStatusBadge({ status }: { status: FarmerProductDisp
 
   return (
     <span className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${tone}`}>
-      {status}
+      {translateFarmerProductStatus(t, status)}
     </span>
   );
 }

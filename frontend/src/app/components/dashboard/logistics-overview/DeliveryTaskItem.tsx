@@ -1,9 +1,11 @@
 import { ArrowRight, Navigation, Package, Phone } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import {
-  DELIVERY_PRIORITY_LABELS,
-  formatTaskQuantity,
-  type DeliveryTask,
-} from "../../../utils/logisticsDashboardStorage";
+  translateLogisticsLocation,
+  translateLogisticsPriority,
+  translateLogisticsProduct,
+} from "../../../../i18n/logisticsDashboardHelpers";
+import { formatTaskQuantity, type DeliveryTask } from "../../../utils/logisticsDashboardStorage";
 import { Button } from "../../ui/button";
 import { cn } from "../../ui/utils";
 import { LogisticsDeliveryStatusBadge } from "./LogisticsDeliveryStatusBadge";
@@ -23,6 +25,7 @@ export function DeliveryTaskItem({
   onOpenRoute,
   onContact,
 }: DeliveryTaskItemProps) {
+  const { t, language } = useLanguage();
   const priorityTone =
     task.priority === "high"
       ? "agrivo-logistics-priority--high"
@@ -39,17 +42,17 @@ export function DeliveryTaskItem({
               {task.taskId}
             </p>
             <span className={cn("agrivo-logistics-priority", priorityTone)}>
-              {DELIVERY_PRIORITY_LABELS[task.priority]} priority
+              {translateLogisticsPriority(t, task.priority)}
             </span>
           </div>
           <h4 className="agrivo-heading mt-1 flex flex-wrap items-center gap-1.5 text-base font-bold text-[#102018] sm:text-lg">
-            <span className="truncate">{task.pickupLocation}</span>
+            <span className="truncate">{translateLogisticsLocation(t, task.pickupLocation)}</span>
             <ArrowRight className="h-4 w-4 shrink-0 text-[#43A047]" />
-            <span className="truncate">{task.dropoffLocation}</span>
+            <span className="truncate">{translateLogisticsLocation(t, task.dropoffLocation)}</span>
           </h4>
           <p className="mt-1 flex items-center gap-1.5 text-sm text-[#5F6F64]">
             <Package className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
-            {task.productName} · {formatTaskQuantity(task)}
+            {translateLogisticsProduct(t, language, task.productName)} · {formatTaskQuantity(task)}
           </p>
         </div>
         <LogisticsDeliveryStatusBadge status={task.status} />
@@ -57,19 +60,19 @@ export function DeliveryTaskItem({
 
       <dl className="agrivo-logistics-task-card__meta">
         <div>
-          <dt>Pickup</dt>
+          <dt>{t("logisticsDashboard.tasks.pickup")}</dt>
           <dd>{task.pickupTime}</dd>
         </div>
         <div>
-          <dt>ETA</dt>
+          <dt>{t("logisticsDashboard.tasks.eta")}</dt>
           <dd>{task.eta}</dd>
         </div>
         <div>
-          <dt>Driver</dt>
+          <dt>{t("logisticsDashboard.route.driver")}</dt>
           <dd>{task.driverName}</dd>
         </div>
         <div>
-          <dt>Vehicle</dt>
+          <dt>{t("logisticsDashboard.route.vehicle")}</dt>
           <dd>{task.vehicle}</dd>
         </div>
       </dl>
@@ -82,7 +85,7 @@ export function DeliveryTaskItem({
           className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
           onClick={() => onViewDetails(task)}
         >
-          View Details
+          {t("logisticsDashboard.actions.viewDetails")}
         </Button>
         {task.status !== "delivered" ? (
           <Button
@@ -91,7 +94,7 @@ export function DeliveryTaskItem({
             className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
             onClick={() => onUpdateStatus(task)}
           >
-            Update Status
+            {t("logisticsDashboard.actions.updateStatus")}
           </Button>
         ) : null}
         <Button
@@ -102,7 +105,7 @@ export function DeliveryTaskItem({
           onClick={() => onOpenRoute(task)}
         >
           <Navigation className="mr-1.5 h-3.5 w-3.5" />
-          Open Route
+          {t("logisticsDashboard.actions.openRoute")}
         </Button>
         <Button
           type="button"
@@ -112,7 +115,7 @@ export function DeliveryTaskItem({
           onClick={() => onContact(task)}
         >
           <Phone className="mr-1.5 h-3.5 w-3.5" />
-          Contact
+          {t("logisticsDashboard.actions.contact")}
         </Button>
       </div>
     </article>

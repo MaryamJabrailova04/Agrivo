@@ -1,6 +1,12 @@
 import { BadgeCheck, Camera, MapPin, Pencil, Star } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import {
-  formatLocation,
+  formatLocalizedLocation,
+  formatLocalizedMemberSince,
+  formatLocalizedOwnerLine,
+  formatLocalizedRating,
+} from "../../../../i18n/farmerDashboardProfileHelpers";
+import {
   formatMemberSince,
   getProfileInitials,
   type FarmerDashboardProfile,
@@ -20,6 +26,7 @@ export function ProfileHeroCard({
   onEditProfile,
   onChangePhoto,
 }: ProfileHeroCardProps) {
+  const { t, language } = useLanguage();
   const initials = getProfileInitials(profile.farmName || profile.ownerName);
 
   return (
@@ -39,7 +46,7 @@ export function ProfileHeroCard({
             type="button"
             className="agrivo-farmer-dash-profile-avatar-btn"
             onClick={onChangePhoto}
-            aria-label="Change farm logo"
+            aria-label={t("farmerDashboardProfile.changeLogoAria")}
           >
             <Camera className="h-3.5 w-3.5" />
           </button>
@@ -48,32 +55,32 @@ export function ProfileHeroCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
-              {profile.farmName || "Add farm name"}
+              {profile.farmName || t("farmerDashboardProfile.placeholders.farmName")}
             </h2>
             {profile.verified ? (
               <span className="agrivo-farmer-dash-verified-badge">
                 <BadgeCheck className="h-3.5 w-3.5" />
-                Verified Farmer
+                {t("farmerDashboardProfile.verifiedFarmer")}
               </span>
             ) : null}
           </div>
 
           <p className="mt-1 text-sm font-medium text-[#5F6F64]">
-            Owner: {profile.ownerName || "Add owner name"}
+            {formatLocalizedOwnerLine(t, profile.ownerName)}
           </p>
 
           <p className="agrivo-farmer-dash-profile-meta mt-2">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
-            <span>{formatLocation(profile)}</span>
+            <span>{formatLocalizedLocation(t, language, profile)}</span>
           </p>
 
           <div className="agrivo-farmer-dash-profile-badges mt-3">
             <span className="agrivo-farmer-dash-profile-badge">
               <Star className="h-3.5 w-3.5 fill-[#facc15] text-[#facc15]" />
-              {profile.rating.toFixed(1)} rating
+              {formatLocalizedRating(t, profile.rating)}
             </span>
             <span className="agrivo-farmer-dash-profile-badge">
-              Member since {formatMemberSince(profile.memberSince)}
+              {formatLocalizedMemberSince(t, formatMemberSince(profile.memberSince))}
             </span>
           </div>
         </div>
@@ -86,7 +93,7 @@ export function ProfileHeroCard({
             onClick={onEditProfile}
           >
             <Pencil className="mr-2 h-4 w-4" />
-            Edit Profile
+            {t("farmerDashboardProfile.editProfile")}
           </Button>
           <Button
             variant="outline"
@@ -94,7 +101,7 @@ export function ProfileHeroCard({
             onClick={onChangePhoto}
           >
             <Camera className="mr-2 h-4 w-4" />
-            Change Logo
+            {t("farmerDashboardProfile.changeLogo")}
           </Button>
         </div>
       ) : null}

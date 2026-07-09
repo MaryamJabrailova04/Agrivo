@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import type { UserRole } from "../../auth/authStorage";
 import { getDashboardHashForRole } from "../../auth/authService";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 
 interface ProtectedDashboardProps {
   allowedRoles: UserRole[];
@@ -13,12 +14,12 @@ export function ProtectedDashboard({ allowedRoles, children }: ProtectedDashboar
 
   useEffect(() => {
     if (!isAuthenticated || !user) {
-      window.location.hash = "login";
+      navigateToHash("login");
       return;
     }
 
     if (!allowedRoles.includes(user.role)) {
-      window.location.hash = getDashboardHashForRole(user.role);
+      navigateToHash(getDashboardHashForRole(user.role));
     }
   }, [allowedRoles, isAuthenticated, user]);
 

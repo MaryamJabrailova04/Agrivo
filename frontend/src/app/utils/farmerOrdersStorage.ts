@@ -11,6 +11,8 @@ export type FarmerManagementOrderStatus =
 export type FarmerOrderDateFilter = "all" | "today" | "week" | "month";
 export type FarmerOrderSortOption = "newest" | "oldest" | "value-desc";
 
+type LocalizedName = { en: string; az: string };
+
 export interface FarmerManagementOrder {
   id: string;
   orderId: string;
@@ -19,7 +21,11 @@ export interface FarmerManagementOrder {
   buyerPhone?: string;
   buyerEmail?: string;
   productName: string;
+  nameKey?: string;
+  nameLocalized?: LocalizedName;
   variety?: string;
+  varietyKey?: string;
+  varietyLocalized?: LocalizedName;
   quantity: number;
   unit: string;
   pricePerUnit: number;

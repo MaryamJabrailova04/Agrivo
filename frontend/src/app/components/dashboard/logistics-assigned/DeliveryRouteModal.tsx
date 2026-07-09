@@ -1,5 +1,10 @@
 import { MapPin, Navigation } from "lucide-react";
 import { todayRouteData } from "../../../data/logisticsRoutes";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  translateAssignedAddressValue,
+  translateAssignedLocation,
+} from "../../../../i18n/assignedDeliveriesHelpers";
 import { RouteMap } from "../../logistics/RouteMap";
 import type { AssignedDelivery } from "../../../utils/assignedDeliveriesStorage";
 import { Button } from "../../ui/button";
@@ -19,6 +24,7 @@ interface DeliveryRouteModalProps {
 }
 
 export function DeliveryRouteModal({ delivery, open, onOpenChange }: DeliveryRouteModalProps) {
+  const { t, language } = useLanguage();
   if (!delivery) return null;
 
   return (
@@ -26,10 +32,22 @@ export function DeliveryRouteModal({ delivery, open, onOpenChange }: DeliveryRou
       <DialogContent className="agrivo-assigned-route-dialog sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-            Route plan · {delivery.taskId}
+            {t("assignedDeliveries.routeModal.title")} · {delivery.taskId}
           </DialogTitle>
           <DialogDescription className="text-sm text-[#5F6F64]">
-            {delivery.pickupLocation} → {delivery.dropoffLocation}
+            {translateAssignedLocation(
+              t,
+              delivery.pickupLocation,
+              language,
+              delivery.pickupLocationLocalized,
+            )}{" "}
+            →{" "}
+            {translateAssignedLocation(
+              t,
+              delivery.dropoffLocation,
+              language,
+              delivery.dropoffLocationLocalized,
+            )}
           </DialogDescription>
         </DialogHeader>
 
@@ -37,17 +55,49 @@ export function DeliveryRouteModal({ delivery, open, onOpenChange }: DeliveryRou
           <div className="agrivo-assigned-route-point">
             <MapPin className="h-4 w-4 text-[#43A047]" />
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">Pickup</p>
-              <p className="text-sm font-semibold text-[#102018]">{delivery.pickupLocation}</p>
-              <p className="text-xs text-[#5F6F64]">{delivery.pickupAddress}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+                {t("assignedDeliveries.routeModal.pickup")}
+              </p>
+              <p className="text-sm font-semibold text-[#102018]">
+                {translateAssignedLocation(
+                  t,
+                  delivery.pickupLocation,
+                  language,
+                  delivery.pickupLocationLocalized,
+                )}
+              </p>
+              <p className="text-xs text-[#5F6F64]">
+                {translateAssignedAddressValue(
+                  t,
+                  delivery.pickupAddress,
+                  language,
+                  delivery.pickupAddressLocalized,
+                )}
+              </p>
             </div>
           </div>
           <div className="agrivo-assigned-route-point">
             <Navigation className="h-4 w-4 text-[#14532D]" />
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">Drop-off</p>
-              <p className="text-sm font-semibold text-[#102018]">{delivery.dropoffLocation}</p>
-              <p className="text-xs text-[#5F6F64]">{delivery.dropoffAddress}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+                {t("assignedDeliveries.routeModal.dropoff")}
+              </p>
+              <p className="text-sm font-semibold text-[#102018]">
+                {translateAssignedLocation(
+                  t,
+                  delivery.dropoffLocation,
+                  language,
+                  delivery.dropoffLocationLocalized,
+                )}
+              </p>
+              <p className="text-xs text-[#5F6F64]">
+                {translateAssignedAddressValue(
+                  t,
+                  delivery.dropoffAddress,
+                  language,
+                  delivery.dropoffAddressLocalized,
+                )}
+              </p>
             </div>
           </div>
         </div>
@@ -60,7 +110,7 @@ export function DeliveryRouteModal({ delivery, open, onOpenChange }: DeliveryRou
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => onOpenChange(false)}
           >
-            Close
+            {t("assignedDeliveries.actions.close")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,3 +1,4 @@
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   AlertTriangle,
   Archive,
@@ -60,6 +61,15 @@ import {
   updateProduct as updateApiProduct,
   type ApiProduct,
 } from "../../../api/productsApi";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import {
+  getLocalizedProductName,
+  getLocalizedVariety,
+  translateFarmerCategory,
+  translateFarmerProductStatus,
+  translateHarvestLabel,
+  translateLocationDetail,
+} from "../../../i18n/farmerProductHelpers";
 
 const filterClass =
   "agrivo-filter-control h-11 rounded-full border-[#DEECE0] bg-[#F7FBF5] text-sm text-[#102018]";
@@ -83,15 +93,15 @@ const STATUS_FILTERS: Array<FarmerProductDisplayStatus | "all" | "Low stock"> = 
   "Out of Stock",
 ];
 
-const SORT_OPTIONS: Array<{ value: ProductSortOption; label: string }> = [
-  { value: "newest", label: "Newest first" },
-  { value: "name", label: "Name A-Z" },
-  { value: "price-asc", label: "Price low to high" },
-  { value: "stock-asc", label: "Stock low to high" },
+const SORT_OPTIONS: Array<{ value: ProductSortOption; labelKey: string }> = [
+  { value: "newest", labelKey: "farmerProducts.filters.newestFirst" },
+  { value: "name", labelKey: "farmerProducts.filters.nameAZ" },
+  { value: "price-asc", labelKey: "farmerProducts.filters.priceLowToHigh" },
+  { value: "stock-asc", labelKey: "farmerProducts.filters.stockLowToHigh" },
 ];
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 function StockUpdateDialog({
@@ -105,8 +115,10 @@ function StockUpdateDialog({
   onOpenChange: (open: boolean) => void;
   onSave: (quantity: number, note: string) => void;
 }) {
+  const { t, language } = useLanguage();
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
+  const localizedName = product ? getLocalizedProductName(product, language, t) : "";
 
   useEffect(() => {
     if (open && product) {
@@ -122,21 +134,21 @@ function StockUpdateDialog({
       <DialogContent className="agrivo-profile-dialog sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-            Update Stock
+            {t("farmerProducts.dialogs.updateStockTitle")}
           </DialogTitle>
           <DialogDescription className="text-sm text-[#5F6F64]">
-            Update available quantity for {product.name}.
+            {t("farmerProducts.dialogs.updateStockDescription", { name: localizedName })}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-1">
           <div>
-            <Label>Current quantity</Label>
+            <Label>{t("farmerProducts.labels.currentQuantity")}</Label>
             <p className="mt-1 text-sm font-semibold text-[#102018]">
               {product.availableQuantity} {product.unit}
             </p>
           </div>
           <div>
-            <Label htmlFor="stock-qty">New quantity</Label>
+            <Label htmlFor="stock-qty">{t("farmerProducts.labels.newQuantity")}</Label>
             <Input
               id="stock-qty"
               type="number"
@@ -147,7 +159,7 @@ function StockUpdateDialog({
             />
           </div>
           <div>
-            <Label htmlFor="stock-unit">Unit</Label>
+            <Label htmlFor="stock-unit">{t("farmerProducts.labels.unit")}</Label>
             <Input
               id="stock-unit"
               value={product.unit}
@@ -156,12 +168,12 @@ function StockUpdateDialog({
             />
           </div>
           <div>
-            <Label htmlFor="stock-note">Note (optional)</Label>
+            <Label htmlFor="stock-note">{t("farmerProducts.labels.noteOptional")}</Label>
             <Textarea
               id="stock-note"
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              placeholder="e.g. Restocked after morning harvest"
+              placeholder={t("farmerProducts.dialogs.stockNotePlaceholder")}
               className="mt-1.5 min-h-[72px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
             />
           </div>
@@ -172,7 +184,7 @@ function StockUpdateDialog({
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t("farmerProducts.actions.cancel")}
           </Button>
           <Button
             className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
@@ -183,7 +195,7 @@ function StockUpdateDialog({
               onOpenChange(false);
             }}
           >
-            Save Changes
+            {t("farmerProducts.actions.saveChanges")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -202,16 +214,17 @@ function ArchiveConfirmDialog({
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="agrivo-profile-dialog sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-            Archive listing
+            {t("farmerProducts.dialogs.archiveTitle")}
           </DialogTitle>
           <DialogDescription className="text-sm text-[#5F6F64]">
-            Are you sure you want to remove this product listing? {productName} will be archived and
-            hidden from the marketplace.
+            {t("farmerProducts.dialogs.archiveDescription", { name: productName })}
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>
@@ -220,7 +233,7 @@ function ArchiveConfirmDialog({
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t("farmerProducts.actions.cancel")}
           </Button>
           <Button
             className="rounded-full bg-[#b91c1c] text-white hover:bg-[#991b1b]"
@@ -229,7 +242,7 @@ function ArchiveConfirmDialog({
               onOpenChange(false);
             }}
           >
-            Archive Product
+            {t("farmerProducts.actions.archiveProduct")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -252,11 +265,14 @@ function ProductManagementCard({
   onArchive: (product: FarmerListingProduct) => void;
   onEdit: (product: FarmerListingProduct) => void;
 }) {
+  const { t, language } = useLanguage();
   const [quickEdit, setQuickEdit] = useState(false);
   const [priceDraft, setPriceDraft] = useState(String(product.price));
   const [qtyDraft, setQtyDraft] = useState(String(product.availableQuantity));
   const displayStatus = getDisplayStatus(product);
   const isPaused = product.listingStatus === "inactive";
+  const localizedName = getLocalizedProductName(product, language, t);
+  const localizedVariety = getLocalizedVariety(product, language);
 
   useEffect(() => {
     setPriceDraft(String(product.price));
@@ -277,10 +293,10 @@ function ProductManagementCard({
       <div className="agrivo-farmer-product-mgmt-main">
         <div className="agrivo-farmer-product-mgmt-thumb">
           <ProductImage
-            name={product.name}
+            name={localizedName}
             src={product.image}
             category={product.category}
-            alt={product.name}
+            alt={localizedName}
             className="h-full w-full"
           />
         </div>
@@ -289,11 +305,12 @@ function ProductManagementCard({
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="agrivo-product-title-block !mt-0">
-                <h3 className="agrivo-heading text-lg font-bold text-[#102018]">{product.name}</h3>
-                <ProductVarietyBadge variety={product.variety} label="Variety" />
+                <h3 className="agrivo-heading text-lg font-bold text-[#102018]">{localizedName}</h3>
+                <ProductVarietyBadge variety={localizedVariety} label={t("farmerProducts.labels.variety")} />
               </div>
               <p className="mt-1 text-sm text-[#5F6F64]">
-                {product.category} · {product.locationDetail}
+                {translateFarmerCategory(t, product.category)} ·{" "}
+                {translateLocationDetail(t, product.locationDetail)}
               </p>
               <p className="text-xs text-[#6b7a70]">{product.location}</p>
             </div>
@@ -304,7 +321,9 @@ function ProductManagementCard({
             <div className="agrivo-farmer-quick-edit mt-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <Label className="text-xs">Price (AZN / {product.unit})</Label>
+                  <Label className="text-xs">
+                    {t("farmerProducts.labels.pricePerUnit", { unit: product.unit })}
+                  </Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -315,7 +334,9 @@ function ProductManagementCard({
                   />
                 </div>
                 <div>
-                  <Label className="text-xs">Available ({product.unit})</Label>
+                  <Label className="text-xs">
+                    {t("farmerProducts.labels.availableWithUnit", { unit: product.unit })}
+                  </Label>
                   <Input
                     type="number"
                     min={0}
@@ -331,7 +352,7 @@ function ProductManagementCard({
                   className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
                   onClick={handleQuickSave}
                 >
-                  Save
+                  {t("farmerProducts.actions.save")}
                 </Button>
                 <Button
                   size="sm"
@@ -343,37 +364,41 @@ function ProductManagementCard({
                     setQuickEdit(false);
                   }}
                 >
-                  Cancel
+                  {t("farmerProducts.actions.cancel")}
                 </Button>
               </div>
             </div>
           ) : (
             <dl className="agrivo-farmer-product-mgmt-meta mt-4">
               <div>
-                <dt>Price</dt>
+                <dt>{t("farmerProducts.labels.price")}</dt>
                 <dd>
                   {product.price.toFixed(2)} AZN / {product.unit}
                 </dd>
               </div>
               <div>
-                <dt>Available</dt>
+                <dt>{t("farmerProducts.labels.available")}</dt>
                 <dd>
                   {product.availableQuantity} {product.unit}
                 </dd>
               </div>
               <div>
-                <dt>Minimum order</dt>
+                <dt>{t("farmerProducts.labels.minimumOrder")}</dt>
                 <dd>
                   {product.minimumOrder} {product.unit}
                 </dd>
               </div>
               <div>
-                <dt>Harvested</dt>
-                <dd>{product.harvestDate}</dd>
+                <dt>{t("farmerProducts.labels.harvested")}</dt>
+                <dd>{translateHarvestLabel(t, product.harvestDate)}</dd>
               </div>
               <div className="sm:col-span-2">
-                <dt>Delivery</dt>
-                <dd>{product.deliveryAvailable ? "Available" : "Pickup only"}</dd>
+                <dt>{t("farmerProducts.labels.delivery")}</dt>
+                <dd>
+                  {product.deliveryAvailable
+                    ? t("farmerProducts.status.available")
+                    : t("farmerProducts.status.pickupOnly")}
+                </dd>
               </div>
             </dl>
           )}
@@ -387,7 +412,7 @@ function ProductManagementCard({
             onClick={() => onEdit(product)}
           >
             <Pencil className="mr-1.5 h-3.5 w-3.5" />
-            Edit
+            {t("farmerProducts.actions.edit")}
           </Button>
           <Button
             size="sm"
@@ -396,7 +421,7 @@ function ProductManagementCard({
             onClick={() => navigate(getProductDetailHash(product.slug))}
           >
             <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
-            View Product
+            {t("farmerProducts.actions.viewProduct")}
           </Button>
           <Button
             size="sm"
@@ -404,7 +429,7 @@ function ProductManagementCard({
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => onOpenStock(product)}
           >
-            Update Stock
+            {t("farmerProducts.actions.updateStock")}
           </Button>
           <Button
             size="sm"
@@ -412,7 +437,7 @@ function ProductManagementCard({
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => setQuickEdit((v) => !v)}
           >
-            Quick Edit
+            {t("farmerProducts.actions.quickEdit")}
           </Button>
           <Button
             size="sm"
@@ -423,12 +448,12 @@ function ProductManagementCard({
             {isPaused ? (
               <>
                 <Play className="mr-1.5 h-3.5 w-3.5" />
-                Activate Listing
+                {t("farmerProducts.actions.activateListing")}
               </>
             ) : (
               <>
                 <Pause className="mr-1.5 h-3.5 w-3.5" />
-                Pause Listing
+                {t("farmerProducts.actions.pauseListing")}
               </>
             )}
           </Button>
@@ -439,7 +464,7 @@ function ProductManagementCard({
             onClick={() => onArchive(product)}
           >
             <Archive className="mr-1.5 h-3.5 w-3.5" />
-            Archive
+            {t("farmerProducts.actions.archive")}
           </Button>
         </div>
       </div>
@@ -454,15 +479,15 @@ function ProductManagementCard({
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span>
             {displayStatus === "Out of Stock"
-              ? "This product is out of stock. Update quantity or pause the listing."
-              : "Low stock warning — consider restocking soon."}
+              ? t("farmerProducts.alerts.outOfStock")
+              : t("farmerProducts.alerts.lowStock")}
           </span>
           <button
             type="button"
             className="ml-auto text-xs font-semibold text-[#14532D] hover:underline"
             onClick={() => onOpenStock(product)}
           >
-            Update stock
+            {t("farmerProducts.alerts.updateStock")}
           </button>
         </div>
       ) : null}
@@ -472,6 +497,7 @@ function ProductManagementCard({
 
 export function FarmerProductsPage() {
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   const userId = user ? resolveFarmerProductsUserId(user) : null;
 
   const [products, setProducts] = useState<FarmerListingProduct[]>([]);
@@ -525,12 +551,12 @@ export function FarmerProductsPage() {
       getFarmerProductsApi(userId)
         .then((items) => setProducts(items.map(mapApiProductToFarmerListing)))
         .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to load products."),
+          setApiError(error instanceof Error ? error.message : t("farmerProducts.feedback.failedLoad")),
         );
       return;
     }
     setProducts(getFarmerProducts(userId));
-  }, [mapApiProductToFarmerListing, userId]);
+  }, [mapApiProductToFarmerListing, t, userId]);
 
   useEffect(() => {
     refresh();
@@ -550,33 +576,33 @@ export function FarmerProductsPage() {
 
   const summaryCards = [
     {
-      label: "Active Listings",
+      label: t("farmerProducts.stats.activeListings"),
       value: String(summary.activeListings),
-      hint: "Visible in marketplace",
+      hint: t("farmerProducts.stats.visibleInMarketplace"),
       icon: Package,
     },
     {
-      label: "Total Stock",
+      label: t("farmerProducts.stats.totalStock"),
       value: `${summary.totalStockKg} kg`,
-      hint: "Across all listings",
+      hint: t("farmerProducts.stats.acrossAllListings"),
       icon: ClipboardList,
     },
     {
-      label: "Low Stock",
+      label: t("farmerProducts.stats.lowStock"),
       value: String(summary.lowStock),
-      hint: "Needs restocking",
+      hint: t("farmerProducts.stats.needsRestocking"),
       icon: AlertTriangle,
     },
     {
-      label: "Draft / Inactive",
+      label: t("farmerProducts.stats.draftInactive"),
       value: String(summary.draftInactive),
-      hint: "Not fully live",
+      hint: t("farmerProducts.stats.notFullyLive"),
       icon: Pause,
     },
     {
-      label: "This Week Sales",
+      label: t("farmerProducts.stats.thisWeekSales"),
       value: `${summary.weekSalesKg} kg`,
-      hint: "Estimated volume",
+      hint: t("farmerProducts.stats.estimatedVolume"),
       icon: TrendingUp,
     },
   ];
@@ -594,7 +620,7 @@ export function FarmerProductsPage() {
           showToast(message);
         })
         .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to update product."),
+          setApiError(error instanceof Error ? error.message : t("farmerProducts.feedback.failedUpdate")),
         );
       return;
     }
@@ -604,12 +630,12 @@ export function FarmerProductsPage() {
   };
 
   const handleQuickSave = (id: string, price: number, quantity: number) => {
-    persistUpdate(id, { price, availableQuantity: quantity }, "Product updated successfully.");
+    persistUpdate(id, { price, availableQuantity: quantity }, t("farmerProducts.feedback.productUpdated"));
   };
 
   const handleStockSave = (quantity: number) => {
     if (!stockProduct) return;
-    persistUpdate(stockProduct.id, { availableQuantity: quantity }, "Stock updated successfully.");
+    persistUpdate(stockProduct.id, { availableQuantity: quantity }, t("farmerProducts.feedback.stockUpdated"));
   };
 
   const handleToggleListing = (product: FarmerListingProduct) => {
@@ -617,7 +643,9 @@ export function FarmerProductsPage() {
     persistUpdate(
       product.id,
       { listingStatus: nextStatus },
-      nextStatus === "active" ? "Listing activated." : "Listing paused.",
+      nextStatus === "active"
+        ? t("farmerProducts.feedback.listingActivated")
+        : t("farmerProducts.feedback.listingPaused"),
     );
   };
 
@@ -627,16 +655,16 @@ export function FarmerProductsPage() {
       deleteApiProduct(archiveProduct.id)
         .then(() => {
           refresh();
-          showToast("Product archived successfully.");
+          showToast(t("farmerProducts.feedback.archived"));
         })
         .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to archive product."),
+          setApiError(error instanceof Error ? error.message : t("farmerProducts.feedback.failedArchive")),
         );
       return;
     }
     const next = archiveFarmerProduct(userId, archiveProduct.id);
     setProducts(next);
-    showToast("Product archived successfully.");
+    showToast(t("farmerProducts.feedback.archived"));
   };
 
   const handleEdit = (product: FarmerListingProduct) => {
@@ -646,6 +674,9 @@ export function FarmerProductsPage() {
   if (!userId) return null;
 
   const hasAnyProducts = products.some((p) => !p.archived);
+  const archiveLocalizedName = archiveProduct
+    ? getLocalizedProductName(archiveProduct, language, t)
+    : "";
 
   return (
     <div className="agrivo-farmer-products space-y-6">
@@ -663,9 +694,11 @@ export function FarmerProductsPage() {
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">My Products</h2>
+          <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
+            {t("farmerProducts.title")}
+          </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            Manage your product listings, stock, prices, and marketplace visibility.
+            {t("farmerProducts.subtitle")}
           </p>
         </div>
         <Button
@@ -673,7 +706,7 @@ export function FarmerProductsPage() {
           onClick={() => navigate(getFarmerSectionHash("add-product"))}
         >
           <PackagePlus className="mr-2 h-4 w-4" />
-          Add Product
+          {t("farmerProducts.actions.addProduct")}
         </Button>
       </div>
 
@@ -704,7 +737,7 @@ export function FarmerProductsPage() {
                 <Input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search products..."
+                  placeholder={t("farmerProducts.filters.searchPlaceholder")}
                   className="h-11 rounded-full border-[#DEECE0] bg-[#F7FBF5] pl-10 text-sm"
                 />
               </div>
@@ -713,12 +746,14 @@ export function FarmerProductsPage() {
                 onValueChange={(v) => setCategory(v as FarmerProductCategory | "all")}
               >
                 <SelectTrigger className={cn(filterClass, "w-full sm:w-[180px]")}>
-                  <SelectValue placeholder="Category" />
+                  <SelectValue placeholder={t("farmerProducts.filters.category")} />
                 </SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.map((item) => (
                     <SelectItem key={item} value={item}>
-                      {item === "all" ? "All categories" : item}
+                      {item === "all"
+                        ? t("farmerProducts.filters.allCategories")
+                        : translateFarmerCategory(t, item)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -730,24 +765,26 @@ export function FarmerProductsPage() {
                 }
               >
                 <SelectTrigger className={cn(filterClass, "w-full sm:w-[160px]")}>
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder={t("farmerProducts.filters.status")} />
                 </SelectTrigger>
                 <SelectContent>
                   {STATUS_FILTERS.map((item) => (
                     <SelectItem key={item} value={item}>
-                      {item === "all" ? "All statuses" : item}
+                      {item === "all"
+                        ? t("farmerProducts.filters.allStatuses")
+                        : translateFarmerProductStatus(t, item)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               <Select value={sort} onValueChange={(v) => setSort(v as ProductSortOption)}>
                 <SelectTrigger className={cn(filterClass, "w-full sm:w-[180px]")}>
-                  <SelectValue placeholder="Sort" />
+                  <SelectValue placeholder={t("farmerProducts.filters.sort")} />
                 </SelectTrigger>
                 <SelectContent>
                   {SORT_OPTIONS.map((item) => (
                     <SelectItem key={item.value} value={item.value}>
-                      {item.label}
+                      {t(item.labelKey)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -755,7 +792,10 @@ export function FarmerProductsPage() {
             </div>
 
             <p className="mt-4 text-sm text-[#6b7a70]">
-              Showing {filtered.length} of {products.filter((p) => !p.archived).length} listings
+              {t("farmerProducts.filters.showingListings", {
+                shown: filtered.length,
+                total: products.filter((p) => !p.archived).length,
+              })}
             </p>
 
             {filtered.length > 0 ? (
@@ -774,7 +814,7 @@ export function FarmerProductsPage() {
               </div>
             ) : (
               <div className="agrivo-dashboard-empty mt-6 py-10">
-                <p className="text-sm text-[#5F6F64]">No products match your filters.</p>
+                <p className="text-sm text-[#5F6F64]">{t("farmerProducts.empty.noMatch")}</p>
                 <Button
                   variant="outline"
                   className="mt-4 rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
@@ -784,7 +824,7 @@ export function FarmerProductsPage() {
                     setStatus("all");
                   }}
                 >
-                  Clear filters
+                  {t("farmerProducts.actions.clearFilters")}
                 </Button>
               </div>
             )}
@@ -793,16 +833,18 @@ export function FarmerProductsPage() {
       ) : (
         <div className="agrivo-dashboard-panel agrivo-dashboard-empty py-16">
           <Package className="mx-auto h-10 w-10 text-[#43A047]" />
-          <h3 className="agrivo-heading mt-4 text-xl font-bold text-[#102018]">No products listed yet</h3>
+          <h3 className="agrivo-heading mt-4 text-xl font-bold text-[#102018]">
+            {t("farmerProducts.empty.noProductsTitle")}
+          </h3>
           <p className="mx-auto mt-2 max-w-md text-sm text-[#5F6F64]">
-            Add your first product to start selling through Agrivo marketplace.
+            {t("farmerProducts.empty.noProductsSubtitle")}
           </p>
           <Button
             className="mt-6 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
             onClick={() => navigate(getFarmerSectionHash("add-product"))}
           >
             <PackagePlus className="mr-2 h-4 w-4" />
-            Add Product
+            {t("farmerProducts.actions.addProduct")}
           </Button>
         </div>
       )}
@@ -818,7 +860,7 @@ export function FarmerProductsPage() {
 
       <ArchiveConfirmDialog
         open={Boolean(archiveProduct)}
-        productName={archiveProduct?.name ?? ""}
+        productName={archiveLocalizedName}
         onOpenChange={(open) => {
           if (!open) setArchiveProduct(null);
         }}

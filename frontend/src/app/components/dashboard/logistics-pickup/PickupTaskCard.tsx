@@ -1,5 +1,13 @@
 import { ArrowRight } from "lucide-react";
 import { ProductVarietyBadge } from "../../products/ProductVarietyBadge";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  translatePickupLocation,
+  translatePickupNotes,
+  translatePickupProduct,
+  translatePickupRegion,
+  translatePickupVariety,
+} from "../../../../i18n/pickupTasksHelpers";
 import {
   formatPickupQuantity,
   type PickupTask,
@@ -15,6 +23,8 @@ interface PickupTaskCardProps {
 }
 
 export function PickupTaskCard({ task, onAction }: PickupTaskCardProps) {
+  const { t, language } = useLanguage();
+
   return (
     <article className="agrivo-pickup-card">
       <div className="agrivo-pickup-card__top">
@@ -32,55 +42,67 @@ export function PickupTaskCard({ task, onAction }: PickupTaskCardProps) {
 
       <div className="agrivo-pickup-card__route">
         <h3 className="agrivo-heading flex flex-wrap items-center gap-1.5 text-base font-bold text-[#102018] sm:text-lg">
-          <span>{task.pickupLocation}</span>
+          <span>
+            {translatePickupLocation(t, task.pickupLocation, language, task.pickupLocationLocalized)}
+          </span>
           <ArrowRight className="h-4 w-4 shrink-0 text-[#43A047]" />
-          <span>{task.destination}</span>
+          <span>{translatePickupLocation(t, task.destination, language, task.destinationLocalized)}</span>
         </h3>
-        <p className="mt-1 text-xs font-medium text-[#15803d]">Pickup at {task.pickupTime}</p>
+        <p className="mt-1 text-xs font-medium text-[#15803d]">
+          {t("pickupTasks.card.pickupAt", { time: task.pickupTime })}
+        </p>
       </div>
 
       <dl className="agrivo-pickup-card__details">
         <div>
-          <dt>Farmer</dt>
+          <dt>{t("pickupTasks.columns.farmer")}</dt>
           <dd>{task.farmerName}</dd>
         </div>
         <div>
-          <dt>Product</dt>
-          <dd>{task.productName}</dd>
+          <dt>{t("pickupTasks.columns.product")}</dt>
+          <dd>{translatePickupProduct(t, language, task)}</dd>
         </div>
         <div>
-          <dt>Sort</dt>
+          <dt>{t("pickupTasks.columns.sort")}</dt>
           <dd>
-            <ProductVarietyBadge variety={task.variety} showLabel={false} size="sm" />
+            <ProductVarietyBadge
+              variety={translatePickupVariety(t, language, task.variety, task.sortKey)}
+              showLabel={false}
+              size="sm"
+            />
           </dd>
         </div>
         <div>
-          <dt>Quantity</dt>
+          <dt>{t("pickupTasks.columns.quantity")}</dt>
           <dd>{formatPickupQuantity(task)}</dd>
         </div>
         <div>
-          <dt>Pickup Window</dt>
+          <dt>{t("pickupTasks.columns.pickupWindow")}</dt>
           <dd>{task.pickupWindow}</dd>
         </div>
         <div>
-          <dt>Region</dt>
-          <dd>{task.district}</dd>
+          <dt>{t("pickupTasks.columns.region")}</dt>
+          <dd>{translatePickupRegion(t, task.region)}</dd>
         </div>
         <div>
-          <dt>Driver</dt>
-          <dd>{task.driverName || "Not assigned"}</dd>
+          <dt>{t("pickupTasks.columns.driver")}</dt>
+          <dd>{task.driverName || t("pickupTasks.status.notAssigned")}</dd>
         </div>
         <div>
-          <dt>Vehicle</dt>
+          <dt>{t("pickupTasks.columns.vehicle")}</dt>
           <dd>{task.vehicle || "—"}</dd>
         </div>
         <div>
-          <dt>Phone</dt>
+          <dt>{t("pickupTasks.columns.phone")}</dt>
           <dd>{task.farmerPhone}</dd>
         </div>
       </dl>
 
-      {task.notes ? <p className="agrivo-pickup-card__notes">{task.notes}</p> : null}
+      {task.notes ? (
+        <p className="agrivo-pickup-card__notes">
+          {translatePickupNotes(t, task.notes, language, task.notesLocalized)}
+        </p>
+      ) : null}
 
       <PickupCardActions task={task} onAction={onAction} />
     </article>

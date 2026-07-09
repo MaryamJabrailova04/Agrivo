@@ -1,7 +1,8 @@
 import {
-  IN_TRANSIT_STATUS_LABELS,
   type InTransitStatus,
 } from "../../../utils/inTransitStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateInTransitStatus } from "../../../../i18n/inTransitHelpers";
 import { cn } from "../../ui/utils";
 
 const STATUS_TONES: Record<InTransitStatus, string> = {
@@ -19,9 +20,10 @@ export function TransitStatusBadge({
   status: InTransitStatus;
   className?: string;
 }) {
+  const { t } = useLanguage();
   return (
     <span className={cn("agrivo-transit-status", STATUS_TONES[status], className)}>
-      {IN_TRANSIT_STATUS_LABELS[status]}
+      {translateInTransitStatus(t, status)}
     </span>
   );
 }

@@ -1,49 +1,51 @@
 import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, CalendarClock, CheckCircle2, Clock3, PackageCheck } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import type { PickupTaskSummary } from "../../../utils/pickupTasksStorage";
 
 interface StatCard {
-  label: string;
+  labelKey: string;
   value: number;
-  hint: string;
+  hintKey: string;
   icon: LucideIcon;
   accent: "today" | "scheduled" | "ready" | "delayed" | "completed";
 }
 
 export function PickupStats({ summary }: { summary: PickupTaskSummary }) {
+  const { t } = useLanguage();
   const cards: StatCard[] = [
     {
-      label: "Today's Pickups",
+      labelKey: "pickupTasks.stats.todaysPickups",
       value: summary.todaysPickups,
-      hint: "Scheduled for today",
+      hintKey: "pickupTasks.stats.scheduledForToday",
       icon: CalendarClock,
       accent: "today",
     },
     {
-      label: "Scheduled",
+      labelKey: "pickupTasks.stats.scheduled",
       value: summary.scheduled,
-      hint: "Awaiting collection",
+      hintKey: "pickupTasks.stats.awaitingCollection",
       icon: Clock3,
       accent: "scheduled",
     },
     {
-      label: "Ready for Pickup",
+      labelKey: "pickupTasks.stats.readyForPickup",
       value: summary.readyForPickup,
-      hint: "Packed and waiting",
+      hintKey: "pickupTasks.stats.packedAndWaiting",
       icon: PackageCheck,
       accent: "ready",
     },
     {
-      label: "Delayed Pickups",
+      labelKey: "pickupTasks.stats.delayedPickups",
       value: summary.delayed,
-      hint: "Needs attention",
+      hintKey: "pickupTasks.stats.needsAttention",
       icon: AlertTriangle,
       accent: "delayed",
     },
     {
-      label: "Completed Pickups",
+      labelKey: "pickupTasks.stats.completedPickups",
       value: summary.completed,
-      hint: "Collected today",
+      hintKey: "pickupTasks.stats.collectedToday",
       icon: CheckCircle2,
       accent: "completed",
     },
@@ -55,7 +57,7 @@ export function PickupStats({ summary }: { summary: PickupTaskSummary }) {
         const Icon = card.icon;
         return (
           <div
-            key={card.label}
+            key={card.labelKey}
             className={`agrivo-pickup-stat-card agrivo-card agrivo-pickup-stat-card--${card.accent}`}
           >
             <div className="flex items-start justify-between gap-3">
@@ -64,8 +66,8 @@ export function PickupStats({ summary }: { summary: PickupTaskSummary }) {
               </div>
               <span className="agrivo-heading text-2xl font-bold text-[#102018]">{card.value}</span>
             </div>
-            <p className="mt-3 text-sm font-semibold text-[#102018]">{card.label}</p>
-            <p className="mt-0.5 text-xs text-[#6b7a70]">{card.hint}</p>
+            <p className="mt-3 text-sm font-semibold text-[#102018]">{t(card.labelKey)}</p>
+            <p className="mt-0.5 text-xs text-[#6b7a70]">{t(card.hintKey)}</p>
           </div>
         );
       })}

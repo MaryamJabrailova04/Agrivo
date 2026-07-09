@@ -1,4 +1,11 @@
+import { useMemo } from "react";
 import { MapPin, MessageCircle } from "lucide-react";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import {
+  localizeHarvestListing,
+  translateTag,
+  VERIFIED_FARMER_TAG,
+} from "../../../i18n/marketplaceHelpers";
 import { ProductImage } from "../products/ProductImage";
 import { ProductSaveButton } from "../products/ProductSaveButton";
 import { ProductAddToCartButton } from "../products/ProductAddToCartButton";
@@ -24,11 +31,16 @@ export function HarvestListingCard({
   compact = false,
   selected = false,
 }: HarvestListingCardProps) {
-  const topBadge =
-    listing.tags.find((tag) => tag !== "Verified farmer") ??
-    (listing.farmerVerified ? "Verified farmer" : listing.tags[0]);
+  const { t } = useLanguage();
+  const display = useMemo(() => localizeHarvestListing(t, listing), [t, listing]);
 
-  const detailTags = listing.tags
+  const rawTopBadge =
+    listing.tags.find((tag) => tag !== VERIFIED_FARMER_TAG) ??
+    (listing.farmerVerified ? VERIFIED_FARMER_TAG : listing.tags[0]);
+
+  const topBadge = rawTopBadge ? translateTag(t, rawTopBadge) : null;
+
+  const detailTags = display.tags
     .filter((tag) => tag !== topBadge)
     .slice(0, 2);
 
@@ -52,10 +64,10 @@ export function HarvestListingCard({
           )}
         >
           <ProductImage
-            name={listing.name}
+            name={display.name}
             src={listing.image}
             category={listing.productType}
-            alt={`${listing.name} product image`}
+            alt={`${display.name} product image`}
             className="h-full w-full"
           />
         </div>
@@ -79,10 +91,10 @@ export function HarvestListingCard({
               compact ? "min-h-[2.5rem] text-base" : "min-h-[2.75rem] text-lg sm:text-xl",
             )}
           >
-            {listing.name}
+            {display.name}
           </h3>
 
-          <ProductVarietyBadge variety={listing.variety} />
+          <ProductVarietyBadge variety={display.variety} label={t("marketplace.card.variety")} />
         </div>
 
         <p className="agrivo-product-farmer line-clamp-1 text-sm text-[#6b7a70]">
@@ -91,12 +103,12 @@ export function HarvestListingCard({
 
         <div className="agrivo-harvest-card-meta mt-3 grid grid-cols-2 gap-x-3">
           <div>
-            <p className="agrivo-harvest-card-meta-label">Quantity</p>
+            <p className="agrivo-harvest-card-meta-label">{t("marketplace.card.quantity")}</p>
             <p className="agrivo-harvest-card-meta-value">{listing.quantity}</p>
           </div>
           <div>
-            <p className="agrivo-harvest-card-meta-label">Harvested</p>
-            <p className="agrivo-harvest-card-meta-value">{listing.harvestDate}</p>
+            <p className="agrivo-harvest-card-meta-label">{t("marketplace.card.harvested")}</p>
+            <p className="agrivo-harvest-card-meta-value">{display.harvestDate}</p>
           </div>
         </div>
 
@@ -119,18 +131,18 @@ export function HarvestListingCard({
           </div>
         ) : null}
 
-        <div className="agrivo-harvest-card-footer mt-auto grid grid-cols-2 gap-2.5 pt-4">
+        <div className="agrivo-harvest-card-footer mt-auto pt-4">
           <Button
             variant="outline"
-            className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--secondary h-11 rounded-full text-sm font-semibold"
+            className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--secondary agrivo-harvest-card-btn--details h-11 rounded-full text-sm font-semibold"
             onClick={onViewDetails}
           >
-            View details
+            {t("marketplace.card.viewDetails")}
           </Button>
           <ProductAddToCartButton
             listing={listing}
-            className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--primary h-11 w-full rounded-full bg-[#14532d] text-sm font-semibold text-white hover:bg-[#1b6b3f]"
-            label="Add to cart"
+            className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--primary agrivo-harvest-card-btn--cart h-11 w-full rounded-full bg-[#14532d] text-sm font-semibold text-white hover:bg-[#1b6b3f]"
+            label={t("marketplace.card.addToCart")}
           />
         </div>
         <Button
@@ -138,7 +150,7 @@ export function HarvestListingCard({
           onClick={onContactSeller}
         >
           <MessageCircle className="h-4 w-4 shrink-0" />
-          <span className="truncate">Contact seller</span>
+          <span className="truncate">{t("marketplace.card.contactSeller")}</span>
         </Button>
       </CardContent>
     </Card>

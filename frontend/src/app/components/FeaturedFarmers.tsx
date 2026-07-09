@@ -1,4 +1,5 @@
 import { MessageCircle, MapPin, Star } from "lucide-react";
+import { navigateToHash } from "../../i18n/localizedRoutes";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -118,7 +119,7 @@ export default function FeaturedFarmers() {
                     variant="outline" 
                     size="sm" 
                     className="flex-1 text-green-600 border-green-600 hover:bg-green-50"
-                    onClick={() => window.location.hash = 'farmers'}
+                    onClick={() => navigateToHash('farmers')}
                   >
                     View Profile
                   </Button>
@@ -141,7 +142,7 @@ export default function FeaturedFarmers() {
           <Button 
             variant="outline" 
             className="border-green-600 text-green-600 hover:bg-green-50"
-            onClick={() => window.location.hash = 'farmers'}
+            onClick={() => navigateToHash('farmers')}
           >
             View All Farmers
           </Button>

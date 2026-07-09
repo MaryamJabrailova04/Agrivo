@@ -1,7 +1,11 @@
 import { Search } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import {
-  DELIVERY_PRIORITY_LABELS,
-  DELIVERY_STATUS_LABELS,
+  translateLogisticsPriority,
+  translateLogisticsRegion,
+  translateLogisticsStatus,
+} from "../../../../i18n/logisticsDashboardHelpers";
+import {
   type DeliveryDateFilter,
   type DeliveryPriorityFilter,
   type DeliveryStatusFilter,
@@ -29,11 +33,7 @@ const STATUS_FILTERS: DeliveryStatusFilter[] = [
   "delayed",
 ];
 
-const DATE_FILTERS: Array<{ value: DeliveryDateFilter; label: string }> = [
-  { value: "all", label: "All time" },
-  { value: "today", label: "Today" },
-  { value: "week", label: "This week" },
-];
+const DATE_FILTERS: DeliveryDateFilter[] = ["all", "today", "week"];
 
 const PRIORITY_FILTERS: DeliveryPriorityFilter[] = ["all", "high", "normal", "low"];
 
@@ -64,6 +64,14 @@ export function DeliveryTasksFilterBar({
   priority,
   onPriorityChange,
 }: DeliveryTasksFilterBarProps) {
+  const { t } = useLanguage();
+
+  const dateLabels: Record<DeliveryDateFilter, string> = {
+    all: t("logisticsDashboard.filters.allTime"),
+    today: t("logisticsDashboard.filters.today"),
+    week: t("logisticsDashboard.filters.thisWeek"),
+  };
+
   return (
     <div className="agrivo-logistics-tasks-filters">
       <div className="relative min-w-0 flex-1">
@@ -71,19 +79,21 @@ export function DeliveryTasksFilterBar({
         <Input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search by farm, buyer, product, or task ID"
+          placeholder={t("logisticsDashboard.filters.searchPlaceholder")}
           className="h-11 rounded-full border-[#DEECE0] bg-[#F7FBF5] pl-10 text-sm"
         />
       </div>
 
       <Select value={status} onValueChange={(value) => onStatusChange(value as DeliveryStatusFilter)}>
         <SelectTrigger className={cn(filterClass, "w-full sm:w-[170px]")}>
-          <SelectValue placeholder="Status" />
+          <SelectValue placeholder={t("logisticsDashboard.filters.status")} />
         </SelectTrigger>
         <SelectContent>
           {STATUS_FILTERS.map((item) => (
             <SelectItem key={item} value={item}>
-              {item === "all" ? "All statuses" : DELIVERY_STATUS_LABELS[item]}
+              {item === "all"
+                ? t("logisticsDashboard.filters.allStatuses")
+                : translateLogisticsStatus(t, item)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -91,13 +101,13 @@ export function DeliveryTasksFilterBar({
 
       <Select value={region} onValueChange={onRegionChange}>
         <SelectTrigger className={cn(filterClass, "w-full sm:w-[150px]")}>
-          <SelectValue placeholder="Region" />
+          <SelectValue placeholder={t("logisticsDashboard.filters.region")} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="all">All regions</SelectItem>
+          <SelectItem value="all">{t("logisticsDashboard.filters.allRegions")}</SelectItem>
           {regions.map((item) => (
             <SelectItem key={item} value={item}>
-              {item}
+              {translateLogisticsRegion(t, item)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -105,12 +115,12 @@ export function DeliveryTasksFilterBar({
 
       <Select value={dateFilter} onValueChange={(value) => onDateFilterChange(value as DeliveryDateFilter)}>
         <SelectTrigger className={cn(filterClass, "w-full sm:w-[140px]")}>
-          <SelectValue placeholder="Date" />
+          <SelectValue placeholder={t("logisticsDashboard.filters.date")} />
         </SelectTrigger>
         <SelectContent>
           {DATE_FILTERS.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
+            <SelectItem key={item} value={item}>
+              {dateLabels[item]}
             </SelectItem>
           ))}
         </SelectContent>
@@ -121,12 +131,14 @@ export function DeliveryTasksFilterBar({
         onValueChange={(value) => onPriorityChange(value as DeliveryPriorityFilter)}
       >
         <SelectTrigger className={cn(filterClass, "w-full sm:w-[140px]")}>
-          <SelectValue placeholder="Priority" />
+          <SelectValue placeholder={t("logisticsDashboard.filters.priority")} />
         </SelectTrigger>
         <SelectContent>
           {PRIORITY_FILTERS.map((item) => (
             <SelectItem key={item} value={item}>
-              {item === "all" ? "All priorities" : DELIVERY_PRIORITY_LABELS[item]}
+              {item === "all"
+                ? t("logisticsDashboard.filters.allPriorities")
+                : translateLogisticsPriority(t, item)}
             </SelectItem>
           ))}
         </SelectContent>

@@ -6,15 +6,16 @@ import {
   BUYER_DASHBOARD,
   parseBuyerOrderIdFromHash,
 } from "../../components/dashboard/dashboardConfig";
+import { getRoutePathFromHash } from "../../../i18n/localizedRoutes";
 
 export default function BuyerDashboardPage() {
   const [currentHash, setCurrentHash] = useState(
-    () => window.location.hash.replace("#", "") || BUYER_DASHBOARD.baseHash,
+    () => getRoutePathFromHash() || BUYER_DASHBOARD.baseHash,
   );
 
   useEffect(() => {
     const handleHashChange = () => {
-      setCurrentHash(window.location.hash.replace("#", "") || BUYER_DASHBOARD.baseHash);
+      setCurrentHash(getRoutePathFromHash() || BUYER_DASHBOARD.baseHash);
     };
 
     window.addEventListener("hashchange", handleHashChange);

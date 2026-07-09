@@ -1,9 +1,20 @@
 import { CheckCircle2, Circle } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import { IN_TRANSIT_TIMELINE_STEPS, getTimelineStepIndex, type InTransitStatus } from "../../../utils/inTransitStorage";
+import { translateInTransitStatus } from "../../../../i18n/inTransitHelpers";
 import { cn } from "../../ui/utils";
 
 export function TransitTimeline({ status }: { status: InTransitStatus }) {
+  const { t } = useLanguage();
   const currentIndex = getTimelineStepIndex(status);
+  const stepLabels = [
+    t("inTransitPage.timeline.assigned"),
+    t("inTransitPage.timeline.pickupScheduled"),
+    t("inTransitPage.timeline.collected"),
+    translateInTransitStatus(t, "in_transit"),
+    translateInTransitStatus(t, "near_destination"),
+    translateInTransitStatus(t, "delivered"),
+  ];
 
   return (
     <ol className="agrivo-assigned-timeline">
@@ -30,9 +41,13 @@ export function TransitTimeline({ status }: { status: InTransitStatus }) {
               )}
             </span>
             <div className="agrivo-assigned-timeline__content">
-              <p className="agrivo-assigned-timeline__label">{step}</p>
+              <p className="agrivo-assigned-timeline__label">{stepLabels[index] ?? step}</p>
               <p className="agrivo-assigned-timeline__meta">
-                {isCurrent ? "Current stage" : isComplete ? "Completed" : "Upcoming"}
+                {isCurrent
+                  ? t("inTransitPage.timeline.currentStage")
+                  : isComplete
+                    ? t("inTransitPage.timeline.completed")
+                    : t("inTransitPage.timeline.upcoming")}
               </p>
             </div>
           </li>

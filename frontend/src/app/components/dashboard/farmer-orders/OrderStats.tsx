@@ -1,42 +1,45 @@
 import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, ClipboardList, Clock3, ChefHat } from "lucide-react";
 import type { FarmerOrdersSummary } from "../../../utils/farmerOrdersStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 
 interface StatCard {
-  label: string;
+  labelKey: string;
   value: number;
-  hint: string;
+  hintKey: string;
   icon: LucideIcon;
   accent?: "default" | "pending" | "preparing" | "completed";
 }
 
 export function OrderStats({ summary }: { summary: FarmerOrdersSummary }) {
+  const { t } = useLanguage();
+
   const cards: StatCard[] = [
     {
-      label: "Total Orders",
+      labelKey: "farmerOrders.stats.totalOrders",
       value: summary.total,
-      hint: "All buyer requests",
+      hintKey: "farmerOrders.stats.allBuyerRequests",
       icon: ClipboardList,
       accent: "default",
     },
     {
-      label: "Pending Orders",
+      labelKey: "farmerOrders.stats.pendingOrders",
       value: summary.pending,
-      hint: "Awaiting confirmation",
+      hintKey: "farmerOrders.stats.awaitingConfirmation",
       icon: Clock3,
       accent: "pending",
     },
     {
-      label: "Preparing",
+      labelKey: "farmerOrders.stats.preparing",
       value: summary.preparing,
-      hint: "In progress now",
+      hintKey: "farmerOrders.stats.inProgressNow",
       icon: ChefHat,
       accent: "preparing",
     },
     {
-      label: "Completed",
+      labelKey: "farmerOrders.stats.completed",
       value: summary.completed,
-      hint: "Delivered orders",
+      hintKey: "farmerOrders.stats.deliveredOrders",
       icon: CheckCircle2,
       accent: "completed",
     },
@@ -48,7 +51,7 @@ export function OrderStats({ summary }: { summary: FarmerOrdersSummary }) {
         const Icon = card.icon;
         return (
           <div
-            key={card.label}
+            key={card.labelKey}
             className={`agrivo-farmer-order-stat-card agrivo-card agrivo-farmer-order-stat-card--${card.accent ?? "default"}`}
           >
             <div className="flex items-start justify-between gap-3">
@@ -57,8 +60,8 @@ export function OrderStats({ summary }: { summary: FarmerOrdersSummary }) {
               </div>
               <span className="agrivo-heading text-2xl font-bold text-[#102018]">{card.value}</span>
             </div>
-            <p className="mt-3 text-sm font-semibold text-[#102018]">{card.label}</p>
-            <p className="mt-0.5 text-xs text-[#6b7a70]">{card.hint}</p>
+            <p className="mt-3 text-sm font-semibold text-[#102018]">{t(card.labelKey)}</p>
+            <p className="mt-0.5 text-xs text-[#6b7a70]">{t(card.hintKey)}</p>
           </div>
         );
       })}

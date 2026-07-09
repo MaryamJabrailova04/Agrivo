@@ -1,7 +1,8 @@
 import {
-  PICKUP_PRIORITY_LABELS,
   type PickupPriority,
 } from "../../../utils/pickupTasksStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translatePickupPriority } from "../../../../i18n/pickupTasksHelpers";
 import { cn } from "../../ui/utils";
 
 const PRIORITY_TONES: Record<PickupPriority, string> = {
@@ -17,9 +18,10 @@ export function PickupPriorityBadge({
   priority: PickupPriority;
   className?: string;
 }) {
+  const { t } = useLanguage();
   return (
     <span className={cn("agrivo-pickup-priority", PRIORITY_TONES[priority], className)}>
-      {PICKUP_PRIORITY_LABELS[priority]}
+      {translatePickupPriority(t, priority)}
     </span>
   );
 }

@@ -1,4 +1,5 @@
 import { Card, CardContent } from "./ui/card";
+import { navigateToHash } from "../../i18n/localizedRoutes";
 
 const categories = [
   { name: "Vegetables", icon: "🥦", count: "150+ items", color: "bg-green-100 hover:bg-green-200" },
@@ -27,7 +28,7 @@ export default function Categories() {
             <Card 
               key={category.name} 
               className={`cursor-pointer transition-all duration-200 hover:shadow-lg ${category.color} border-0`}
-              onClick={() => window.location.hash = 'products'}
+              onClick={() => navigateToHash('products')}
             >
               <CardContent className="flex flex-col items-center justify-center p-6 text-center">
                 <div className="text-3xl md:text-4xl mb-2">{category.icon}</div>
@@ -42,7 +43,7 @@ export default function Categories() {
         <div className="text-center mt-8">
           <button 
             className="text-green-600 hover:text-green-700 font-medium inline-flex items-center"
-            onClick={() => window.location.hash = 'products'}
+            onClick={() => navigateToHash('products')}
           >
             View All Categories
             <svg className="ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

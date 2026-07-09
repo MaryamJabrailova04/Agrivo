@@ -7,57 +7,60 @@ import {
   Route,
   Truck,
 } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import type { LogisticsOverviewSummary } from "../../../utils/logisticsDashboardStorage";
 
 interface StatCard {
-  label: string;
+  labelKey: string;
   value: number;
-  hint: string;
+  hintKey: string;
   icon: LucideIcon;
   accent: string;
 }
 
 export function OverviewStats({ summary }: { summary: LogisticsOverviewSummary }) {
+  const { t } = useLanguage();
+
   const cards: StatCard[] = [
     {
-      label: "Assigned Today",
+      labelKey: "logisticsDashboard.stats.assignedToday",
       value: summary.assignedToday,
-      hint: "Tasks scheduled",
+      hintKey: "logisticsDashboard.stats.tasksScheduled",
       icon: ClipboardList,
       accent: "assigned",
     },
     {
-      label: "Pickup Pending",
+      labelKey: "logisticsDashboard.stats.pickupPending",
       value: summary.pickupPending,
-      hint: "Awaiting farm handoff",
+      hintKey: "logisticsDashboard.stats.awaitingFarmHandoff",
       icon: MapPin,
       accent: "pickup",
     },
     {
-      label: "In Transit",
+      labelKey: "logisticsDashboard.stats.inTransit",
       value: summary.inTransit,
-      hint: "On the road now",
+      hintKey: "logisticsDashboard.stats.onTheRoadNow",
       icon: Truck,
       accent: "transit",
     },
     {
-      label: "Completed Today",
+      labelKey: "logisticsDashboard.stats.completedToday",
       value: summary.completedToday,
-      hint: "Delivered successfully",
+      hintKey: "logisticsDashboard.stats.deliveredSuccessfully",
       icon: CheckCircle2,
       accent: "completed",
     },
     {
-      label: "Delayed Deliveries",
+      labelKey: "logisticsDashboard.stats.delayedDeliveries",
       value: summary.delayed,
-      hint: "Needs attention",
+      hintKey: "logisticsDashboard.stats.needsAttention",
       icon: AlertTriangle,
       accent: "delayed",
     },
     {
-      label: "Total Stops",
+      labelKey: "logisticsDashboard.stats.totalStops",
       value: summary.totalStops,
-      hint: "Active route stops",
+      hintKey: "logisticsDashboard.stats.activeRouteStops",
       icon: Route,
       accent: "stops",
     },
@@ -69,7 +72,7 @@ export function OverviewStats({ summary }: { summary: LogisticsOverviewSummary }
         const Icon = card.icon;
         return (
           <div
-            key={card.label}
+            key={card.labelKey}
             className={`agrivo-logistics-overview-stat agrivo-logistics-overview-stat--${card.accent}`}
           >
             <div className="flex items-start justify-between gap-2">
@@ -78,8 +81,8 @@ export function OverviewStats({ summary }: { summary: LogisticsOverviewSummary }
               </div>
               <span className="agrivo-heading text-2xl font-bold text-[#102018]">{card.value}</span>
             </div>
-            <p className="mt-2.5 text-sm font-semibold text-[#102018]">{card.label}</p>
-            <p className="mt-0.5 text-xs text-[#6b7a70]">{card.hint}</p>
+            <p className="mt-2.5 text-sm font-semibold text-[#102018]">{t(card.labelKey)}</p>
+            <p className="mt-0.5 text-xs text-[#6b7a70]">{t(card.hintKey)}</p>
           </div>
         );
       })}

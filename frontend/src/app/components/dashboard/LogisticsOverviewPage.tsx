@@ -2,6 +2,14 @@ import { CheckCircle2, Route, Truck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { isApiMode } from "../../../config/dataMode";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import {
+  formatLogisticsRouteLabel,
+  translateLogisticsProduct,
+  translateLogisticsRegion,
+  translateLogisticsStatus,
+} from "../../../i18n/logisticsDashboardHelpers";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   getLogisticsOverview,
   getDeliveries,
@@ -10,7 +18,6 @@ import {
 } from "../../../api/logisticsApi";
 import {
   computeLogisticsSummary,
-  DELIVERY_STATUS_LABELS,
   filterDeliveryTasks,
   getDeliveryRegions,
   getDeliveryTasks,
@@ -52,10 +59,11 @@ import { RouteSummaryCard } from "./logistics-overview/RouteSummaryCard";
 import { UrgentAlertsCard } from "./logistics-overview/UrgentAlertsCard";
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 export function LogisticsOverviewPage() {
+  const { t, language } = useLanguage();
   const { user } = useAuth();
   const userId = resolveLogisticsUserId(user);
 
@@ -96,13 +104,11 @@ export function LogisticsOverviewPage() {
             totalStops: overview.total,
           });
         })
-        .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to load logistics overview."),
-        );
+        .catch(() => setApiError(t("logisticsDashboard.feedback.failedLoad")));
       return;
     }
     setTasks(getDeliveryTasks(userId));
-  }, [userId]);
+  }, [userId, t]);
 
   useEffect(() => {
     refresh();
@@ -136,33 +142,46 @@ export function LogisticsOverviewPage() {
       if (!next) return;
       updateDeliveryStatusApi(task.id, next)
         .then(() => refresh())
-        .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to update delivery status."),
-        );
+        .catch(() => setApiError(t("logisticsDashboard.feedback.failedUpdate")));
       return;
     }
     const next = NEXT_STATUS[task.status];
     if (!next) {
-      showToast(`Task ${task.taskId} is already ${DELIVERY_STATUS_LABELS[task.status]}.`);
+      showToast(
+        t("logisticsDashboard.feedback.alreadyStatus", {
+          taskId: task.taskId,
+          status: translateLogisticsStatus(t, task.status),
+        }),
+      );
       return;
     }
     const updated = updateDeliveryTaskStatus(userId, task.id, next);
     setTasks(updated);
-    showToast(`Task ${task.taskId} updated to ${DELIVERY_STATUS_LABELS[next]}.`);
+    showToast(
+      t("logisticsDashboard.feedback.statusUpdated", {
+        taskId: task.taskId,
+        status: translateLogisticsStatus(t, next),
+      }),
+    );
     if (detailTask?.id === task.id) {
       setDetailTask({ ...task, status: next });
     }
   };
 
-  const handleQuickStatus = (targetStatus: DeliveryTaskStatus, label: string) => {
+  const handleQuickStatus = (targetStatus: DeliveryTaskStatus) => {
     const candidate = tasks.find((task) => task.status !== "delivered");
     if (!candidate || !userId) {
-      showToast("No active task available to update.");
+      showToast(t("logisticsDashboard.feedback.noActiveTask"));
       return;
     }
     const updated = updateDeliveryTaskStatus(userId, candidate.id, targetStatus);
     setTasks(updated);
-    showToast(`${candidate.taskId} marked as ${label}.`);
+    showToast(
+      t("logisticsDashboard.feedback.markedAs", {
+        taskId: candidate.taskId,
+        status: translateLogisticsStatus(t, targetStatus),
+      }),
+    );
   };
 
   if (!userId) return null;
@@ -186,10 +205,10 @@ export function LogisticsOverviewPage() {
       <div className="agrivo-logistics-overview-header">
         <div>
           <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
-            Logistics Overview
+            {t("logisticsDashboard.title")}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            Monitor assigned deliveries, manage pickups, track routes, and update shipment progress.
+            {t("logisticsDashboard.subtitle")}
           </p>
         </div>
         <div className="agrivo-logistics-overview-header-actions">
@@ -198,22 +217,22 @@ export function LogisticsOverviewPage() {
             onClick={() => navigate(getLogisticsSectionHash("pickup"))}
           >
             <Truck className="mr-2 h-4 w-4" />
-            Assign Pickup
+            {t("logisticsDashboard.actions.assignPickup")}
           </Button>
           <Button
             variant="outline"
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => navigate(getLogisticsSectionHash("assigned"))}
           >
-            View Deliveries
+            {t("logisticsDashboard.actions.viewDeliveries")}
           </Button>
           <Button
             variant="outline"
             className="hidden rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC] sm:inline-flex"
-            onClick={() => showToast("Route optimization will be available in the next update.")}
+            onClick={() => showToast(t("logisticsDashboard.feedback.routeOptimization"))}
           >
             <Route className="mr-2 h-4 w-4" />
-            Optimize Route
+            {t("logisticsDashboard.actions.optimizeRoute")}
           </Button>
         </div>
       </div>
@@ -248,14 +267,22 @@ export function LogisticsOverviewPage() {
                       task={task}
                       onViewDetails={setDetailTask}
                       onUpdateStatus={handleStatusAdvance}
-                      onOpenRoute={() => showToast(`Opening route for ${task.taskId}…`)}
-                      onContact={() => showToast(`Contact options for ${task.taskId} will open here.`)}
+                      onOpenRoute={() =>
+                        showToast(
+                          t("logisticsDashboard.feedback.openingRoute", { taskId: task.taskId }),
+                        )
+                      }
+                      onContact={() =>
+                        showToast(
+                          t("logisticsDashboard.feedback.contactOptions", { taskId: task.taskId }),
+                        )
+                      }
                     />
                   ))}
                 </div>
               ) : (
                 <div className="agrivo-logistics-tasks-empty-filter">
-                  <p className="text-sm text-[#5F6F64]">No tasks match your filters.</p>
+                  <p className="text-sm text-[#5F6F64]">{t("logisticsDashboard.tasks.noMatch")}</p>
                 </div>
               )}
             </DeliveryTasksCard>
@@ -267,11 +294,11 @@ export function LogisticsOverviewPage() {
         <LogisticsOverviewRightColumn>
           <QuickActionsCard
             onAssignPickup={() => navigate(getLogisticsSectionHash("pickup"))}
-            onMarkPickedUp={() => handleQuickStatus("picked_up", "Picked Up")}
-            onMarkInTransit={() => handleQuickStatus("in_transit", "In Transit")}
-            onMarkDelivered={() => handleQuickStatus("delivered", "Delivered")}
-            onContactFarmer={() => showToast("Farmer contact will open here.")}
-            onContactBuyer={() => showToast("Buyer contact will open here.")}
+            onMarkPickedUp={() => handleQuickStatus("picked_up")}
+            onMarkInTransit={() => handleQuickStatus("in_transit")}
+            onMarkDelivered={() => handleQuickStatus("delivered")}
+            onContactFarmer={() => showToast(t("logisticsDashboard.feedback.contactFarmer"))}
+            onContactBuyer={() => showToast(t("logisticsDashboard.feedback.contactBuyer"))}
           />
           <UrgentAlertsCard alerts={alerts} />
           <PerformanceSummaryCard performance={performance} />
@@ -282,41 +309,48 @@ export function LogisticsOverviewPage() {
         <DialogContent className="agrivo-profile-dialog sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-              {detailTask ? `Task ${detailTask.taskId}` : "Delivery task"}
+              {detailTask
+                ? t("logisticsDashboard.tasks.modalTitle", { taskId: detailTask.taskId })
+                : t("logisticsDashboard.tasks.modalFallback")}
             </DialogTitle>
             <DialogDescription className="text-sm text-[#5F6F64]">
               {detailTask
-                ? `${detailTask.pickupLocation} → ${detailTask.dropoffLocation}`
+                ? formatLogisticsRouteLabel(
+                    t,
+                    detailTask.pickupLocation,
+                    detailTask.dropoffLocation,
+                  )
                 : null}
             </DialogDescription>
           </DialogHeader>
           {detailTask ? (
             <dl className="agrivo-logistics-task-detail-grid">
               <div>
-                <dt>Product</dt>
+                <dt>{t("logisticsDashboard.tasks.labels.product")}</dt>
                 <dd>
-                  {detailTask.productName} · {detailTask.quantity} {detailTask.unit}
+                  {translateLogisticsProduct(t, language, detailTask.productName)} ·{" "}
+                  {detailTask.quantity} {detailTask.unit}
                 </dd>
               </div>
               <div>
-                <dt>Pickup time</dt>
+                <dt>{t("logisticsDashboard.tasks.labels.pickupTime")}</dt>
                 <dd>{detailTask.pickupTime}</dd>
               </div>
               <div>
-                <dt>ETA</dt>
+                <dt>{t("logisticsDashboard.tasks.eta")}</dt>
                 <dd>{detailTask.eta}</dd>
               </div>
               <div>
-                <dt>Driver</dt>
+                <dt>{t("logisticsDashboard.tasks.labels.driver")}</dt>
                 <dd>{detailTask.driverName}</dd>
               </div>
               <div>
-                <dt>Vehicle</dt>
+                <dt>{t("logisticsDashboard.tasks.labels.vehicle")}</dt>
                 <dd>{detailTask.vehicle}</dd>
               </div>
               <div>
-                <dt>Region</dt>
-                <dd>{detailTask.region}</dd>
+                <dt>{t("logisticsDashboard.tasks.labels.region")}</dt>
+                <dd>{translateLogisticsRegion(t, detailTask.region)}</dd>
               </div>
             </dl>
           ) : null}
@@ -326,7 +360,7 @@ export function LogisticsOverviewPage() {
               className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
               onClick={() => setDetailTask(null)}
             >
-              Close
+              {t("logisticsDashboard.actions.close")}
             </Button>
             {detailTask && detailTask.status !== "delivered" ? (
               <Button
@@ -335,7 +369,7 @@ export function LogisticsOverviewPage() {
                   handleStatusAdvance(detailTask);
                 }}
               >
-                Update Status
+                {t("logisticsDashboard.actions.updateStatus")}
               </Button>
             ) : null}
           </DialogFooter>

@@ -4,6 +4,8 @@ import { useAuth } from "../../auth/AuthContext";
 import { setAuthUser } from "../../auth/authStorage";
 import { isApiMode } from "../../../config/dataMode";
 import { getLogisticsProfileApi, updateLogisticsProfileApi } from "../../../api/profileApi";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { translateDocumentUploadLabel } from "../../../i18n/logisticsProfileHelpers";
 import {
   cloneLogisticsProfile,
   computeLogisticsProfileStats,
@@ -42,6 +44,7 @@ import { TrustVerificationCard } from "./logistics-profile/TrustVerificationCard
 import { WorkingScheduleCard } from "./logistics-profile/WorkingScheduleCard";
 
 export function LogisticsProfilePage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const userId = resolveLogisticsProfileUserId(user);
 
@@ -68,15 +71,13 @@ export function LogisticsProfilePage() {
           setProfile(loaded);
           setDraft(loaded);
         })
-        .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to load logistics profile."),
-        );
+        .catch(() => setApiError(t("logisticsProfile.feedback.loadFailed")));
     } else {
       const loaded = getLogisticsDashboardProfile(user);
       setProfile(loaded);
       setDraft(loaded);
     }
-  }, [user]);
+  }, [user, t]);
 
   useEffect(() => {
     refresh();
@@ -149,7 +150,7 @@ export function LogisticsProfilePage() {
 
     if (Object.keys(allErrors).length > 0) {
       setFormErrors(allErrors);
-      showToast("Please fix the highlighted fields.");
+      showToast(t("logisticsProfile.feedback.fixHighlightedFields"));
       return;
     }
 
@@ -176,8 +177,8 @@ export function LogisticsProfilePage() {
           openingTime: draft.openingTime,
           closingTime: draft.closingTime,
         });
-      } catch (error) {
-        setApiError(error instanceof Error ? error.message : "Failed to save logistics profile.");
+      } catch {
+        setApiError(t("logisticsProfile.feedback.saveFailed"));
       }
     }
 
@@ -188,7 +189,7 @@ export function LogisticsProfilePage() {
     setSavedSnapshot(null);
     setFormErrors({});
     setIsSaving(false);
-    showToast("Profile updated successfully.");
+    showToast(t("logisticsProfile.feedback.profileUpdated"));
   };
 
   if (!userId || !displayProfile) return null;
@@ -209,25 +210,22 @@ export function LogisticsProfilePage() {
 
       {isEditing ? (
         <div className="agrivo-profile-editing-banner">
-          You are editing your logistics company profile. Save or cancel your changes when finished.
+          {t("logisticsProfile.editingBanner")}
         </div>
       ) : null}
 
       <div className="agrivo-logistics-profile-header">
         <div>
           <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
-            Logistics Profile
+            {t("logisticsProfile.title")}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            Manage your company information, fleet capacity, service regions, and public logistics
-            partner profile.
+            {t("logisticsProfile.subtitle")}
           </p>
         </div>
         <div className="agrivo-logistics-profile-helper">
           <Info className="h-4 w-4 shrink-0 text-[#15803d]" />
-          <p className="text-sm font-medium text-[#14532D]">
-            A complete profile helps farmers and buyers trust your logistics service.
-          </p>
+          <p className="text-sm font-medium text-[#14532D]">{t("logisticsProfile.infoBox")}</p>
         </div>
       </div>
 
@@ -275,7 +273,13 @@ export function LogisticsProfilePage() {
           <LogisticsProfileSection id="documents">
             <DocumentsComplianceCard
               profile={displayProfile}
-              onUpload={(label) => showToast(`${label} upload will be available soon.`)}
+              onUpload={(docKey) =>
+                showToast(
+                  t("logisticsProfile.feedback.uploadSoon", {
+                    label: translateDocumentUploadLabel(t, docKey),
+                  }),
+                )
+              }
             />
           </LogisticsProfileSection>
 
@@ -321,11 +325,10 @@ export function LogisticsProfilePage() {
         <DialogContent className="agrivo-profile-dialog sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-              Change Company Logo
+              {t("logisticsProfile.changeLogoTitle")}
             </DialogTitle>
             <DialogDescription className="text-sm text-[#5F6F64]">
-              Logo upload will be available in a future update. Your current company image or
-              initials will continue to be used.
+              {t("logisticsProfile.changeLogoDescription")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -333,7 +336,7 @@ export function LogisticsProfilePage() {
               className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={() => setPhotoDialogOpen(false)}
             >
-              Got it
+              {t("logisticsProfile.actions.gotIt")}
             </Button>
           </DialogFooter>
         </DialogContent>

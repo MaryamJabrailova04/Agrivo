@@ -1,12 +1,17 @@
 import {
-  PICKUP_PRIORITY_LABELS,
-  PICKUP_STATUS_LABELS,
   type PickupPriority,
   type PickupPriorityFilter,
   type PickupStatusFilter,
   type PickupTaskStatus,
   type PickupTimeFilter,
 } from "../../../utils/pickupTasksStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  translatePickupPriority,
+  translatePickupRegion,
+  translatePickupStatus,
+  translatePickupTimeFilter,
+} from "../../../../i18n/pickupTasksHelpers";
 import { Input } from "../../ui/input";
 import {
   Select,
@@ -56,6 +61,8 @@ export function PickupFilterBar({
   priority,
   onPriorityChange,
 }: PickupFilterBarProps) {
+  const { t } = useLanguage();
+
   return (
     <section className="agrivo-pickup-filters agrivo-dashboard-panel">
       <div className="agrivo-pickup-filters__search">
@@ -63,7 +70,7 @@ export function PickupFilterBar({
         <Input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search by farm, product, farmer, or pickup ID"
+          placeholder={t("pickupTasks.filters.searchPlaceholder")}
           className="agrivo-pickup-filters__input"
         />
       </div>
@@ -71,13 +78,13 @@ export function PickupFilterBar({
       <div className="agrivo-pickup-filters__controls">
         <Select value={status} onValueChange={(value) => onStatusChange(value as PickupStatusFilter)}>
           <SelectTrigger className="agrivo-pickup-filters__select">
-            <SelectValue placeholder="Status" />
+            <SelectValue placeholder={t("pickupTasks.filters.status")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All statuses</SelectItem>
+            <SelectItem value="all">{t("pickupTasks.filters.allStatuses")}</SelectItem>
             {STATUS_OPTIONS.map((item) => (
               <SelectItem key={item} value={item}>
-                {PICKUP_STATUS_LABELS[item]}
+                {translatePickupStatus(t, item)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -88,27 +95,27 @@ export function PickupFilterBar({
           onValueChange={(value) => onTimeFilterChange(value as PickupTimeFilter)}
         >
           <SelectTrigger className="agrivo-pickup-filters__select">
-            <SelectValue placeholder="Time" />
+            <SelectValue placeholder={t("pickupTasks.filters.time")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="today">Today</SelectItem>
-            <SelectItem value="next_2_hours">Next 2 hours</SelectItem>
-            <SelectItem value="afternoon">This afternoon</SelectItem>
-            <SelectItem value="tomorrow">Tomorrow</SelectItem>
-            <SelectItem value="week">This week</SelectItem>
-            <SelectItem value="all">All time</SelectItem>
+            <SelectItem value="today">{translatePickupTimeFilter(t, "today")}</SelectItem>
+            <SelectItem value="next_2_hours">{translatePickupTimeFilter(t, "next_2_hours")}</SelectItem>
+            <SelectItem value="afternoon">{translatePickupTimeFilter(t, "afternoon")}</SelectItem>
+            <SelectItem value="tomorrow">{translatePickupTimeFilter(t, "tomorrow")}</SelectItem>
+            <SelectItem value="week">{translatePickupTimeFilter(t, "week")}</SelectItem>
+            <SelectItem value="all">{translatePickupTimeFilter(t, "all")}</SelectItem>
           </SelectContent>
         </Select>
 
         <Select value={region} onValueChange={onRegionChange}>
           <SelectTrigger className="agrivo-pickup-filters__select">
-            <SelectValue placeholder="Region" />
+            <SelectValue placeholder={t("pickupTasks.filters.region")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All regions</SelectItem>
+            <SelectItem value="all">{t("pickupTasks.filters.allRegions")}</SelectItem>
             {regions.map((item) => (
               <SelectItem key={item} value={item}>
-                {item}
+                {translatePickupRegion(t, item)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -119,13 +126,13 @@ export function PickupFilterBar({
           onValueChange={(value) => onPriorityChange(value as PickupPriorityFilter)}
         >
           <SelectTrigger className="agrivo-pickup-filters__select">
-            <SelectValue placeholder="Priority" />
+            <SelectValue placeholder={t("pickupTasks.filters.priority")} />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All priorities</SelectItem>
+            <SelectItem value="all">{t("pickupTasks.filters.allPriorities")}</SelectItem>
             {PRIORITY_OPTIONS.map((item) => (
               <SelectItem key={item} value={item}>
-                {PICKUP_PRIORITY_LABELS[item]}
+                {translatePickupPriority(t, item)}
               </SelectItem>
             ))}
           </SelectContent>

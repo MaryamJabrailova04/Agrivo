@@ -1,4 +1,12 @@
 import { Briefcase } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  getLocalizedCategory,
+  getLocalizedDeliveryOption,
+  getLocalizedPaymentMethod,
+  getLocalizedProduct,
+  translateLocalizedFarmSize,
+} from "../../../../i18n/farmerDashboardProfileHelpers";
 import {
   FARMER_PROFILE_CATEGORIES,
   FARMER_PROFILE_DELIVERY_OPTIONS,
@@ -6,9 +14,6 @@ import {
   FARMER_PROFILE_PRODUCT_SUGGESTIONS,
   toggleArrayItem,
   type FarmerDashboardProfile,
-  type FarmerProfileCategory,
-  type FarmerProfileDeliveryOption,
-  type FarmerProfilePaymentMethod,
 } from "../../../utils/farmerProfileStorage";
 import { Input } from "../../ui/input";
 import { Label } from "../../ui/label";
@@ -22,25 +27,24 @@ interface BusinessDetailsCardProps {
 }
 
 export function BusinessDetailsCard({ profile, isEditing, onChange }: BusinessDetailsCardProps) {
+  const { t, language } = useLanguage();
+
   return (
     <ProfileCard>
-      <ProfileCardHeader icon={Briefcase} title="Business Details" />
+      <ProfileCardHeader icon={Briefcase} title={t("farmerDashboardProfile.sections.businessDetails")} />
       <ProfileCardBody className="agrivo-profile-card-body--stacked">
         <div>
-          <Label>Main Product Categories</Label>
+          <Label>{t("farmerDashboardProfile.fields.mainProductCategories")}</Label>
           {isEditing ? (
             <div className="agrivo-profile-chip-group mt-2">
               {FARMER_PROFILE_CATEGORIES.map((category) => (
                 <ChipToggle
                   key={category}
-                  label={category}
+                  label={getLocalizedCategory(category, language, t)}
                   selected={profile.mainCategories.includes(category)}
                   onClick={() =>
                     onChange({
-                      mainCategories: toggleArrayItem(
-                        profile.mainCategories,
-                        category as FarmerProfileCategory,
-                      ),
+                      mainCategories: toggleArrayItem(profile.mainCategories, category),
                     })
                   }
                 />
@@ -51,25 +55,27 @@ export function BusinessDetailsCard({ profile, isEditing, onChange }: BusinessDe
               {profile.mainCategories.length > 0 ? (
                 profile.mainCategories.map((category) => (
                   <span key={category} className="agrivo-farmer-dash-preview-chip">
-                    {category}
+                    {getLocalizedCategory(category, language, t)}
                   </span>
                 ))
               ) : (
-                <p className="text-sm text-[#6b7a70]">Add main categories</p>
+                <p className="text-sm text-[#6b7a70]">
+                  {t("farmerDashboardProfile.placeholders.mainCategories")}
+                </p>
               )}
             </div>
           )}
         </div>
 
         <div>
-          <Label>Main Products</Label>
+          <Label>{t("farmerDashboardProfile.fields.mainProducts")}</Label>
           {isEditing ? (
             <>
               <div className="agrivo-profile-chip-group mt-2">
                 {FARMER_PROFILE_PRODUCT_SUGGESTIONS.map((product) => (
                   <ChipToggle
                     key={product}
-                    label={product}
+                    label={getLocalizedProduct(product, language, t)}
                     selected={profile.mainProducts.includes(product)}
                     onClick={() =>
                       onChange({
@@ -89,7 +95,9 @@ export function BusinessDetailsCard({ profile, isEditing, onChange }: BusinessDe
                       .filter(Boolean),
                   })
                 }
-                placeholder="Tomatoes, Apples, Watermelon"
+                placeholder={FARMER_PROFILE_PRODUCT_SUGGESTIONS.map((product) =>
+                  getLocalizedProduct(product, language, t),
+                ).join(", ")}
                 className="mt-2 h-11 rounded-xl border-[#DEECE0] bg-[#F7FBF5] text-sm text-[#102018]"
               />
             </>
@@ -98,11 +106,13 @@ export function BusinessDetailsCard({ profile, isEditing, onChange }: BusinessDe
               {profile.mainProducts.length > 0 ? (
                 profile.mainProducts.map((product) => (
                   <span key={product} className="agrivo-farmer-dash-preview-chip">
-                    {product}
+                    {getLocalizedProduct(product, language, t)}
                   </span>
                 ))
               ) : (
-                <p className="text-sm text-[#6b7a70]">Add main products</p>
+                <p className="text-sm text-[#6b7a70]">
+                  {t("farmerDashboardProfile.placeholders.mainProducts")}
+                </p>
               )}
             </div>
           )}
@@ -110,7 +120,7 @@ export function BusinessDetailsCard({ profile, isEditing, onChange }: BusinessDe
 
         <div className="agrivo-profile-form-grid">
           <div>
-            <Label htmlFor="farm-size">Farm Size</Label>
+            <Label htmlFor="farm-size">{t("farmerDashboardProfile.fields.farmSize")}</Label>
             {isEditing ? (
               <Input
                 id="farm-size"
@@ -121,13 +131,15 @@ export function BusinessDetailsCard({ profile, isEditing, onChange }: BusinessDe
               />
             ) : (
               <p className="mt-1.5 text-sm font-medium text-[#102018]">
-                {profile.farmSize || "Add farm size"}
+                {profile.farmSize
+                  ? translateLocalizedFarmSize(t, profile.farmSize)
+                  : t("farmerDashboardProfile.placeholders.farmSize")}
               </p>
             )}
           </div>
 
           <div>
-            <Label htmlFor="minimum-order">Minimum Order Quantity</Label>
+            <Label htmlFor="minimum-order">{t("farmerDashboardProfile.fields.minimumOrderQuantity")}</Label>
             {isEditing ? (
               <Input
                 id="minimum-order"
@@ -138,27 +150,24 @@ export function BusinessDetailsCard({ profile, isEditing, onChange }: BusinessDe
               />
             ) : (
               <p className="mt-1.5 text-sm font-medium text-[#102018]">
-                {profile.minimumOrder || "Add minimum order"}
+                {profile.minimumOrder || t("farmerDashboardProfile.placeholders.minimumOrder")}
               </p>
             )}
           </div>
         </div>
 
         <div>
-          <Label>Delivery Options</Label>
+          <Label>{t("farmerDashboardProfile.fields.deliveryOptions")}</Label>
           {isEditing ? (
             <div className="agrivo-profile-chip-group mt-2">
               {FARMER_PROFILE_DELIVERY_OPTIONS.map((option) => (
                 <ChipToggle
                   key={option}
-                  label={option}
+                  label={getLocalizedDeliveryOption(option, t)}
                   selected={profile.deliveryOptions.includes(option)}
                   onClick={() =>
                     onChange({
-                      deliveryOptions: toggleArrayItem(
-                        profile.deliveryOptions,
-                        option as FarmerProfileDeliveryOption,
-                      ),
+                      deliveryOptions: toggleArrayItem(profile.deliveryOptions, option),
                     })
                   }
                 />
@@ -169,31 +178,30 @@ export function BusinessDetailsCard({ profile, isEditing, onChange }: BusinessDe
               {profile.deliveryOptions.length > 0 ? (
                 profile.deliveryOptions.map((option) => (
                   <span key={option} className="agrivo-farmer-dash-preview-chip">
-                    {option}
+                    {getLocalizedDeliveryOption(option, t)}
                   </span>
                 ))
               ) : (
-                <p className="text-sm text-[#6b7a70]">No delivery option selected</p>
+                <p className="text-sm text-[#6b7a70]">
+                  {t("farmerDashboardProfile.placeholders.deliveryOptions")}
+                </p>
               )}
             </div>
           )}
         </div>
 
         <div>
-          <Label>Payment Methods</Label>
+          <Label>{t("farmerDashboardProfile.fields.paymentMethods")}</Label>
           {isEditing ? (
             <div className="agrivo-profile-chip-group mt-2">
               {FARMER_PROFILE_PAYMENT_METHODS.map((method) => (
                 <ChipToggle
                   key={method}
-                  label={method}
+                  label={getLocalizedPaymentMethod(method, t)}
                   selected={profile.paymentMethods.includes(method)}
                   onClick={() =>
                     onChange({
-                      paymentMethods: toggleArrayItem(
-                        profile.paymentMethods,
-                        method as FarmerProfilePaymentMethod,
-                      ),
+                      paymentMethods: toggleArrayItem(profile.paymentMethods, method),
                     })
                   }
                 />
@@ -204,11 +212,13 @@ export function BusinessDetailsCard({ profile, isEditing, onChange }: BusinessDe
               {profile.paymentMethods.length > 0 ? (
                 profile.paymentMethods.map((method) => (
                   <span key={method} className="agrivo-farmer-dash-preview-chip">
-                    {method}
+                    {getLocalizedPaymentMethod(method, t)}
                   </span>
                 ))
               ) : (
-                <p className="text-sm text-[#6b7a70]">Add payment methods</p>
+                <p className="text-sm text-[#6b7a70]">
+                  {t("farmerDashboardProfile.placeholders.paymentMethods")}
+                </p>
               )}
             </div>
           )}

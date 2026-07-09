@@ -1,4 +1,5 @@
 import { MapPin, MessageCircle } from "lucide-react";
+import { useLanguage } from "../../i18n/LanguageContext";
 import { cn } from "./ui/utils";
 import { ProductImage } from "./products/ProductImage";
 import { ProductSaveButton } from "./products/ProductSaveButton";
@@ -27,9 +28,11 @@ interface FeaturedProductCardProps {
 }
 
 export function FeaturedProductCard({ product, onViewDetails, onContactSeller }: FeaturedProductCardProps) {
+  const { t } = useLanguage();
+
   const topBadge =
     product.badge ??
-    product.tags.find((tag) => tag !== "Verified farmer") ??
+    product.tags.find((tag) => tag !== t("landing.tags.verifiedFarmer")) ??
     product.tags[0];
 
   const detailTags = product.tags.filter((tag) => tag !== topBadge).slice(0, 2);
@@ -78,11 +81,11 @@ export function FeaturedProductCard({ product, onViewDetails, onContactSeller }:
 
         <div className="agrivo-harvest-card-meta mt-3 grid grid-cols-2 gap-x-3">
           <div>
-            <p className="agrivo-harvest-card-meta-label">Quantity</p>
+            <p className="agrivo-harvest-card-meta-label">{t("landing.products.quantity")}</p>
             <p className="agrivo-harvest-card-meta-value">{product.quantity}</p>
           </div>
           <div>
-            <p className="agrivo-harvest-card-meta-label">Harvested</p>
+            <p className="agrivo-harvest-card-meta-label">{t("landing.products.harvested")}</p>
             <p className="agrivo-harvest-card-meta-value">{product.harvestDate}</p>
           </div>
         </div>
@@ -107,14 +110,14 @@ export function FeaturedProductCard({ product, onViewDetails, onContactSeller }:
             className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--secondary h-11 rounded-full text-sm font-semibold"
             onClick={onViewDetails}
           >
-            View details
+            {t("landing.products.viewDetails")}
           </Button>
           <Button
             className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--primary h-11 rounded-full bg-[#14532d] text-sm font-semibold text-white hover:bg-[#1b6b3f]"
             onClick={onContactSeller}
           >
             <MessageCircle className="h-4 w-4 shrink-0" />
-            <span className="truncate">Contact seller</span>
+            <span className="truncate">{t("landing.products.contactSeller")}</span>
           </Button>
         </div>
       </CardContent>

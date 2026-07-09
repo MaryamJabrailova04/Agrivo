@@ -1,7 +1,6 @@
-import {
-  ASSIGNED_STATUS_LABELS,
-  type AssignedDeliveryStatus,
-} from "../../../utils/assignedDeliveriesStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateAssignedStatus } from "../../../../i18n/assignedDeliveriesHelpers";
+import { type AssignedDeliveryStatus } from "../../../utils/assignedDeliveriesStorage";
 import { cn } from "../../ui/utils";
 
 const STATUS_TONES: Record<AssignedDeliveryStatus, string> = {
@@ -21,9 +20,11 @@ export function DeliveryStatusBadge({
   status: AssignedDeliveryStatus;
   className?: string;
 }) {
+  const { t } = useLanguage();
+
   return (
     <span className={cn("agrivo-assigned-status", STATUS_TONES[status], className)}>
-      {ASSIGNED_STATUS_LABELS[status]}
+      {translateAssignedStatus(t, status)}
     </span>
   );
 }

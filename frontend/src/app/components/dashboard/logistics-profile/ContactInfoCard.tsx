@@ -3,6 +3,11 @@ import {
   LOGISTICS_PREFERRED_CONTACT_OPTIONS,
   type LogisticsDashboardProfile,
 } from "../../../utils/logisticsProfileStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  translatePreferredContact,
+  translateValidationError,
+} from "../../../../i18n/logisticsProfileHelpers";
 import { Input } from "../../ui/input";
 import {
   Select,
@@ -29,16 +34,18 @@ export function ContactInfoCard({
   errors: Record<string, string>;
   onChange: (updates: Partial<LogisticsDashboardProfile>) => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <ProfileCard>
-      <ProfileCardHeader icon={Phone} title="Contact Information" />
+      <ProfileCardHeader icon={Phone} title={t("logisticsProfile.sections.contactInformation")} />
       <ProfileCardBody className="agrivo-profile-info-card-body">
         <ProfileInfoGrid>
           <ProfileInfoField
-            label="Phone Number"
+            label={t("logisticsProfile.fields.phoneNumber")}
             emphasized
             isEditing={isEditing}
-            error={errors.phone}
+            error={errors.phone ? translateValidationError(t, errors.phone) : undefined}
             edit={
               <Input
                 id="logistics-phone"
@@ -48,13 +55,13 @@ export function ContactInfoCard({
               />
             }
           >
-            {profile.phone || "Add phone number"}
+            {profile.phone || t("logisticsProfile.placeholders.phoneNumber")}
           </ProfileInfoField>
 
           <ProfileInfoField
-            label="Email Address"
+            label={t("logisticsProfile.fields.emailAddress")}
             isEditing={isEditing}
-            error={errors.email}
+            error={errors.email ? translateValidationError(t, errors.email) : undefined}
             edit={
               <Input
                 id="logistics-email"
@@ -65,11 +72,11 @@ export function ContactInfoCard({
               />
             }
           >
-            {profile.email || "Add email address"}
+            {profile.email || t("logisticsProfile.placeholders.emailAddress")}
           </ProfileInfoField>
 
           <ProfileInfoField
-            label="WhatsApp Number"
+            label={t("logisticsProfile.fields.whatsappNumber")}
             isEditing={isEditing}
             edit={
               <Input
@@ -80,11 +87,11 @@ export function ContactInfoCard({
               />
             }
           >
-            {profile.whatsapp || "Add WhatsApp number"}
+            {profile.whatsapp || t("logisticsProfile.placeholders.whatsappNumber")}
           </ProfileInfoField>
 
           <ProfileInfoField
-            label="Emergency Contact Number"
+            label={t("logisticsProfile.fields.emergencyContactNumber")}
             isEditing={isEditing}
             edit={
               <Input
@@ -95,11 +102,11 @@ export function ContactInfoCard({
               />
             }
           >
-            {profile.emergencyContact || "Add emergency contact"}
+            {profile.emergencyContact || t("logisticsProfile.placeholders.emergencyContact")}
           </ProfileInfoField>
 
           <ProfileInfoField
-            label="Preferred Contact Method"
+            label={t("logisticsProfile.fields.preferredContactMethod")}
             fullWidth
             isEditing={isEditing}
             edit={
@@ -117,14 +124,14 @@ export function ContactInfoCard({
                 <SelectContent>
                   {LOGISTICS_PREFERRED_CONTACT_OPTIONS.map((option) => (
                     <SelectItem key={option} value={option}>
-                      {option}
+                      {translatePreferredContact(t, option)}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             }
           >
-            {profile.preferredContactMethod}
+            {translatePreferredContact(t, profile.preferredContactMethod)}
           </ProfileInfoField>
         </ProfileInfoGrid>
       </ProfileCardBody>

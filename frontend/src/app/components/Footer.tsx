@@ -1,4 +1,5 @@
 import { MessageCircle, Phone, Mail, MapPin, Facebook, Twitter, Instagram } from "lucide-react";
+import { navigateToHash } from "../../i18n/localizedRoutes";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 
@@ -35,11 +36,11 @@ export default function Footer() {
           <div className="space-y-4">
             <h3 className="font-semibold text-green-400">For Buyers</h3>
             <ul className="space-y-2 text-gray-300">
-              <li><button onClick={() => window.location.hash = 'products'} className="hover:text-green-400 transition-colors text-left">Browse Products</button></li>
-              <li><button onClick={() => window.location.hash = 'farmers'} className="hover:text-green-400 transition-colors text-left">Find Farmers</button></li>
-              <li><button onClick={() => window.location.hash = 'bulk-orders'} className="hover:text-green-400 transition-colors text-left">Bulk Orders</button></li>
+              <li><button onClick={() => navigateToHash('products')} className="hover:text-green-400 transition-colors text-left">Browse Products</button></li>
+              <li><button onClick={() => navigateToHash('farmers')} className="hover:text-green-400 transition-colors text-left">Find Farmers</button></li>
+              <li><button onClick={() => navigateToHash('bulk-orders')} className="hover:text-green-400 transition-colors text-left">Bulk Orders</button></li>
               <li><a href="#" className="hover:text-green-400 transition-colors">Track Orders</a></li>
-              <li><button onClick={() => window.location.hash = 'login'} className="hover:text-green-400 transition-colors text-left">My Account</button></li>
+              <li><button onClick={() => navigateToHash('login')} className="hover:text-green-400 transition-colors text-left">My Account</button></li>
             </ul>
           </div>
 
@@ -47,8 +48,8 @@ export default function Footer() {
           <div className="space-y-4">
             <h3 className="font-semibold text-green-400">For Farmers</h3>
             <ul className="space-y-2 text-gray-300">
-              <li><button onClick={() => window.location.hash = 'login'} className="hover:text-green-400 transition-colors text-left">Join as Farmer</button></li>
-              <li><button onClick={() => window.location.hash = 'login'} className="hover:text-green-400 transition-colors text-left">Farmer Dashboard</button></li>
+              <li><button onClick={() => navigateToHash('login')} className="hover:text-green-400 transition-colors text-left">Join as Farmer</button></li>
+              <li><button onClick={() => navigateToHash('login')} className="hover:text-green-400 transition-colors text-left">Farmer Dashboard</button></li>
               <li><a href="#" className="hover:text-green-400 transition-colors">List Products</a></li>
               <li><a href="#" className="hover:text-green-400 transition-colors">Success Stories</a></li>
               <li><a href="#" className="hover:text-green-400 transition-colors">Farming Tips</a></li>

@@ -2,6 +2,7 @@ import { ArrowLeft, CheckCircle2 } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { getFarmerSectionHash } from "../../data/farmerDashboard";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   getFarmerProductById,
   mapFarmerCategoryToForm,
@@ -15,7 +16,7 @@ import { PageHeader } from "./PageHeader";
 import { ProductForm, type ProductFormSubmitPayload, type ProductFormValues } from "./farmer-product-form/ProductForm";
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 function productToFormValues(product: NonNullable<ReturnType<typeof getFarmerProductById>>): ProductFormValues {

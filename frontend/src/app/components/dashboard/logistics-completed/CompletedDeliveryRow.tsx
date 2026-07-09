@@ -1,8 +1,9 @@
 import {
   formatCompletedQuantity,
-  formatCompletedTime,
   type CompletedDelivery,
 } from "../../../utils/completedDeliveriesStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateCompletedTime } from "../../../../i18n/completedDeliveriesHelpers";
 import { DeliveryActionsCell } from "./DeliveryActionsCell";
 import { ProductCell } from "./ProductCell";
 import { RouteCell } from "./RouteCell";
@@ -17,6 +18,8 @@ export function CompletedDeliveryRow({
   onView: (delivery: CompletedDelivery) => void;
   onDownloadReceipt?: (delivery: CompletedDelivery) => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <tr className="agrivo-completed-table__row">
       <td className="agrivo-completed-table__cell agrivo-completed-table__cell--id">
@@ -36,7 +39,7 @@ export function CompletedDeliveryRow({
       </td>
       <td className="agrivo-completed-table__cell agrivo-completed-table__cell--completed">
         <span className="agrivo-completed-table__completed-time">
-          {formatCompletedTime(delivery.completedAt)}
+          {translateCompletedTime(t, delivery.completedAt)}
         </span>
       </td>
       <td className="agrivo-completed-table__cell agrivo-completed-table__cell--status">

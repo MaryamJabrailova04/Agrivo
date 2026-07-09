@@ -1,3 +1,9 @@
+import { navigateToHash } from "../../../i18n/localizedRoutes";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import {
+  translateInTransitAction,
+  translateInTransitStatus,
+} from "../../../i18n/inTransitHelpers";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -16,8 +22,6 @@ import {
   getInTransitDrivers,
   getInTransitRegions,
   getLogisticsSectionHash,
-  getTransitActionLabel,
-  IN_TRANSIT_STATUS_LABELS,
   resolveInTransitUserId,
   seedTransitDrivers,
   seedTransitEtaAlerts,
@@ -40,10 +44,11 @@ import { TransitDetailsModal } from "./logistics-in-transit/TransitDetailsModal"
 import { TransitRouteModal } from "./logistics-in-transit/TransitRouteModal";
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 export function InTransitPage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const userId = resolveInTransitUserId(user);
 
@@ -75,6 +80,11 @@ export function InTransitPage() {
     setToast(message);
     window.setTimeout(() => setToast(null), 3200);
   }, []);
+
+  const handleRefresh = useCallback(() => {
+    refresh();
+    showToast(t("inTransitPage.feedback.locationsRefreshed"));
+  }, [refresh, showToast, t]);
 
   const activeDeliveries = useMemo(
     () => deliveries.filter((d) => d.status !== "delivered"),
@@ -108,16 +118,17 @@ export function InTransitPage() {
 
     if (action === "open_route") {
       setRouteDelivery(delivery);
+      showToast(t("inTransitPage.feedback.routeOpened"));
       return;
     }
 
     if (action === "contact_driver") {
-      showToast(`Calling ${delivery.driverName} at ${delivery.driverPhone}`);
+      showToast(t("inTransitPage.feedback.driverContacted"));
       return;
     }
 
     if (action === "notify_buyer") {
-      showToast(`Buyer ${delivery.buyerName} notified about ${delivery.taskId}.`);
+      showToast(t("inTransitPage.feedback.buyerNotified"));
       return;
     }
 
@@ -125,11 +136,25 @@ export function InTransitPage() {
     setDeliveries(next);
     const updated = next.find((d) => d.id === delivery.id);
 
-    showToast(
-      updated
-        ? `${delivery.taskId}: ${getTransitActionLabel(action)} — ${IN_TRANSIT_STATUS_LABELS[updated.status]}.`
-        : `${delivery.taskId}: ${getTransitActionLabel(action)} completed.`,
-    );
+    if (!updated) {
+      showToast(t("inTransitPage.feedback.couldNotUpdateShipment"));
+      return;
+    }
+    if (action === "mark_delivered") {
+      showToast(t("inTransitPage.feedback.markedAsDelivered"));
+    } else if (action === "confirm_arrival") {
+      showToast(t("inTransitPage.feedback.arrivalConfirmed"));
+    } else if (action === "report_issue") {
+      showToast(t("inTransitPage.feedback.issueReported"));
+    } else {
+      showToast(
+        t("inTransitPage.feedback.statusUpdatedWithTask", {
+          taskId: delivery.taskId,
+          action: translateInTransitAction(t, action),
+          status: translateInTransitStatus(t, updated.status),
+        }),
+      );
+    }
 
     if (detailDelivery?.id === delivery.id && updated) {
       setDetailDelivery(updated);
@@ -139,13 +164,13 @@ export function InTransitPage() {
   const handleViewIssue = (taskId: string) => {
     const match = deliveries.find((d) => d.taskId === taskId);
     if (match) setDetailDelivery(match);
-    else showToast(`Opening issue for ${taskId}.`);
+    else showToast(t("inTransitPage.feedback.issueOpened"));
   };
 
   const handleReportIssue = () => {
     const candidate = activeDeliveries.find((d) => !d.issue);
     if (!candidate || !userId) {
-      showToast("All active trips already have reported issues or none available.");
+      showToast(t("inTransitPage.feedback.noIssueCandidate"));
       return;
     }
     handleAction(candidate, "report_issue");
@@ -164,19 +189,21 @@ export function InTransitPage() {
 
       <div className="agrivo-transit-header">
         <div>
-          <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">In Transit</h2>
+          <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
+            {t("inTransitPage.title")}
+          </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            Track active deliveries, monitor ETA, and manage shipments currently on the road.
+            {t("inTransitPage.subtitle")}
           </p>
         </div>
         <div className="agrivo-transit-header__actions">
           <Button
             variant="outline"
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
-            onClick={refresh}
+            onClick={handleRefresh}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
-            Refresh Locations
+            {t("inTransitPage.actions.refreshLocations")}
           </Button>
           <Button
             variant="outline"
@@ -184,14 +211,14 @@ export function InTransitPage() {
             onClick={() => setShowLiveMap(true)}
           >
             <Map className="mr-2 h-4 w-4" />
-            View Live Map
+            {t("inTransitPage.actions.viewLiveMap")}
           </Button>
           <Button
             className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
             onClick={handleReportIssue}
           >
             <AlertTriangle className="mr-2 h-4 w-4" />
-            Report Issue
+            {t("inTransitPage.actions.reportIssue")}
           </Button>
         </div>
       </div>
@@ -229,23 +256,23 @@ export function InTransitPage() {
             </div>
           ) : activeDeliveries.length > 0 ? (
             <div className="agrivo-dashboard-panel agrivo-transit-empty-filter">
-              <p className="text-sm text-[#5F6F64]">No in-transit deliveries match your filters.</p>
+              <p className="text-sm text-[#5F6F64]">{t("inTransitPage.empty.noMatch")}</p>
             </div>
           ) : (
             <div className="agrivo-dashboard-panel">
               <div className="agrivo-dashboard-empty agrivo-transit-empty">
                 <Truck className="h-10 w-10 text-[#86efac]" strokeWidth={1.5} />
                 <h3 className="agrivo-heading mt-4 text-lg font-bold text-[#102018]">
-                  No deliveries in transit
+                  {t("inTransitPage.empty.noneTitle")}
                 </h3>
                 <p className="mt-2 max-w-md text-sm leading-6 text-[#5F6F64]">
-                  Collected deliveries will appear here once drivers start moving toward buyers.
+                  {t("inTransitPage.empty.noneDescription")}
                 </p>
                 <Button
                   className="mt-5 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
                   onClick={() => navigate(getLogisticsSectionHash("pickup"))}
                 >
-                  View Pickup Tasks
+                  {t("inTransitPage.actions.viewPickupTasks")}
                 </Button>
               </div>
             </div>

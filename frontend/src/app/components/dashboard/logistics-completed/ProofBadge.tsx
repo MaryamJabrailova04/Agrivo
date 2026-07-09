@@ -1,7 +1,6 @@
-import {
-  PROOF_STATUS_LABELS,
-  type ProofStatus,
-} from "../../../utils/completedDeliveriesStorage";
+import type { ProofStatus } from "../../../utils/completedDeliveriesStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateProofStatus } from "../../../../i18n/completedDeliveriesHelpers";
 import { cn } from "../../ui/utils";
 
 const PROOF_TONES: Record<ProofStatus, string> = {
@@ -18,9 +17,11 @@ export function ProofBadge({
   proofStatus: ProofStatus;
   className?: string;
 }) {
+  const { t } = useLanguage();
+
   return (
     <span className={cn("agrivo-completed-proof", PROOF_TONES[proofStatus], className)}>
-      {PROOF_STATUS_LABELS[proofStatus]}
+      {translateProofStatus(t, proofStatus)}
     </span>
   );
 }

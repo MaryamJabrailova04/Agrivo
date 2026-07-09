@@ -1,6 +1,8 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --font-sans: "Manrope", "Inter", Arial, sans-serif;
+  --font-heading: "Manrope", "Inter", Arial, sans-serif;
   --font-size: 16px;
   --background: #ffffff;
   --foreground: oklch(0.145 0 0);
@@ -125,6 +127,7 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --font-sans: "Manrope", "Inter", Arial, sans-serif;
 }
 
 @layer base {
@@ -132,26 +135,54 @@
     @apply border-border outline-ring/50;
   }
 
+  html,
+  body,
+  button,
+  input,
+  textarea,
+  select {
+    font-family: var(--font-sans);
+  }
+
   body {
     @apply bg-background text-foreground;
-    font-family: "Inter", "Segoe UI", sans-serif;
+    letter-spacing: -0.01em;
   }
-}
 
-@layer base {
-  :where(:not(:has([class*=" text-"]), :not(:has([class^="text-"])))) {
-    h1, h2, h3, h4 {
-      font-family: "Sora", "Inter", sans-serif;
-      font-weight: 700;
-      line-height: 1.2;
-    }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+  }
 
-    p,
-    label,
-    button,
-    input {
-      font-family: "Inter", "Segoe UI", sans-serif;
-      line-height: 1.5;
+  p,
+  span,
+  label,
+  input,
+  button,
+  select,
+  textarea {
+    font-family: var(--font-sans);
+  }
+
+  button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"] {
+    line-height: 1.2;
+  }
+
+  @media (min-width: 640px) {
+    button:not(.agrivo-btn-wrap):not([class*="w-full"]),
+    input[type="button"]:not(.agrivo-btn-wrap):not([class*="w-full"]),
+    input[type="submit"]:not(.agrivo-btn-wrap):not([class*="w-full"]) {
+      white-space: nowrap;
+      min-width: fit-content;
     }
   }
 }
@@ -160,6 +191,9 @@ html {
   font-size: var(--font-size);
   scroll-behavior: smooth;
   overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
@@ -286,6 +320,61 @@ video {
   .agrivo-header-inner {
     height: 84px;
     gap: 1.5rem;
+  }
+}
+
+.agrivo-lang-switcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  border-radius: 9999px;
+  border: 1px solid #dbe7d4;
+  background: #fff;
+}
+
+.agrivo-lang-switcher--compact {
+  padding: 0.15rem;
+}
+
+.agrivo-lang-switcher__icon {
+  width: 0.9rem;
+  height: 0.9rem;
+  margin-left: 0.45rem;
+  color: #5f6f64;
+}
+
+.agrivo-lang-switcher__btn {
+  min-width: 2rem;
+  padding: 0.3rem 0.55rem;
+  border: 0;
+  border-radius: 9999px;
+  background: transparent;
+  color: #5f6f64;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.agrivo-lang-switcher__btn--active {
+  background: #eaf7ec;
+  color: #14532d;
+}
+
+.agrivo-lang-switcher__btn:hover {
+  color: #14532d;
+}
+
+.agrivo-dashboard-lang-switcher {
+  margin-left: auto;
+}
+
+@media (min-width: 1024px) {
+  .agrivo-dashboard-lang-switcher {
+    display: none;
   }
 }
 
@@ -2244,7 +2333,12 @@ video {
 }
 
 .agrivo-harvest-card-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
   flex-shrink: 0;
+  width: 100%;
 }
 
 .agrivo-harvest-card-btn {
@@ -2253,6 +2347,18 @@ video {
   justify-content: center;
   gap: 0.375rem;
   white-space: nowrap;
+  min-height: 2.75rem;
+  text-align: center;
+}
+
+.agrivo-harvest-card-btn--details {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.agrivo-harvest-card-btn--cart {
+  flex: 1.25 1 9.375rem;
+  min-width: 9.375rem;
 }
 
 .agrivo-harvest-card-btn--secondary {
@@ -2272,6 +2378,21 @@ video {
 
 .agrivo-harvest-card-btn--primary:hover {
   background: #1b6b3f;
+}
+
+@media (max-width: 480px) {
+  .agrivo-harvest-card-footer {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.625rem;
+  }
+
+  .agrivo-harvest-card-btn--details,
+  .agrivo-harvest-card-btn--cart {
+    width: 100%;
+    min-width: 100%;
+    flex: 1 1 100%;
+  }
 }
 
 .agrivo-harvest-map-tooltip {
@@ -2804,8 +2925,8 @@ video {
 }
 
 .agrivo-heading {
-  font-family: "Sora", "Inter", sans-serif;
-  letter-spacing: -0.04em;
+  font-family: var(--font-heading);
+  letter-spacing: -0.035em;
 }
 
 .agrivo-reveal {
@@ -5505,7 +5626,7 @@ video {
 }
 
 .agrivo-buyer-cart-item-name {
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.0625rem;
   font-weight: 700;
   color: #102018;
@@ -5548,7 +5669,7 @@ video {
 
 .agrivo-buyer-cart-item-subtotal-value {
   margin-top: 0.125rem;
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 800;
   color: #14532d;
@@ -5746,7 +5867,7 @@ video {
 }
 
 .agrivo-buyer-cart-summary-title {
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.125rem;
   font-weight: 800;
   color: #102018;
@@ -5788,7 +5909,7 @@ video {
 }
 
 .agrivo-buyer-cart-summary-row--total dd {
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.375rem;
   font-weight: 800;
   color: #14532d;
@@ -5887,7 +6008,7 @@ video {
 
 .agrivo-buyer-cart-empty-title {
   margin-top: 1rem;
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.375rem;
   font-weight: 800;
   color: #102018;
@@ -5965,7 +6086,7 @@ video {
 
 .agrivo-bulk-summary-card-value {
   margin-top: 0.25rem;
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.75rem;
   font-weight: 800;
   color: #102018;
@@ -5973,7 +6094,7 @@ video {
 }
 
 .agrivo-bulk-form-title {
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 800;
   color: #102018;
@@ -6076,7 +6197,7 @@ video {
 }
 
 .agrivo-bulk-orders-section-title {
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 800;
   color: #102018;
@@ -6118,7 +6239,7 @@ video {
 }
 
 .agrivo-bulk-order-card-title {
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.0625rem;
   font-weight: 800;
   color: #102018;
@@ -6215,7 +6336,7 @@ video {
 
 .agrivo-bulk-empty-title {
   margin-top: 1rem;
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.25rem;
   font-weight: 800;
   color: #102018;
@@ -6366,14 +6487,14 @@ video {
   justify-content: center;
   background: linear-gradient(135deg, #ecfdf5, #d1fae5);
   border: 2px solid #bbf7d0;
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: 800;
   color: #14532d;
 }
 
 .agrivo-profile-overview-name {
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: 800;
   color: #102018;
@@ -6466,7 +6587,7 @@ video {
 
 .agrivo-profile-stat-value {
   margin-top: 0.25rem;
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.5rem;
   font-weight: 800;
   color: #102018;
@@ -6500,7 +6621,7 @@ video {
 }
 
 .agrivo-profile-section-title {
-  font-family: var(--font-heading, "Sora", sans-serif);
+  font-family: var(--font-heading);
   font-size: 1.0625rem;
   font-weight: 800;
   color: #102018;
@@ -7732,6 +7853,7 @@ video {
   margin-top: 1rem;
   height: 15rem;
   overflow: hidden;
+  isolation: isolate;
   border-radius: 1.25rem;
   border: 1px solid #e5efe1;
   background: #f0fdf4;
@@ -7755,6 +7877,13 @@ video {
   height: 100vh;
   border-radius: 0;
   border: none;
+}
+
+.agrivo-route-map-container {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
 }
 
 .agrivo-route-map {
@@ -7795,7 +7924,7 @@ video {
   position: absolute;
   top: 0.625rem;
   right: 0.625rem;
-  z-index: 500;
+  z-index: 10;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -7847,11 +7976,12 @@ video {
   }
 }
 
-.agrivo-route-map-live-label {
+.agrivo-route-map-mock-badge {
   position: absolute;
-  left: 0.625rem;
-  bottom: 0.625rem;
-  z-index: 500;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 5;
+  pointer-events: none;
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;

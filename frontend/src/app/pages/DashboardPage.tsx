@@ -1,4 +1,5 @@
 import { ShoppingCart, Package, MessageCircle, TrendingUp, Users, Star } from "lucide-react";
+import { navigateToHash } from "../../i18n/localizedRoutes";
 import { Button } from "../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
@@ -136,7 +137,7 @@ export default function DashboardPage() {
             <Button 
               variant="outline" 
               className="w-full"
-              onClick={() => window.location.hash = 'farmers'}
+              onClick={() => navigateToHash('farmers')}
             >
               Discover More Farmers
             </Button>
@@ -154,7 +155,7 @@ export default function DashboardPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <Button 
                 className="bg-green-600 hover:bg-green-700 text-white h-auto p-4"
-                onClick={() => window.location.hash = 'products'}
+                onClick={() => navigateToHash('products')}
               >
                 <div className="text-center">
                   <ShoppingCart className="w-8 h-8 mx-auto mb-2" />
@@ -166,7 +167,7 @@ export default function DashboardPage() {
               <Button 
                 variant="outline" 
                 className="h-auto p-4"
-                onClick={() => window.location.hash = 'bulk-orders'}
+                onClick={() => navigateToHash('bulk-orders')}
               >
                 <div className="text-center">
                   <Package className="w-8 h-8 mx-auto mb-2" />
@@ -178,7 +179,7 @@ export default function DashboardPage() {
               <Button 
                 variant="outline" 
                 className="h-auto p-4"
-                onClick={() => window.location.hash = 'farmers'}
+                onClick={() => navigateToHash('farmers')}
               >
                 <div className="text-center">
                   <Users className="w-8 h-8 mx-auto mb-2" />

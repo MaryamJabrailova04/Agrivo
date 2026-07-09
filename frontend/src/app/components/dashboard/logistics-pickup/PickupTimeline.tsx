@@ -1,6 +1,7 @@
 import { CheckCircle2, Circle } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translatePickupStatus } from "../../../../i18n/pickupTasksHelpers";
 import {
-  PICKUP_STATUS_LABELS,
   PICKUP_TIMELINE_STEPS,
   getPickupTimelineIndex,
   type PickupTaskStatus,
@@ -8,14 +9,17 @@ import {
 import { cn } from "../../ui/utils";
 
 export function PickupTimeline({ status }: { status: PickupTaskStatus }) {
+  const { t } = useLanguage();
   const currentIndex = getPickupTimelineIndex(status);
   const isCancelled = status === "cancelled";
   const isDelayed = status === "delayed";
 
   const steps = [...PICKUP_TIMELINE_STEPS, "in_transit" as const];
   const stepLabels = [
-    ...PICKUP_TIMELINE_STEPS.map((step) => PICKUP_STATUS_LABELS[step]),
-    "Moved to In Transit",
+    ...PICKUP_TIMELINE_STEPS.map((step) =>
+      step === "collected" ? t("pickupTasks.timeline.collected") : translatePickupStatus(t, step),
+    ),
+    t("pickupTasks.timeline.movedToInTransit"),
   ];
 
   return (
@@ -47,7 +51,11 @@ export function PickupTimeline({ status }: { status: PickupTaskStatus }) {
             <div className="agrivo-assigned-timeline__content">
               <p className="agrivo-assigned-timeline__label">{stepLabels[index]}</p>
               <p className="agrivo-assigned-timeline__meta">
-                {isCurrent ? "Current stage" : isComplete ? "Completed" : "Upcoming"}
+                {isCurrent
+                  ? t("pickupTasks.timeline.currentStage")
+                  : isComplete
+                    ? t("pickupTasks.timeline.completed")
+                    : t("pickupTasks.timeline.upcoming")}
               </p>
             </div>
           </li>

@@ -1,7 +1,6 @@
-import {
-  FARMER_ORDER_STATUS_LABELS,
-  type FarmerManagementOrderStatus,
-} from "../../../utils/farmerOrdersStorage";
+import type { FarmerManagementOrderStatus } from "../../../utils/farmerOrdersStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateFarmerOrderStatus } from "../../../../i18n/farmerOrderHelpers";
 import { cn } from "../../ui/utils";
 
 const STATUS_TONES: Record<FarmerManagementOrderStatus, string> = {
@@ -20,6 +19,8 @@ export function FarmerMgmtOrderStatusBadge({
   status: FarmerManagementOrderStatus;
   className?: string;
 }) {
+  const { t } = useLanguage();
+
   return (
     <span
       className={cn(
@@ -28,7 +29,7 @@ export function FarmerMgmtOrderStatusBadge({
         className,
       )}
     >
-      {FARMER_ORDER_STATUS_LABELS[status]}
+      {translateFarmerOrderStatus(t, status)}
     </span>
   );
 }

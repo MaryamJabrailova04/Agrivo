@@ -41,6 +41,14 @@ export interface AssignedDelivery {
   vehicle: string;
   region: string;
   notes: string;
+  productKey?: string;
+  sortKey?: string;
+  buyerTypeKey?: string;
+  pickupLocationLocalized?: { en: string; az: string };
+  dropoffLocationLocalized?: { en: string; az: string };
+  pickupAddressLocalized?: { en: string; az: string };
+  dropoffAddressLocalized?: { en: string; az: string };
+  notesLocalized?: { en: string; az: string };
 }
 
 export interface AssignedDeliverySummary {

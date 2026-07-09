@@ -1,6 +1,13 @@
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
 import { X } from "lucide-react";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
+import {
+  formatMapTooltipFarmers,
+  formatMapTooltipListings,
+  localizeHarvestListing,
+} from "../../../i18n/marketplaceHelpers";
 import azerbaijanDistricts from "../../data/azerbaijanDistricts.json";
 import type { EconomicRegion } from "../../data/azerbaijanRegions";
 import {
@@ -118,7 +125,7 @@ function RegionLabels({
             fill={STROKE_SELECTED}
             fontSize={fontSize}
             fontWeight={700}
-            fontFamily="Sora, system-ui, sans-serif"
+            fontFamily="Manrope, Inter, Arial, sans-serif"
             opacity={isActive ? 1 : 0.92}
           >
             {lines.map((line, index) => (
@@ -171,7 +178,7 @@ function DistrictLabels({
               fill={isActive ? STROKE_SELECTED : STROKE}
               fontSize={fontSize}
               fontWeight={isActive ? 700 : 600}
-              fontFamily="Sora, system-ui, sans-serif"
+              fontFamily="Manrope, Inter, Arial, sans-serif"
             >
               {label}
             </text>
@@ -222,6 +229,7 @@ export function HarvestMap({
   panelHoveredDistrict = null,
   onDistrictHover,
 }: HarvestMapProps) {
+  const { t } = useLanguage();
   const [hoveredRegion, setHoveredRegion] = useState<EconomicRegion | null>(null);
   const [hoveredDistrict, setHoveredDistrict] = useState<string | null>(null);
   const [focusedRegion, setFocusedRegion] = useState<EconomicRegion | null>(null);
@@ -299,6 +307,10 @@ export function HarvestMap({
   );
 
   const popupListing = selectedPin?.listing ?? null;
+  const displayPopupListing = useMemo(
+    () => (popupListing ? localizeHarvestListing(t, popupListing) : null),
+    [popupListing, t],
+  );
 
   useEffect(() => {
     if (selectedProductId && !selectedPin) {
@@ -401,13 +413,13 @@ export function HarvestMap({
     <div className="agrivo-harvest-map relative shrink-0 rounded-[28px] border border-[#DEECE0] bg-[#F7FBF5] p-5 shadow-[0_24px_60px_rgba(20,83,45,0.08)] sm:rounded-[32px]">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#15803d]">Harvest Map</p>
-          <h3 className="mt-1 text-lg font-bold text-[#102018] sm:text-xl">
-            Explore Fresh Produce by Region
-          </h3>
-          <p className="mt-1 text-sm text-[#5F6F64]">
-            Select an economic region to discover available fruits and vegetables.
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#15803d]">
+            {t("marketplace.map.eyebrow")}
           </p>
+          <h3 className="mt-1 text-lg font-bold text-[#102018] sm:text-xl">
+            {t("marketplace.map.title")}
+          </h3>
+          <p className="mt-1 text-sm text-[#5F6F64]">{t("marketplace.map.subtitle")}</p>
         </div>
         {selectedRegion !== "all" ? (
           <button
@@ -415,14 +427,15 @@ export function HarvestMap({
             onClick={handleBackToAllRegions}
             className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-semibold text-[#14532D] shadow-sm ring-1 ring-[#DEECE0] transition hover:bg-[#EAF7EC]"
           >
-            ← Back to all regions
+            {t("marketplace.map.backToAll")}
           </button>
         ) : null}
       </div>
 
       {selectedRegion !== "all" ? (
         <p className="agrivo-harvest-map-breadcrumb mb-2 text-xs font-medium text-[#5F6F64]">
-          Azerbaijan / <span className="text-[#14532D]">{selectedRegion}</span>
+          {t("marketplace.map.breadcrumbCountry")} /{" "}
+          <span className="text-[#14532D]">{selectedRegion}</span>
           {breadcrumbDistrict ? (
             <>
               {" "}
@@ -434,7 +447,7 @@ export function HarvestMap({
 
       {isDistrictView ? (
         <p className="agrivo-harvest-map-hint mb-3 text-[11px] text-[#7a8b80]">
-          Hover a district to view details. Click to select.
+          {t("marketplace.map.districtHint")}
         </p>
       ) : null}
 
@@ -446,7 +459,7 @@ export function HarvestMap({
           viewBox={viewBox}
           className="agrivo-harvest-map-svg mx-auto block w-full"
           role="img"
-          aria-label="Interactive harvest map of Azerbaijan"
+          aria-label={t("marketplace.map.ariaLabel")}
           preserveAspectRatio="xMidYMid meet"
           animate={{ viewBox }}
           transition={{ duration: 0.55, ease: EASE }}
@@ -584,10 +597,10 @@ export function HarvestMap({
             >
               <p className="text-sm font-bold text-[#14532D]">{tooltipRegion}</p>
               <p className="mt-1 text-xs text-[#5F6F64]">
-                {regionStats[tooltipRegion]?.listingCount ?? 0} fresh produce listings
+                {formatMapTooltipListings(t, regionStats[tooltipRegion]?.listingCount ?? 0)}
               </p>
               <p className="text-xs text-[#5F6F64]">
-                {regionStats[tooltipRegion]?.farmerCount ?? 0} verified farmers
+                {formatMapTooltipFarmers(t, regionStats[tooltipRegion]?.farmerCount ?? 0)}
               </p>
             </motion.div>
           )}
@@ -604,10 +617,10 @@ export function HarvestMap({
             >
               <p className="text-sm font-bold text-[#14532D]">{geoDistrictShortLabel(tooltipDistrict)}</p>
               <p className="mt-1 text-xs text-[#5F6F64]">
-                {districtTooltipStats.listingCount} fresh produce listings
+                {formatMapTooltipListings(t, districtTooltipStats.listingCount)}
               </p>
               <p className="text-xs text-[#5F6F64]">
-                {districtTooltipStats.farmerCount} verified farmers
+                {formatMapTooltipFarmers(t, districtTooltipStats.farmerCount)}
               </p>
             </motion.div>
           )}
@@ -625,13 +638,13 @@ export function HarvestMap({
             >
               <button
                 type="button"
-                aria-label="Close product popup"
+                aria-label={t("marketplace.map.closePopup")}
                 className="agrivo-harvest-map-product-popup-close"
                 onClick={() => onProductSelect(null)}
               >
                 <X className="h-3 w-3" />
               </button>
-              <p className="agrivo-harvest-map-product-popup-title">{popupListing.name}</p>
+              <p className="agrivo-harvest-map-product-popup-title">{displayPopupListing?.name}</p>
               <p className="agrivo-harvest-map-product-popup-farmer">{popupListing.farmer}</p>
               <p className="agrivo-harvest-map-product-popup-meta">{popupListing.quantity}</p>
               <p className="agrivo-harvest-map-product-popup-price">{popupListing.pricePerKg}</p>
@@ -639,10 +652,10 @@ export function HarvestMap({
                 type="button"
                 className="agrivo-harvest-map-product-popup-btn"
                 onClick={() => {
-                  window.location.hash = "login";
+                  navigateToHash("login");
                 }}
               >
-                View product
+                {t("marketplace.map.viewProduct")}
               </button>
             </motion.div>
           )}

@@ -1,7 +1,18 @@
 import { CheckCircle2 } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import { COMPLETED_TIMELINE_STEPS } from "../../../utils/completedDeliveriesStorage";
 
 export function CompletedDeliveryTimeline() {
+  const { t } = useLanguage();
+  const stepLabels = [
+    t("completedDeliveries.timeline.assigned"),
+    t("completedDeliveries.timeline.pickupScheduled"),
+    t("completedDeliveries.timeline.collected"),
+    t("completedDeliveries.timeline.inTransit"),
+    t("completedDeliveries.timeline.nearDestination"),
+    t("completedDeliveries.timeline.delivered"),
+  ];
+
   return (
     <ol className="agrivo-assigned-timeline">
       {COMPLETED_TIMELINE_STEPS.map((step, index) => {
@@ -19,9 +30,11 @@ export function CompletedDeliveryTimeline() {
               <CheckCircle2 className="h-4 w-4" />
             </span>
             <div className="agrivo-assigned-timeline__content">
-              <p className="agrivo-assigned-timeline__label">{step}</p>
+              <p className="agrivo-assigned-timeline__label">{stepLabels[index] ?? step}</p>
               <p className="agrivo-assigned-timeline__meta">
-                {isCurrent ? "Final stage" : "Completed"}
+                {isCurrent
+                  ? t("completedDeliveries.timeline.finalStage")
+                  : t("completedDeliveries.timeline.completed")}
               </p>
             </div>
           </li>

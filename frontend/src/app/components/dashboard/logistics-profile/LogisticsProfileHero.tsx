@@ -1,4 +1,5 @@
 import { BadgeCheck, Camera, Pencil, Star } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import {
   formatMemberSince,
   getProfileInitials,
@@ -17,6 +18,7 @@ export function LogisticsProfileHero({
   onEditProfile: () => void;
   onChangePhoto: () => void;
 }) {
+  const { t } = useLanguage();
   const initials = getProfileInitials(profile.companyName || profile.contactPerson);
 
   return (
@@ -36,7 +38,7 @@ export function LogisticsProfileHero({
             type="button"
             className="agrivo-logistics-profile-avatar-btn"
             onClick={onChangePhoto}
-            aria-label="Change company logo"
+            aria-label={t("logisticsProfile.changeLogoAria")}
           >
             <Camera className="h-3.5 w-3.5" />
           </button>
@@ -45,31 +47,35 @@ export function LogisticsProfileHero({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h3 className="agrivo-heading text-xl font-bold text-[#102018] sm:text-2xl">
-              {profile.companyName || "Add company name"}
+              {profile.companyName || t("logisticsProfile.placeholders.companyName")}
             </h3>
             {profile.verified ? (
               <span className="agrivo-logistics-verified-badge">
                 <BadgeCheck className="h-3.5 w-3.5" />
-                Verified Logistics Partner
+                {t("logisticsProfile.verifiedPartner")}
               </span>
             ) : null}
           </div>
 
           <p className="mt-1 text-sm text-[#5F6F64]">
-            Contact: {profile.contactPerson || "Add contact person"}
+            {t("logisticsProfile.contactLine", {
+              name: profile.contactPerson || t("logisticsProfile.placeholders.contactPerson"),
+            })}
           </p>
 
           <p className="agrivo-logistics-profile-meta mt-2">
-            <span>{profile.location || "Add location"}</span>
+            <span>{profile.location || t("logisticsProfile.placeholders.location")}</span>
           </p>
 
           <div className="agrivo-logistics-profile-badges mt-3">
             <span className="agrivo-logistics-profile-badge">
               <Star className="h-3.5 w-3.5 fill-[#facc15] text-[#facc15]" />
-              {profile.rating.toFixed(1)} rating
+              {t("logisticsProfile.ratingValue", { rating: profile.rating.toFixed(1) })}
             </span>
             <span className="agrivo-logistics-profile-badge">
-              Member since {formatMemberSince(profile.memberSince)}
+              {t("logisticsProfile.memberSince", {
+                year: formatMemberSince(profile.memberSince),
+              })}
             </span>
           </div>
         </div>
@@ -83,7 +89,7 @@ export function LogisticsProfileHero({
             onClick={onEditProfile}
           >
             <Pencil className="mr-2 h-4 w-4" />
-            Edit Profile
+            {t("logisticsProfile.editProfile")}
           </Button>
         </div>
       ) : null}

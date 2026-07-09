@@ -1,6 +1,16 @@
 import { Map, Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AgrivoNavbar } from "../components/AgrivoNavbar";
+import { useLanguage } from "../../i18n/LanguageContext";
+import { navigateToHash } from "../../i18n/localizedRoutes";
+import {
+  formatJobsAvailable,
+  formatSearchChip,
+  formatSignedInAs,
+  translateCropType,
+  translateDateFilterLabel,
+  translateJobType,
+} from "../../i18n/jobHelpers";
 import { AzerbaijanMap } from "../components/AzerbaijanMap";
 import { FarmJobCard } from "../components/jobs/FarmJobCard";
 import { getAuthUser, isFarmerUser, isLoggedIn } from "../auth/authStorage";
@@ -8,7 +18,6 @@ import type { EconomicRegion } from "../data/azerbaijanRegions";
 import { getDistrictsForJobRegion } from "../data/economicRegionDistricts";
 import {
   CROP_TYPES,
-  DATE_FILTER_LABELS,
   JOB_TYPES,
   defaultJobFilters,
   filterFarmJobs,
@@ -33,9 +42,14 @@ import { cn } from "../components/ui/utils";
 const filterTriggerClass =
   "agrivo-filter-control h-12 rounded-full border-[#DEECE0] bg-[#F7FBF5] text-sm text-[#102018] sm:h-14 sm:text-base";
 
-const heroChips = ["Seasonal Harvest", "Daily Payment", "Verified Farmers"];
+const heroChipKeys = [
+  "jobs.page.chips.seasonalHarvest",
+  "jobs.page.chips.dailyPayment",
+  "jobs.page.chips.verifiedFarmers",
+] as const;
 
 export default function JobsPage() {
+  const { t } = useLanguage();
   const [filters, setFilters] = useState<JobFilters>(defaultJobFilters);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showMap, setShowMap] = useState(false);
@@ -109,7 +123,7 @@ export default function JobsPage() {
     if (filters.cropType !== "all") {
       chips.push({
         key: "crop",
-        label: filters.cropType,
+        label: translateCropType(t, filters.cropType),
         onRemove: () => setFilters((prev) => ({ ...prev, cropType: "all" })),
       });
     }
@@ -117,15 +131,15 @@ export default function JobsPage() {
     if (filters.jobType !== "all") {
       chips.push({
         key: "jobType",
-        label: filters.jobType,
+        label: translateJobType(t, filters.jobType),
         onRemove: () => setFilters((prev) => ({ ...prev, jobType: "all" })),
       });
     }
 
-    if (filters.dateRange !== "any" && DATE_FILTER_LABELS[filters.dateRange]) {
+    if (filters.dateRange !== "any") {
       chips.push({
         key: "date",
-        label: DATE_FILTER_LABELS[filters.dateRange],
+        label: translateDateFilterLabel(t, filters.dateRange),
         onRemove: () => setFilters((prev) => ({ ...prev, dateRange: "any" })),
       });
     }
@@ -133,13 +147,13 @@ export default function JobsPage() {
     if (filters.search.trim()) {
       chips.push({
         key: "search",
-        label: `Search: ${filters.search.trim()}`,
+        label: formatSearchChip(t, filters.search.trim()),
         onRemove: () => setFilters((prev) => ({ ...prev, search: "" })),
       });
     }
 
     return chips;
-  }, [filters]);
+  }, [filters, t]);
 
   const handleLocationChange = (location: string) => {
     if (location === "all") {
@@ -185,15 +199,16 @@ export default function JobsPage() {
     <>
       <div className="flex items-center justify-between gap-4">
         <p className="text-sm text-[#5F6F64]">
-          <span className="font-semibold text-[#102018]">{filteredJobs.length}</span> job
-          {filteredJobs.length !== 1 ? "s" : ""} available
+          <span className="font-semibold text-[#102018]">
+            {formatJobsAvailable(t, filteredJobs.length)}
+          </span>
         </p>
         {!isLoggedIn() ? (
-          <p className="hidden text-xs text-[#6b7a70] sm:block">
-            Login to save jobs and track applications.
-          </p>
+          <p className="hidden text-xs text-[#6b7a70] sm:block">{t("jobs.page.results.loginNotice")}</p>
         ) : user ? (
-          <p className="hidden text-xs text-[#6b7a70] sm:block">Signed in as {user.name}</p>
+          <p className="hidden text-xs text-[#6b7a70] sm:block">
+            {formatSignedInAs(t, user.name)}
+          </p>
         ) : null}
       </div>
 
@@ -210,17 +225,19 @@ export default function JobsPage() {
         </div>
       ) : (
         <div className="agrivo-jobs-empty mt-10 rounded-[28px] border border-dashed border-[#d8e8d4] bg-white/70 px-6 py-16 text-center">
-          <h2 className="agrivo-heading text-xl font-bold text-[#102018]">No jobs found</h2>
+          <h2 className="agrivo-heading text-xl font-bold text-[#102018]">
+            {t("jobs.page.empty.title")}
+          </h2>
           <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#5F6F64]">
             {hasLocationOrRegionFilter
-              ? "No jobs found for this location. Try another region or location."
-              : "Try changing the filters or check again later."}
+              ? t("jobs.page.empty.subtitleLocation")
+              : t("jobs.page.empty.subtitleGeneral")}
           </p>
           <Button
             className="mt-6 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
             onClick={clearFilters}
           >
-            Clear all filters
+            {t("jobs.page.empty.clearFilters")}
           </Button>
         </div>
       )}
@@ -235,21 +252,21 @@ export default function JobsPage() {
       <div className="agrivo-container py-8 sm:py-10">
         <div className="agrivo-jobs-hero mx-auto max-w-3xl text-center">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#15803d] sm:text-sm">
-            Farm Jobs
+            {t("jobs.page.eyebrow")}
           </p>
           <h1 className="agrivo-heading text-3xl font-bold text-[#102018] sm:text-4xl md:text-5xl">
-            Farm Jobs
+            {t("jobs.title")}
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-sm leading-7 text-[#5F6F64] sm:text-base">
-            Find seasonal agricultural work opportunities from verified farmers across Azerbaijan.
+            {t("jobs.subtitleLong")}
           </p>
           <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
-            {heroChips.map((chip) => (
+            {heroChipKeys.map((chipKey) => (
               <span
-                key={chip}
+                key={chipKey}
                 className="rounded-full border border-[#dbe7d4] bg-white px-4 py-1.5 text-xs font-medium text-[#14532D] sm:text-sm"
               >
-                {chip}
+                {t(chipKey)}
               </span>
             ))}
           </div>
@@ -259,19 +276,19 @@ export default function JobsPage() {
               <Button
                 className="agrivo-button-soft rounded-full bg-[#14532D] px-6 text-white hover:bg-[#1D6A3B]"
                 onClick={() => {
-                  window.location.hash = "dashboard/jobs/new";
+                  navigateToHash("dashboard/jobs/new");
                 }}
               >
-                Create Job Post
+                {t("jobs.createJobPost")}
               </Button>
               <Button
                 variant="outline"
                 className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
                 onClick={() => {
-                  window.location.hash = "dashboard/jobs";
+                  navigateToHash("dashboard/jobs");
                 }}
               >
-                My Job Posts
+                {t("jobs.myJobPostsLink")}
               </Button>
             </div>
           ) : null}
@@ -280,12 +297,14 @@ export default function JobsPage() {
         <div className="agrivo-jobs-filters agrivo-reveal mt-10 rounded-[28px] border border-[#e5efe1] bg-white p-5 shadow-[0_10px_28px_rgba(20,83,45,0.04)] sm:p-6 md:mt-12">
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             <div className="space-y-2 md:col-span-2 xl:col-span-2">
-              <Label className="text-sm font-semibold text-[#14532D]">Search</Label>
+              <Label className="text-sm font-semibold text-[#14532D]">
+                {t("jobs.page.filters.search")}
+              </Label>
               <div className="relative">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b7a70]" />
                 <Input
                   className={`${filterTriggerClass} pl-11`}
-                  placeholder="Search jobs, crops, locations..."
+                  placeholder={t("jobs.page.filters.searchPlaceholder")}
                   value={filters.search}
                   onChange={(e) => updateFilter("search", e.target.value)}
                 />
@@ -293,16 +312,18 @@ export default function JobsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-[#14532D]">Job Type</Label>
+              <Label className="text-sm font-semibold text-[#14532D]">
+                {t("jobs.page.filters.jobType")}
+              </Label>
               <Select value={filters.jobType} onValueChange={(v) => updateFilter("jobType", v)}>
                 <SelectTrigger className={filterTriggerClass}>
-                  <SelectValue placeholder="All job types" />
+                  <SelectValue placeholder={t("jobs.page.filters.allJobTypes")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All job types</SelectItem>
+                  <SelectItem value="all">{t("jobs.page.filters.allJobTypes")}</SelectItem>
                   {JOB_TYPES.map((type) => (
                     <SelectItem key={type} value={type}>
-                      {type}
+                      {translateJobType(t, type)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -310,16 +331,18 @@ export default function JobsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-[#14532D]">Crop Type</Label>
+              <Label className="text-sm font-semibold text-[#14532D]">
+                {t("jobs.page.filters.cropType")}
+              </Label>
               <Select value={filters.cropType} onValueChange={(v) => updateFilter("cropType", v)}>
                 <SelectTrigger className={filterTriggerClass}>
-                  <SelectValue placeholder="All crops" />
+                  <SelectValue placeholder={t("jobs.page.filters.allCrops")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All crops</SelectItem>
+                  <SelectItem value="all">{t("jobs.page.filters.allCrops")}</SelectItem>
                   {CROP_TYPES.map((crop) => (
                     <SelectItem key={crop} value={crop}>
-                      {crop}
+                      {translateCropType(t, crop)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -327,13 +350,15 @@ export default function JobsPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-sm font-semibold text-[#14532D]">Location</Label>
+              <Label className="text-sm font-semibold text-[#14532D]">
+                {t("jobs.page.filters.location")}
+              </Label>
               <Select value={filters.location} onValueChange={handleLocationChange}>
                 <SelectTrigger className={filterTriggerClass}>
-                  <SelectValue placeholder="All locations" />
+                  <SelectValue placeholder={t("jobs.page.filters.allLocations")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All locations</SelectItem>
+                  <SelectItem value="all">{t("jobs.page.filters.allLocations")}</SelectItem>
                   {locationOptions.map((loc) => (
                     <SelectItem key={loc} value={loc}>
                       {loc}
@@ -344,16 +369,18 @@ export default function JobsPage() {
             </div>
 
             <div className="space-y-2 md:col-span-2 lg:col-span-1 xl:col-span-1">
-              <Label className="text-sm font-semibold text-[#14532D]">Date</Label>
+              <Label className="text-sm font-semibold text-[#14532D]">
+                {t("jobs.page.filters.date")}
+              </Label>
               <Select value={filters.dateRange} onValueChange={(v) => updateFilter("dateRange", v)}>
                 <SelectTrigger className={filterTriggerClass}>
-                  <SelectValue placeholder="Any date" />
+                  <SelectValue placeholder={t("jobs.page.filters.anyDate")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="any">Any date</SelectItem>
-                  <SelectItem value="this-week">This week</SelectItem>
-                  <SelectItem value="this-month">This month</SelectItem>
-                  <SelectItem value="upcoming">Upcoming</SelectItem>
+                  <SelectItem value="any">{t("jobs.page.filters.anyDate")}</SelectItem>
+                  <SelectItem value="this-week">{t("jobs.page.filters.thisWeek")}</SelectItem>
+                  <SelectItem value="this-month">{t("jobs.page.filters.thisMonth")}</SelectItem>
+                  <SelectItem value="upcoming">{t("jobs.page.filters.upcoming")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -372,7 +399,7 @@ export default function JobsPage() {
               onClick={() => setShowMap((v) => !v)}
             >
               <Map className="mr-2 h-4 w-4" />
-              {showMap ? "Hide Map" : "Map View"}
+              {showMap ? t("jobs.page.filters.hideMap") : t("jobs.page.filters.mapView")}
             </Button>
 
             <Button
@@ -382,7 +409,7 @@ export default function JobsPage() {
               onClick={() => setShowAdvanced((v) => !v)}
             >
               <SlidersHorizontal className="mr-2 h-4 w-4" />
-              Advanced filters
+              {t("jobs.page.filters.advancedFilters")}
               {activeFilterCount > 0 ? (
                 <span className="ml-2 rounded-full bg-[#14532D] px-2 py-0.5 text-xs text-white">
                   {activeFilterCount}
@@ -398,7 +425,7 @@ export default function JobsPage() {
                 onClick={clearFilters}
               >
                 <X className="mr-1 h-4 w-4" />
-                Clear filters
+                {t("jobs.page.filters.clearFilters")}
               </Button>
             ) : null}
           </div>
@@ -422,50 +449,56 @@ export default function JobsPage() {
           {showAdvanced ? (
             <div className="mt-5 grid grid-cols-1 gap-4 border-t border-[#edf2ea] pt-5 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-[#14532D]">Min pay (AZN/day)</Label>
+                <Label className="text-sm font-semibold text-[#14532D]">
+                  {t("jobs.page.filters.payUnit")}
+                </Label>
                 <Input
                   type="number"
                   min={0}
                   className={filterTriggerClass}
-                  placeholder="Min"
+                  placeholder={t("jobs.page.filters.minPayPlaceholder")}
                   value={filters.payMin}
                   onChange={(e) => updateFilter("payMin", e.target.value)}
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-semibold text-[#14532D]">Max pay (AZN/day)</Label>
+                <Label className="text-sm font-semibold text-[#14532D]">
+                  {t("jobs.page.filters.maxPayUnit")}
+                </Label>
                 <Input
                   type="number"
                   min={0}
                   className={filterTriggerClass}
-                  placeholder="Max"
+                  placeholder={t("jobs.page.filters.maxPayPlaceholder")}
                   value={filters.payMax}
                   onChange={(e) => updateFilter("payMax", e.target.value)}
                 />
               </div>
               <div className="space-y-3 sm:col-span-2">
-                <Label className="text-sm font-semibold text-[#14532D]">Benefits &amp; experience</Label>
+                <Label className="text-sm font-semibold text-[#14532D]">
+                  {t("jobs.page.filters.benefitsExperience")}
+                </Label>
                 <div className="flex flex-wrap gap-4">
                   <label className="flex items-center gap-2 text-sm text-[#3f5247]">
                     <Checkbox
                       checked={filters.mealsIncluded}
                       onCheckedChange={(c) => updateFilter("mealsIncluded", c === true)}
                     />
-                    Meals included
+                    {t("jobs.page.filters.mealsIncluded")}
                   </label>
                   <label className="flex items-center gap-2 text-sm text-[#3f5247]">
                     <Checkbox
                       checked={filters.transportIncluded}
                       onCheckedChange={(c) => updateFilter("transportIncluded", c === true)}
                     />
-                    Transport included
+                    {t("jobs.page.filters.transportIncluded")}
                   </label>
                   <label className="flex items-center gap-2 text-sm text-[#3f5247]">
                     <Checkbox
                       checked={filters.housingIncluded}
                       onCheckedChange={(c) => updateFilter("housingIncluded", c === true)}
                     />
-                    Housing included
+                    {t("jobs.page.filters.housingIncluded")}
                   </label>
                   <label className="flex items-center gap-2 text-sm text-[#3f5247]">
                     <Checkbox
@@ -474,7 +507,7 @@ export default function JobsPage() {
                         updateFilter("experienceRequired", c === true ? false : null)
                       }
                     />
-                    No experience required
+                    {t("jobs.page.filters.noExperienceRequired")}
                   </label>
                 </div>
               </div>

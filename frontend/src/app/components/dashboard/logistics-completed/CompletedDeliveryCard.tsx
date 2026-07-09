@@ -1,8 +1,13 @@
 import {
   formatCompletedQuantity,
-  formatCompletedTime,
   type CompletedDelivery,
 } from "../../../utils/completedDeliveriesStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  translateCompletedProduct,
+  translateCompletedTime,
+  translateCompletedVariety,
+} from "../../../../i18n/completedDeliveriesHelpers";
 import { Button } from "../../ui/button";
 import { ProductVarietyBadge } from "../../products/ProductVarietyBadge";
 import { CompletionStatusBadge } from "./CompletionStatusBadge";
@@ -16,6 +21,8 @@ export function CompletedDeliveryCard({
   delivery: CompletedDelivery;
   onView: (delivery: CompletedDelivery) => void;
 }) {
+  const { t, language } = useLanguage();
+
   return (
     <article className="agrivo-completed-card">
       <div className="agrivo-completed-card__top">
@@ -28,25 +35,32 @@ export function CompletedDeliveryCard({
       </div>
 
       <div className="agrivo-completed-card__product">
-        <p className="agrivo-completed-card__product-name">{delivery.productName}</p>
-        <ProductVarietyBadge variety={delivery.variety} showLabel={false} size="sm" compact />
+        <p className="agrivo-completed-card__product-name">
+          {translateCompletedProduct(t, language, delivery)}
+        </p>
+        <ProductVarietyBadge
+          variety={translateCompletedVariety(t, language, delivery.variety, delivery.sortKey)}
+          showLabel={false}
+          size="sm"
+          compact
+        />
       </div>
 
       <dl className="agrivo-completed-card__meta agrivo-completed-card__meta--compact">
         <div>
-          <dt>Qty</dt>
+          <dt>{t("completedDeliveries.table.quantity")}</dt>
           <dd>{formatCompletedQuantity(delivery)}</dd>
         </div>
         <div>
-          <dt>Driver</dt>
+          <dt>{t("completedDeliveries.table.driver")}</dt>
           <dd>{delivery.driverName}</dd>
         </div>
         <div>
-          <dt>Completed</dt>
-          <dd>{formatCompletedTime(delivery.completedAt)}</dd>
+          <dt>{t("completedDeliveries.table.completed")}</dt>
+          <dd>{translateCompletedTime(t, delivery.completedAt)}</dd>
         </div>
         <div>
-          <dt>Rating</dt>
+          <dt>{t("completedDeliveries.sidebar.ratingLabel")}</dt>
           <dd>
             <RatingDisplay rating={delivery.rating} showEmpty />
           </dd>
@@ -59,7 +73,7 @@ export function CompletedDeliveryCard({
         className="agrivo-completed-card__action mt-3 w-full rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
         onClick={() => onView(delivery)}
       >
-        View Details
+        {t("completedDeliveries.actions.viewDetails")}
       </Button>
     </article>
   );

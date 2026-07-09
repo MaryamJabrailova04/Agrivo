@@ -2,6 +2,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown, ChevronRight, Filter, Map, Search, SlidersHorizontal, Sprout, Truck, Users } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { AgrivoNavbar } from "../components/AgrivoNavbar";
+import { useLanguage } from "../../i18n/LanguageContext";
+import { navigateToHash } from "../../i18n/localizedRoutes";
+import {
+  formatAllListingsIn,
+  formatAvailableIn,
+  formatInsightHighlight,
+  formatListingCount,
+  formatMoreListings,
+  formatQuickStatsSubtitle,
+  formatShowingCount,
+  formatViewAllDistrictsIn,
+  translateProductChip,
+  translateRegionSummary,
+  translateTopProductsList,
+} from "../../i18n/marketplaceHelpers";
 import { HarvestListingCard } from "../components/harvest/HarvestListingCard";
 import { HarvestMap } from "../components/harvest/HarvestMap";
 import { Button } from "../components/ui/button";
@@ -27,7 +42,7 @@ import {
 } from "../data/harvestExplorer";
 import { getFarmerBySlug } from "../data/farmers";
 import { buildWhatsAppUrl } from "../utils/whatsapp";
-import { districtShortName, districtsMatchGeo, formatProductTypeLabel } from "../data/harvestExplorerUtils";
+import { districtShortName, districtsMatchGeo } from "../data/harvestExplorerUtils";
 import { isApiMode } from "../../config/dataMode";
 import { getProducts, type ApiProduct } from "../../api/productsApi";
 
@@ -37,12 +52,12 @@ const MOBILE_PAGE_SIZE = 8;
 const filterControlClass =
   "agrivo-marketplace-control h-11 w-full rounded-full border-[#D8E8D4] bg-[#F8FBF6] text-sm shadow-none transition-[border-color,box-shadow,background-color] duration-200 focus-visible:border-[#43A047] focus-visible:ring-[3px] focus-visible:ring-[#43A047]/15";
 
-const heroStats = [
-  { label: "1,250+ active produce listings" },
-  { label: "320+ verified farmers" },
-  { label: "14 economic regions" },
-  { label: "Fresh products updated daily" },
-];
+function parseInsightHighlight(item: string): { count: number; productType: string } | null {
+  const match = item.match(/^(\d+)\s+(\w+)\s+listings$/i);
+  if (!match) return null;
+  const productType = match[2].charAt(0).toUpperCase() + match[2].slice(1);
+  return { count: Number(match[1]), productType };
+}
 
 function HarvestListingSkeleton() {
   return (
@@ -125,7 +140,7 @@ function HarvestListingGrid({
             compact={compact}
             selected={selectedListingId === listing.id}
             onViewDetails={() => {
-              window.location.hash = getProductDetailHash(listing.slug);
+              navigateToHash(getProductDetailHash(listing.slug));
             }}
             onContactSeller={() => {
               if (listing.farmerSlug) {
@@ -135,7 +150,7 @@ function HarvestListingGrid({
                   return;
                 }
               }
-              window.location.hash = "login";
+              navigateToHash("login");
             }}
           />
         </div>
@@ -145,6 +160,18 @@ function HarvestListingGrid({
 }
 
 export default function ProductsPage() {
+  const { t } = useLanguage();
+
+  const heroStats = useMemo(
+    () => [
+      t("marketplace.snapshot.activeListings"),
+      t("marketplace.snapshot.verifiedFarmers"),
+      t("marketplace.snapshot.economicRegions"),
+      t("marketplace.snapshot.updatedDaily"),
+    ],
+    [t],
+  );
+
   const [apiListings, setApiListings] = useState<HarvestListing[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isFetchingProducts, setIsFetchingProducts] = useState(false);
@@ -356,7 +383,7 @@ export default function ProductsPage() {
         const topProducts = Object.entries(entry.productCounts)
           .sort((a, b) => b[1] - a[1])
           .slice(0, 2)
-          .map(([product]) => formatProductTypeLabel(product));
+          .map(([product]) => product);
         return {
           ...entry,
           topProducts,
@@ -412,7 +439,7 @@ export default function ProductsPage() {
         if (import.meta.env.DEV) {
           console.error("[Products] API fetch failed:", error);
         }
-        setApiError(error instanceof Error ? error.message : "Failed to load products.");
+        setApiError(error instanceof Error ? error.message : t("marketplace.unableToLoad"));
       })
       .finally(() => {
         if (mounted) {
@@ -423,7 +450,7 @@ export default function ProductsPage() {
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     setPanelHoveredDistrict(null);
@@ -488,26 +515,31 @@ export default function ProductsPage() {
       ? `${regionFilter} · ${districtShortName(districtFilter)}`
       : regionFilter !== "all"
         ? regionFilter
-        : "All Azerbaijan";
+        : t("marketplace.allAzerbaijan");
 
   const resultsTitle =
     regionFilter === "all"
-      ? "Fresh listings near you"
+      ? t("marketplace.listings.nearbyTitle")
       : districtFilter !== "all"
-        ? `Fresh produce available in ${districtShortName(districtFilter)}`
-        : `Fresh produce available in ${regionFilter}`;
+        ? formatAvailableIn(t, districtShortName(districtFilter))
+        : formatAvailableIn(t, regionFilter);
 
   const resultsSubtitle =
     regionFilter === "all"
-      ? "Choose a region on the map or use filters to narrow fruit and vegetable results."
-      : `${quickStats.listings} listings · ${quickStats.farmers} verified farmers · ${quickStats.deliveryCount} with delivery`;
+      ? t("marketplace.listings.nearbySubtitle")
+      : formatQuickStatsSubtitle(
+          t,
+          quickStats.listings,
+          quickStats.farmers,
+          quickStats.deliveryCount,
+        );
 
   const allListingsTitle =
     regionFilter === "all"
-      ? "Browse all available products"
+      ? t("marketplace.listings.allTitle")
       : districtFilter !== "all"
-        ? `All listings in ${districtShortName(districtFilter)}`
-        : `All listings in ${regionFilter}`;
+        ? formatAllListingsIn(t, districtShortName(districtFilter))
+        : formatAllListingsIn(t, regionFilter);
 
   return (
     <div className="agrivo-shell agrivo-harvest-explorer min-h-screen">
@@ -517,12 +549,12 @@ export default function ProductsPage() {
       <div className="agrivo-container py-8 sm:py-10 lg:py-12">
         <section className="agrivo-harvest-hero">
           <div className="agrivo-harvest-hero-copy">
-            <p className="agrivo-marketplace-eyebrow">Marketplace</p>
+            <p className="agrivo-marketplace-eyebrow">{t("nav.marketplace")}</p>
             <h1 className="agrivo-heading agrivo-harvest-hero-title">
-              Discover Fresh Produce Across Azerbaijan
+              {t("marketplace.title")}
             </h1>
             <p className="agrivo-harvest-hero-subtitle">
-              Search fruits and vegetables by region, district, village, category, or verified farmer.
+              {t("marketplace.subtitle")}
             </p>
 
             <div className="agrivo-harvest-hero-search">
@@ -535,7 +567,7 @@ export default function ProductsPage() {
                   setVisibleCount(REMAINING_PAGE_SIZE);
                   setMobileVisibleCount(MOBILE_PAGE_SIZE);
                 }}
-                placeholder="Search tomatoes, apples, potatoes, pomegranates…"
+                placeholder={t("marketplace.searchPlaceholder")}
                 className={filterControlClass}
               />
             </div>
@@ -553,38 +585,40 @@ export default function ProductsPage() {
                   }}
                   className={`agrivo-harvest-chip ${productChip === chip ? "agrivo-harvest-chip--active" : ""}`}
                 >
-                  {chip}
+                  {translateProductChip(t, chip)}
                 </button>
               ))}
             </div>
           </div>
 
           <div className="agrivo-harvest-stats-card">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#15803d]">Harvest Explorer</p>
-            <p className="mt-2 text-lg font-bold text-[#102018]">Marketplace snapshot</p>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-[#15803d]">
+              {t("marketplace.snapshot.eyebrow")}
+            </p>
+            <p className="mt-2 text-lg font-bold text-[#102018]">{t("marketplace.snapshot.title")}</p>
             <ul className="mt-4 space-y-3">
               {heroStats.map((stat) => (
-                <li key={stat.label} className="flex items-center gap-2 text-sm text-[#3f5247]">
+                <li key={stat} className="flex items-center gap-2 text-sm text-[#3f5247]">
                   <span className="h-2 w-2 rounded-full bg-[#43A047]" />
-                  {stat.label}
+                  {stat}
                 </li>
               ))}
             </ul>
           </div>
         </section>
 
-        <section className="agrivo-harvest-filters" aria-label="Harvest Explorer filters">
+        <section className="agrivo-harvest-filters" aria-label={t("marketplace.filterTitle")}>
           <div className="agrivo-harvest-filters-head">
             <div className="flex items-center gap-2 text-[#14532D]">
               <SlidersHorizontal className="h-4 w-4" />
-              <span className="text-sm font-semibold">Filter fresh produce</span>
+              <span className="text-sm font-semibold">{t("marketplace.filterTitle")}</span>
             </div>
             <Button
               variant="ghost"
               className="hidden rounded-full text-sm text-[#14532D] hover:bg-[#EAF7EC] md:inline-flex"
               onClick={() => setShowMoreFilters((value) => !value)}
             >
-              More filters
+              {showMoreFilters ? t("marketplace.lessFilters") : t("marketplace.moreFilters")}
               <ChevronDown className={`ml-1 h-4 w-4 transition ${showMoreFilters ? "rotate-180" : ""}`} />
             </Button>
           </div>
@@ -592,15 +626,15 @@ export default function ProductsPage() {
           <div className="agrivo-harvest-filters-grid">
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className={filterControlClass}>
-                <SelectValue placeholder="Category" />
+                <SelectValue placeholder={t("marketplace.category")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
-                <SelectItem value="Fruits">Fruits</SelectItem>
-                <SelectItem value="Vegetables">Vegetables</SelectItem>
+                <SelectItem value="all">{t("marketplace.filters.allCategories")}</SelectItem>
+                <SelectItem value="Fruits">{t("marketplace.categories.fruits")}</SelectItem>
+                <SelectItem value="Vegetables">{t("marketplace.categories.vegetables")}</SelectItem>
                 {PRODUCT_CHIPS.map((chip) => (
                   <SelectItem key={chip} value={chip}>
-                    {chip}
+                    {translateProductChip(t, chip)}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -611,10 +645,10 @@ export default function ProductsPage() {
               onValueChange={(value) => handleRegionSelect(value as EconomicRegion | "all")}
             >
               <SelectTrigger className={filterControlClass}>
-                <SelectValue placeholder="Economic Region" />
+                <SelectValue placeholder={t("marketplace.economicRegion")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All regions</SelectItem>
+                <SelectItem value="all">{t("marketplace.filters.allRegions")}</SelectItem>
                 {economicRegions.map((region) => (
                   <SelectItem key={region} value={region}>
                     {region}
@@ -629,10 +663,10 @@ export default function ProductsPage() {
               disabled={regionFilter === "all"}
             >
               <SelectTrigger className={filterControlClass} disabled={regionFilter === "all"}>
-                <SelectValue placeholder="District / City" />
+                <SelectValue placeholder={t("marketplace.district")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All districts</SelectItem>
+                <SelectItem value="all">{t("marketplace.filters.allDistricts")}</SelectItem>
                 {districtOptions.map((district) => (
                   <SelectItem key={district} value={district}>
                     {district}
@@ -647,7 +681,7 @@ export default function ProductsPage() {
               onClick={() => setShowMobileFilters((value) => !value)}
             >
               <Filter className="mr-2 h-4 w-4" />
-              Filters
+              {t("marketplace.mobileFilters")}
             </Button>
           </div>
 
@@ -661,18 +695,18 @@ export default function ProductsPage() {
               >
                 <div className="grid gap-3 pt-4 md:grid-cols-3">
                   <Input
-                    placeholder="Village"
+                    placeholder={t("marketplace.village")}
                     value={villageFilter}
                     onChange={(e) => setVillageFilter(e.target.value)}
                     className={filterControlClass}
                   />
                   <label className="flex items-center gap-2 rounded-full border border-[#e3ece0] bg-[#f8fbf6] px-4 py-2 text-sm text-[#3f5247]">
                     <Checkbox checked={verifiedOnly} onCheckedChange={(v) => setVerifiedOnly(Boolean(v))} />
-                    Verified farmer only
+                    {t("marketplace.verifiedOnly")}
                   </label>
                   <label className="flex items-center gap-2 rounded-full border border-[#e3ece0] bg-[#f8fbf6] px-4 py-2 text-sm text-[#3f5247]">
                     <Checkbox checked={deliveryOnly} onCheckedChange={(v) => setDeliveryOnly(Boolean(v))} />
-                    Delivery available
+                    {t("marketplace.deliveryOnly")}
                   </label>
                 </div>
               </motion.div>
@@ -700,25 +734,27 @@ export default function ProductsPage() {
               />
 
               <div className="agrivo-harvest-selection-card">
-                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#15803d]">Current selection</p>
+                <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#15803d]">
+                  {t("marketplace.map.currentSelection")}
+                </p>
                 <p className="mt-2 text-base font-bold text-[#102018]">{selectionLabel}</p>
                 <div className="agrivo-harvest-quick-stats mt-3">
                   <div className="agrivo-harvest-quick-stat">
                     <Sprout className="h-4 w-4 text-[#43A047]" />
                     <span>
-                      <strong>{quickStats.listings}</strong> listings
+                      <strong>{quickStats.listings}</strong> {t("marketplace.map.listings")}
                     </span>
                   </div>
                   <div className="agrivo-harvest-quick-stat">
                     <Users className="h-4 w-4 text-[#43A047]" />
                     <span>
-                      <strong>{quickStats.farmers}</strong> farmers
+                      <strong>{quickStats.farmers}</strong> {t("marketplace.map.farmers")}
                     </span>
                   </div>
                   <div className="agrivo-harvest-quick-stat">
                     <Truck className="h-4 w-4 text-[#43A047]" />
                     <span>
-                      <strong>{quickStats.deliveryCount}</strong> delivery
+                      <strong>{quickStats.deliveryCount}</strong> {t("marketplace.map.delivery")}
                     </span>
                   </div>
                 </div>
@@ -728,24 +764,34 @@ export default function ProductsPage() {
                     className="agrivo-harvest-reset-btn mt-4 w-full"
                     onClick={clearAllFilters}
                   >
-                    Reset selection
+                    {t("marketplace.resetSelection")}
                   </Button>
                 )}
               </div>
 
               {selectedInsight && regionFilter !== "all" ? (
                 <div className="agrivo-harvest-insight-card">
-                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#15803d]">What grows here?</p>
-                  <p className="mt-2 text-sm leading-6 text-[#3f5247]">{selectedInsight.summary}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#15803d]">
+                    {t("marketplace.insight.eyebrow")}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[#3f5247]">
+                    {translateRegionSummary(t, regionFilter, selectedInsight.summary)}
+                  </p>
                   <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-[#5F6F64]">
-                    Top local products
+                    {t("marketplace.insight.topProducts")}
                   </p>
                   <ul className="mt-2 space-y-1.5">
-                    {selectedInsight.highlights.map((item) => (
-                      <li key={item} className="text-sm text-[#102018]">
-                        • {item}
-                      </li>
-                    ))}
+                    {selectedInsight.highlights.map((item) => {
+                      const parsed = parseInsightHighlight(item);
+                      const label = parsed
+                        ? formatInsightHighlight(t, parsed.count, parsed.productType)
+                        : item;
+                      return (
+                        <li key={item} className="text-sm text-[#102018]">
+                          • {label}
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ) : null}
@@ -754,10 +800,10 @@ export default function ProductsPage() {
                 <div className="agrivo-harvest-district-panel">
                   <div className="agrivo-harvest-district-panel-head">
                     <p className="text-xs font-bold uppercase tracking-[0.14em] text-[#15803d]">
-                      Available Districts
+                      {t("marketplace.districts.eyebrow")}
                     </p>
                     <p className="mt-1 text-xs leading-5 text-[#5F6F64]">
-                      Quick filter — click a district to browse listings
+                      {t("marketplace.districts.subtitle")}
                     </p>
                   </div>
 
@@ -767,7 +813,7 @@ export default function ProductsPage() {
                       className="agrivo-harvest-district-clear"
                       onClick={() => handleDistrictSelect("all")}
                     >
-                      View all districts in {regionFilter}
+                      {formatViewAllDistrictsIn(t, regionFilter)}
                     </button>
                   ) : null}
 
@@ -793,8 +839,10 @@ export default function ProductsPage() {
                             <span className="agrivo-harvest-district-row-main">
                               <span className="agrivo-harvest-district-name">{item.shortName}</span>
                               <span className="agrivo-harvest-district-meta">
-                                {item.count} {item.count === 1 ? "listing" : "listings"}
-                                {item.topProducts.length > 0 ? ` · ${item.topProducts.join(", ")}` : ""}
+                                {formatListingCount(t, item.count)}
+                                {item.topProducts.length > 0
+                                  ? ` · ${translateTopProductsList(t, item.topProducts)}`
+                                  : ""}
                               </span>
                             </span>
                             <ChevronRight className="agrivo-harvest-district-arrow h-4 w-4 shrink-0" />
@@ -817,7 +865,7 @@ export default function ProductsPage() {
 
               {apiError ? (
                 <div className="agrivo-marketplace-empty">
-                  <h3 className="text-xl font-semibold text-[#102018]">Unable to load products</h3>
+                  <h3 className="text-xl font-semibold text-[#102018]">{t("marketplace.unableToLoad")}</h3>
                   <p className="mt-2 max-w-md text-sm leading-6 text-[#5F6F64]">
                     {apiError}
                   </p>
@@ -839,12 +887,12 @@ export default function ProductsPage() {
                 </>
               ) : (
                 <div className="agrivo-marketplace-empty">
-                  <h3 className="text-xl font-semibold text-[#102018]">No fresh produce found</h3>
+                  <h3 className="text-xl font-semibold text-[#102018]">{t("marketplace.noProducts")}</h3>
                   <p className="mt-2 max-w-md text-sm leading-6 text-[#5F6F64]">
-                    No fresh produce found in this area. Try another region or remove filters.
+                    {t("marketplace.noProductsDesc")}
                   </p>
                   <Button variant="outline" className="agrivo-marketplace-load-more-btn mt-6" onClick={clearAllFilters}>
-                    Clear filters
+                    {t("marketplace.clearFilters")}
                   </Button>
                 </div>
               )}
@@ -870,7 +918,7 @@ export default function ProductsPage() {
                 <div className="agrivo-harvest-all-listings-head">
                   <h2 className="text-xl font-bold text-[#102018]">{allListingsTitle}</h2>
                   <p className="mt-1 text-sm text-[#5F6F64]">
-                    Showing {mobileListings.length} of {filteredListings.length}
+                    {formatShowingCount(t, mobileListings.length, filteredListings.length)}
                   </p>
                 </div>
                 <HarvestListingGrid
@@ -885,7 +933,7 @@ export default function ProductsPage() {
                       className="agrivo-marketplace-load-more-btn"
                       onClick={() => setMobileVisibleCount((count) => count + MOBILE_PAGE_SIZE)}
                     >
-                      Load More Products
+                      {t("marketplace.loadMore")}
                     </Button>
                   </div>
                 ) : null}
@@ -899,12 +947,11 @@ export default function ProductsPage() {
                 <div>
                   <h2 className="text-xl font-bold text-[#102018] sm:text-2xl">{allListingsTitle}</h2>
                   <p className="mt-1 text-sm text-[#5F6F64]">
-                    {remainingListings.length} more listings across the selected area
+                    {formatMoreListings(t, remainingListings.length)}
                   </p>
                 </div>
                 <p className="agrivo-harvest-all-listings-count text-sm text-[#5F6F64]">
-                  Showing <span className="font-semibold text-[#102018]">{visibleRemaining.length}</span> of{" "}
-                  <span className="font-semibold text-[#102018]">{remainingListings.length}</span>
+                  {formatShowingCount(t, visibleRemaining.length, remainingListings.length)}
                 </p>
               </div>
 
@@ -928,7 +975,7 @@ export default function ProductsPage() {
                         className="agrivo-marketplace-load-more-btn"
                         onClick={() => setVisibleCount((count) => count + REMAINING_PAGE_SIZE)}
                       >
-                        Load More Products
+                        {t("marketplace.loadMore")}
                       </Button>
                     </div>
                   ) : null}
@@ -949,7 +996,7 @@ export default function ProductsPage() {
           }}
         >
           <Filter className="mr-2 h-4 w-4" />
-          Filter
+          {t("marketplace.mobileFilter")}
         </Button>
         <Button
           variant="outline"
@@ -960,7 +1007,7 @@ export default function ProductsPage() {
           }}
         >
           <Map className="mr-2 h-4 w-4" />
-          Map
+          {t("marketplace.mobileMap")}
         </Button>
       </div>
     </div>

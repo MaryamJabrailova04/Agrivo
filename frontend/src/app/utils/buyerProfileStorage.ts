@@ -1,4 +1,5 @@
 import type { AuthUser } from "../auth/authStorage";
+import type { TranslateFn } from "../../i18n/LanguageContext";
 
 export type BuyerType =
   | "Restaurant"
@@ -139,21 +140,26 @@ export function getBuyerProfile(user: AuthUser): BuyerProfile {
   }
 }
 
-export function validateBuyerProfile(profile: Pick<BuyerProfile, "fullName" | "email" | "phone" | "buyerType">): Record<string, string> {
+export function validateBuyerProfile(
+  profile: Pick<BuyerProfile, "fullName" | "email" | "phone" | "buyerType">,
+  t?: TranslateFn,
+): Record<string, string> {
   const errors: Record<string, string> = {};
+  const required = t ? t("buyerProfile.feedback.requiredFields") : "Please fill in required fields.";
+  const invalidEmail = t ? t("buyerProfile.feedback.invalidEmail") : "Enter a valid email address.";
   if (!profile.fullName.trim()) {
-    errors.fullName = "Full name is required.";
+    errors.fullName = required;
   }
   if (!profile.email.trim()) {
-    errors.email = "Enter a valid email address.";
+    errors.email = invalidEmail;
   } else if (!isValidEmail(profile.email)) {
-    errors.email = "Enter a valid email address.";
+    errors.email = invalidEmail;
   }
   if (!profile.phone.trim()) {
-    errors.phone = "Phone number is required.";
+    errors.phone = required;
   }
   if (!profile.buyerType) {
-    errors.buyerType = "Buyer type is required.";
+    errors.buyerType = required;
   }
   return errors;
 }
@@ -172,9 +178,9 @@ export function setBuyerProfile(userId: string, profile: BuyerProfile): void {
   localStorage.setItem(storageKey(userId), JSON.stringify(profile));
 }
 
-export function formatJoinedDate(iso: string): string {
+export function formatJoinedDate(iso: string, locale = "en-US"): string {
   try {
-    return new Date(iso).toLocaleDateString("en-US", {
+    return new Date(iso).toLocaleDateString(locale, {
       month: "long",
       year: "numeric",
     });

@@ -1,10 +1,11 @@
 import { Search } from "lucide-react";
 import {
-  FARMER_ORDER_STATUS_LABELS,
   type FarmerManagementOrderStatus,
   type FarmerOrderDateFilter,
   type FarmerOrderSortOption,
 } from "../../../utils/farmerOrdersStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateFarmerOrderStatus } from "../../../../i18n/farmerOrderHelpers";
 import { Input } from "../../ui/input";
 import {
   Select,
@@ -28,18 +29,9 @@ const STATUS_FILTERS: Array<FarmerManagementOrderStatus | "all"> = [
   "cancelled",
 ];
 
-const DATE_FILTERS: Array<{ value: FarmerOrderDateFilter; label: string }> = [
-  { value: "all", label: "All time" },
-  { value: "today", label: "Today" },
-  { value: "week", label: "This week" },
-  { value: "month", label: "This month" },
-];
+const DATE_FILTERS: FarmerOrderDateFilter[] = ["all", "today", "week", "month"];
 
-const SORT_OPTIONS: Array<{ value: FarmerOrderSortOption; label: string }> = [
-  { value: "newest", label: "Newest first" },
-  { value: "oldest", label: "Oldest first" },
-  { value: "value-desc", label: "Highest value" },
-];
+const SORT_OPTIONS: FarmerOrderSortOption[] = ["newest", "oldest", "value-desc"];
 
 interface OrdersFilterBarProps {
   search: string;
@@ -62,6 +54,21 @@ export function OrdersFilterBar({
   sort,
   onSortChange,
 }: OrdersFilterBarProps) {
+  const { t } = useLanguage();
+
+  const dateFilterLabels: Record<FarmerOrderDateFilter, string> = {
+    all: t("farmerOrders.filters.allTime"),
+    today: t("farmerOrders.filters.today"),
+    week: t("farmerOrders.filters.thisWeek"),
+    month: t("farmerOrders.filters.thisMonth"),
+  };
+
+  const sortLabels: Record<FarmerOrderSortOption, string> = {
+    newest: t("farmerOrders.filters.newestFirst"),
+    oldest: t("farmerOrders.filters.oldestFirst"),
+    "value-desc": t("farmerOrders.filters.highestValue"),
+  };
+
   return (
     <div className="agrivo-farmer-order-filters">
       <div className="relative min-w-0 flex-1">
@@ -69,19 +76,21 @@ export function OrdersFilterBar({
         <Input
           value={search}
           onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search by buyer, product, or order ID"
+          placeholder={t("farmerOrders.filters.searchPlaceholder")}
           className="h-11 rounded-full border-[#DEECE0] bg-[#F7FBF5] pl-10 text-sm"
         />
       </div>
 
       <Select value={status} onValueChange={(value) => onStatusChange(value as FarmerManagementOrderStatus | "all")}>
         <SelectTrigger className={cn(filterClass, "w-full sm:w-[190px]")}>
-          <SelectValue placeholder="Status" />
+          <SelectValue placeholder={t("farmerOrders.labels.status")} />
         </SelectTrigger>
         <SelectContent>
           {STATUS_FILTERS.map((item) => (
             <SelectItem key={item} value={item}>
-              {item === "all" ? "All statuses" : FARMER_ORDER_STATUS_LABELS[item]}
+              {item === "all"
+                ? t("farmerOrders.filters.allStatuses")
+                : translateFarmerOrderStatus(t, item)}
             </SelectItem>
           ))}
         </SelectContent>
@@ -89,12 +98,12 @@ export function OrdersFilterBar({
 
       <Select value={dateFilter} onValueChange={(value) => onDateFilterChange(value as FarmerOrderDateFilter)}>
         <SelectTrigger className={cn(filterClass, "w-full sm:w-[160px]")}>
-          <SelectValue placeholder="Date" />
+          <SelectValue placeholder={t("farmerOrders.filters.allTime")} />
         </SelectTrigger>
         <SelectContent>
           {DATE_FILTERS.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
+            <SelectItem key={item} value={item}>
+              {dateFilterLabels[item]}
             </SelectItem>
           ))}
         </SelectContent>
@@ -102,12 +111,12 @@ export function OrdersFilterBar({
 
       <Select value={sort} onValueChange={(value) => onSortChange(value as FarmerOrderSortOption)}>
         <SelectTrigger className={cn(filterClass, "w-full sm:w-[170px]")}>
-          <SelectValue placeholder="Sort" />
+          <SelectValue placeholder={t("farmerOrders.labels.sort")} />
         </SelectTrigger>
         <SelectContent>
           {SORT_OPTIONS.map((item) => (
-            <SelectItem key={item.value} value={item.value}>
-              {item.label}
+            <SelectItem key={item} value={item}>
+              {sortLabels[item]}
             </SelectItem>
           ))}
         </SelectContent>

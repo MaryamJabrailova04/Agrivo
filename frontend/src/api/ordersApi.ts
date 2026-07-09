@@ -12,7 +12,11 @@ export interface ApiOrderItem {
   id: string;
   productId: string | null;
   productName: string;
+  nameKey?: string;
+  nameLocalized?: { en: string; az: string };
   variety: string | null;
+  varietyKey?: string;
+  varietyLocalized?: { en: string; az: string };
   quantity: number;
   unit: string;
   pricePerUnit: number;

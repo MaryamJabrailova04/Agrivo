@@ -1,5 +1,11 @@
 import type { AuthUser } from "../auth/authStorage";
 import { getProductImage } from "./productImages";
+import {
+  resolveLocalizedName,
+  resolveLocalizedVariety,
+  resolveProductKey,
+  resolveVarietyKey,
+} from "../../i18n/farmerProductHelpers";
 
 export type FarmerProductCategory =
   | "Vegetables"
@@ -28,11 +34,17 @@ export interface FarmerListingProduct {
   id: string;
   slug: string;
   name: string;
+  nameKey?: string;
+  nameLocalized?: { en: string; az: string };
   variety?: string;
+  varietyKey?: string;
+  varietyLocalized?: { en: string; az: string };
   category: FarmerProductCategory;
+  categoryKey?: "vegetables" | "fruits" | "dairy" | "grains" | "herbs" | "other";
   image: string;
   price: number;
   unit: string;
+  unitKey?: "kg" | "ton" | "box" | "piece" | "liter";
   availableQuantity: number;
   minimumOrder: number;
   harvestDate: string;
@@ -49,6 +61,7 @@ export interface FarmerListingProduct {
   district?: string;
   productTags?: ProductFormTag[];
   deliveryOption?: FarmerDeliveryOption;
+  deliveryOptionKey?: "farmerDelivery" | "buyerPickup" | "logisticsPartner";
 }
 
 export interface FarmerProductsSummary {
@@ -326,16 +339,44 @@ export function addFarmerProduct(
   const products = getFarmerProducts(userId);
   const now = new Date().toISOString();
   const locationLabel = input.district.replace(/ rayonu| şəhəri/g, "").trim();
+  const nameKey = resolveProductKey(input.name);
+  const nameLocalized = resolveLocalizedName(input.name, nameKey);
+  const varietyKey = input.variety ? resolveVarietyKey(input.variety) : null;
+  const varietyLocalized = input.variety ? resolveLocalizedVariety(input.variety, varietyKey) : undefined;
+  const categoryKey =
+    input.category === "Vegetables"
+      ? "vegetables"
+      : input.category === "Fruits"
+        ? "fruits"
+        : input.category === "Dairy"
+          ? "dairy"
+          : input.category === "Grains"
+            ? "grains"
+            : input.category === "Herbs"
+              ? "herbs"
+              : "other";
+  const deliveryOptionKey =
+    input.deliveryOption === "Farmer delivery"
+      ? "farmerDelivery"
+      : input.deliveryOption === "Buyer pickup"
+        ? "buyerPickup"
+        : "logisticsPartner";
 
   const product: FarmerListingProduct = {
     id: generateId(),
     slug: uniqueSlug(input.name, input.district, products),
     name: input.name.trim(),
+    nameKey: nameKey ?? undefined,
+    nameLocalized,
     variety: input.variety?.trim() || undefined,
+    varietyKey: varietyKey ?? undefined,
+    varietyLocalized,
     category: mapFormCategory(input.category),
+    categoryKey,
     image: input.image,
     price: input.price,
     unit: input.unit,
+    unitKey: input.unit as FarmerListingProduct["unitKey"],
     availableQuantity: input.quantity,
     minimumOrder: input.unit === "kg" ? 20 : input.unit === "ton" ? 1 : 5,
     harvestDate: input.harvestDate,
@@ -348,6 +389,7 @@ export function addFarmerProduct(
     district: input.district,
     productTags: input.tags,
     deliveryOption: input.deliveryOption,
+    deliveryOptionKey,
     createdAt: now,
     updatedAt: now,
     archived: false,
@@ -375,14 +417,43 @@ export function filterAndSortProducts(
   let result = products.filter((p) => !p.archived);
 
   if (query) {
-    result = result.filter(
-      (p) =>
-        p.name.toLowerCase().includes(query) ||
-        (p.variety?.toLowerCase().includes(query) ?? false) ||
-        p.location.toLowerCase().includes(query) ||
-        p.category.toLowerCase().includes(query) ||
-        p.locationDetail.toLowerCase().includes(query),
-    );
+    const productAliases: Record<string, string[]> = {
+      tomato: ["tomato", "tomatoes", "pomidor"],
+      cucumber: ["cucumber", "cucumbers", "xiyar"],
+      apple: ["apple", "apples", "alma"],
+      potato: ["potato", "potatoes", "kartof"],
+      carrot: ["carrot", "carrots", "yerkökü", "yerkoku"],
+      cherry: ["cherry", "cherries", "gilas"],
+      pomegranate: ["pomegranate", "nar"],
+      watermelon: ["watermelon", "qarpız", "qarpiz"],
+      grape: ["grape", "grapes", "üzüm", "uzum"],
+      pear: ["pear", "pears", "armud"],
+    };
+
+    result = result.filter((p) => {
+      const haystack = [
+        p.name,
+        p.variety ?? "",
+        p.location,
+        p.category,
+        p.locationDetail,
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      if (haystack.includes(query)) return true;
+
+      const normalizedName = p.name.trim().toLowerCase();
+      for (const aliases of Object.values(productAliases)) {
+        if (aliases.includes(normalizedName) || aliases.some((alias) => normalizedName.includes(alias))) {
+          if (aliases.some((alias) => alias.includes(query) || query.includes(alias))) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    });
   }
 
   if (options.category !== "all") {

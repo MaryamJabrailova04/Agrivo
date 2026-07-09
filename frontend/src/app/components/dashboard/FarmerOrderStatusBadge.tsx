@@ -1,7 +1,23 @@
 import type { FarmerOrderStatus } from "../../data/farmerDashboard";
+import { useLanguage } from "../../../i18n/LanguageContext";
 
 export function FarmerOrderStatusBadge({ status }: { status: FarmerOrderStatus | string }) {
+  const { t } = useLanguage();
   const normalized = status.toLowerCase();
+  const label =
+    status === "New"
+      ? t("status.new")
+      : status === "Confirmed"
+        ? t("status.confirmed")
+        : status === "Pickup scheduled"
+          ? t("status.pickupScheduled")
+          : status === "In transit"
+            ? t("status.inTransit")
+            : status === "Delivered"
+              ? t("status.delivered")
+              : status === "Cancelled"
+                ? t("status.cancelled")
+                : status;
 
   const tone =
     normalized === "delivered"
@@ -18,7 +34,7 @@ export function FarmerOrderStatusBadge({ status }: { status: FarmerOrderStatus |
 
   return (
     <span className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${tone}`}>
-      {status}
+      {label}
     </span>
   );
 }

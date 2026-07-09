@@ -1,4 +1,10 @@
 import { BadgeCheck, MapPin, Star } from "lucide-react";
+import { useLanguage } from "../../i18n/LanguageContext";
+import {
+  translateFarmerCategory,
+  translateFarmerSpecialty,
+} from "../../i18n/farmerHelpers";
+import { translateLandingExperience } from "../../i18n/landingHelpers";
 import type { FarmerProfile } from "../data/farmers";
 import { buildWhatsAppUrl } from "../utils/whatsapp";
 import { WhatsAppIcon } from "./WhatsAppIcon";
@@ -13,6 +19,7 @@ interface FeaturedFarmerCardProps {
 }
 
 export function FeaturedFarmerCard({ farmer, onViewProfile }: FeaturedFarmerCardProps) {
+  const { t } = useLanguage();
   const whatsappUrl = buildWhatsAppUrl(farmer.whatsapp, farmer.name);
 
   return (
@@ -29,14 +36,16 @@ export function FeaturedFarmerCard({ farmer, onViewProfile }: FeaturedFarmerCard
               <h3 className="text-lg font-semibold text-[#102018] sm:text-xl">{farmer.name}</h3>
               <Badge className="rounded-full bg-[#ecfdf5] px-2.5 py-0.5 text-[0.7rem] text-[#166534] hover:bg-[#ecfdf5] sm:text-xs">
                 <BadgeCheck className="mr-1 inline h-3.5 w-3.5" />
-                Verified
+                {t("farmersPage.card.verified")}
               </Badge>
             </div>
             <div className="agrivo-farmer-meta mt-2 flex items-center text-sm text-[#5F6F64] sm:text-base">
               <MapPin className="mr-1.5 h-4 w-4 shrink-0 text-[#22c55e]" />
               {farmer.village ? `${farmer.village}, ${farmer.districtCity}` : farmer.districtCity}
             </div>
-            <p className="mt-1 text-sm font-medium text-[#43A047] sm:text-base">{farmer.category}</p>
+            <p className="mt-1 text-sm font-medium text-[#43A047] sm:text-base">
+              {translateFarmerCategory(t, farmer.category)}
+            </p>
           </div>
         </div>
 
@@ -46,24 +55,28 @@ export function FeaturedFarmerCard({ farmer, onViewProfile }: FeaturedFarmerCard
               <Star className="h-4 w-4 fill-[#facc15] text-[#facc15]" />
               <span className="font-bold">{farmer.rating}</span>
             </div>
-            <p className="agrivo-farmer-stat-label mt-1 text-[#5F6F64]">Rating</p>
+            <p className="agrivo-farmer-stat-label mt-1 text-[#5F6F64]">{t("farmersPage.card.rating")}</p>
           </div>
           <div>
             <p className="agrivo-farmer-stat-value font-bold text-[#14532D]">{farmer.completedOrders}</p>
-            <p className="agrivo-farmer-stat-label mt-1 text-[#5F6F64]">Orders</p>
+            <p className="agrivo-farmer-stat-label mt-1 text-[#5F6F64]">{t("farmersPage.card.orders")}</p>
           </div>
           <div>
-            <p className="agrivo-farmer-stat-value font-bold text-[#14532D]">{farmer.experience}</p>
-            <p className="agrivo-farmer-stat-label mt-1 text-[#5F6F64]">Experience</p>
+            <p className="agrivo-farmer-stat-value font-bold text-[#14532D]">
+              {translateLandingExperience(t, farmer.experience)}
+            </p>
+            <p className="agrivo-farmer-stat-label mt-1 text-[#5F6F64]">{t("farmersPage.card.experience")}</p>
           </div>
         </div>
 
         <div className="mt-5 flex-1">
-          <p className="agrivo-farmer-meta text-base font-medium text-[#5F6F64]">Specializes in</p>
+          <p className="agrivo-farmer-meta text-base font-medium text-[#5F6F64]">
+            {t("farmersPage.card.specializesIn")}
+          </p>
           <div className="mt-2 flex flex-wrap gap-2">
             {farmer.specialties.map((specialty) => (
               <Badge key={specialty} variant="secondary" className="rounded-full bg-white px-3 py-1 text-[#14532d] shadow-sm">
-                {specialty}
+                {translateFarmerSpecialty(t, specialty)}
               </Badge>
             ))}
           </div>
@@ -75,7 +88,7 @@ export function FeaturedFarmerCard({ farmer, onViewProfile }: FeaturedFarmerCard
             className="agrivo-button-soft w-full rounded-full border-[#14532d] bg-white text-[#14532d] hover:bg-[#ecfdf5]"
             onClick={() => onViewProfile(farmer.slug)}
           >
-            View Profile
+            {t("farmersPage.card.viewProfile")}
           </Button>
           <Button
             asChild
@@ -83,7 +96,7 @@ export function FeaturedFarmerCard({ farmer, onViewProfile }: FeaturedFarmerCard
           >
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer">
               <WhatsAppIcon className="mr-2 h-4 w-4" />
-              Contact via WhatsApp
+              {t("farmersPage.card.contactWhatsapp")}
             </a>
           </Button>
         </div>

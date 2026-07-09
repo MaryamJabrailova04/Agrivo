@@ -1,3 +1,4 @@
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   BadgeCheck,
   Building2,
@@ -67,6 +68,8 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { cn } from "../ui/utils";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import type { Language } from "../../../i18n/translations";
 
 const BUYER_TYPES: BuyerType[] = [
   "Restaurant",
@@ -91,6 +94,74 @@ const inputClass =
   "mt-1.5 h-11 rounded-xl border-[#DEECE0] bg-[#F7FBF5] text-sm text-[#102018]";
 const filterClass =
   "agrivo-filter-control h-11 rounded-full border-[#DEECE0] bg-[#F7FBF5] text-sm text-[#102018]";
+
+function formatProfileJoinedDate(joinedAt: string, language: Language): string {
+  return formatJoinedDate(joinedAt, language === "az" ? "az-AZ" : "en-US");
+}
+
+function translateProfileText(t: (key: string, fallback?: string) => string, value: string): string {
+  const map: Record<string, string> = {
+    "Demo Buyer": "buyerProfile.mock.demoBuyer",
+    Buyer: "buyerProfile.role",
+    "Local greengrocer": "buyerTypes.localGreengrocer",
+    "Green Market Baku": "buyerProfile.mock.greenMarketBaku",
+    "Green Market Bakı": "buyerProfile.mock.greenMarketBaku",
+    "Baku, Azerbaijan": "buyerProfile.mock.locations.bakuAzerbaijan",
+    "Bakı, Azərbaycan": "buyerProfile.mock.locations.bakuAzerbaijan",
+    "Baku, Nizami district": "buyerProfile.mock.locations.bakuNizami",
+    "Bakı, Nizami rayonu": "buyerProfile.mock.locations.bakuNizami",
+    "Baku, Binagadi district": "buyerProfile.mock.locations.bakuBinagadi",
+    "Bakı, Binəqədi rayonu": "buyerProfile.mock.locations.bakuBinagadi",
+    "Main Shop": "buyerProfile.addresses.mainShop",
+    "Əsas mağaza": "buyerProfile.addresses.mainShop",
+    Warehouse: "buyerProfile.addresses.warehouse",
+    "Anbar": "buyerProfile.addresses.warehouse",
+    "Local Produce Shop, Ataturk avenue 25": "buyerProfile.mock.addresses.mainShopAddress",
+    "Yerli məhsul mağazası, Atatürk prospekti 25": "buyerProfile.mock.addresses.mainShopAddress",
+    "Market warehouse entrance 2": "buyerProfile.mock.addresses.warehouseAddress",
+    "Bazar anbarı, giriş 2": "buyerProfile.mock.addresses.warehouseAddress",
+    "Agrivo logistics": "buyerProfile.preferences.deliveryMethods.agrivoLogistics",
+    "Farmer delivery": "buyerProfile.preferences.deliveryMethods.farmerDelivery",
+    "Pickup from farm": "buyerProfile.preferences.deliveryMethods.pickupFromFarm",
+    Restaurant: "buyerProfile.buyerTypes.restaurant",
+    Restoran: "buyerProfile.buyerTypes.restaurant",
+    Supermarket: "buyerProfile.buyerTypes.supermarket",
+    "Bazaar seller": "buyerProfile.buyerTypes.bazaarSeller",
+    "Bazar satıcısı": "buyerProfile.buyerTypes.bazaarSeller",
+    "Wholesale buyer": "buyerProfile.buyerTypes.wholesaleBuyer",
+    "Topdan alıcı": "buyerProfile.buyerTypes.wholesaleBuyer",
+    Other: "buyerProfile.buyerTypes.other",
+    "Digər": "buyerProfile.buyerTypes.other",
+    Vegetables: "categories.vegetables",
+    Fruits: "categories.fruits",
+    "Dairy Products": "categories.dairyProducts",
+    WhatsApp: "common.whatsapp",
+    Email: "common.email",
+    Phone: "common.phone",
+    "All regions": "regions.allRegions",
+    "Bütün regionlar": "regions.allRegions",
+    "Lənkəran-Astara": "regions.lankaranAstara",
+    "Quba-Xaçmaz": "regions.gubaKhachmaz",
+    "Bakı": "regions.baku",
+    Baku: "regions.baku",
+    "Absheron-Khizi": "regions.absheronKhizi",
+    "Ganja-Dashkasan": "regions.ganjaDashkasan",
+    "Shaki-Zagatala": "regions.shakiZagatala",
+    "Guba-Khachmaz": "regions.gubaKhachmaz",
+    "Central Aran": "regions.centralAran",
+    Karabakh: "regions.karabakh",
+    "Eastern Zangezur": "regions.easternZangezur",
+    "Mountainous Shirvan": "regions.mountainousShirvan",
+    Nakhchivan: "regions.nakhchivan",
+    "Gazakh-Tovuz": "regions.gazakhTovuz",
+    "Mil-Mughan": "regions.milMughan",
+    "Shirvan-Salyan": "regions.shirvanSalyan",
+    Today: "buyerProfile.security.today",
+    "Bu gün": "buyerProfile.security.today",
+  };
+  const key = map[value];
+  return key ? t(key, value) : value;
+}
 
 function ChipToggle({
   label,
@@ -161,6 +232,7 @@ function ProfileOverviewCard({
   onCancel: () => void;
   onChangePhoto: () => void;
 }) {
+  const { t, language } = useLanguage();
   const initials = getProfileInitials(profile.fullName);
 
   return (
@@ -176,8 +248,8 @@ function ProfileOverviewCard({
 
         <div className="agrivo-profile-overview-info">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="agrivo-profile-overview-name">{profile.fullName}</h2>
-            <span className="agrivo-profile-role-badge">Buyer</span>
+            <h2 className="agrivo-profile-overview-name">{translateProfileText(t, profile.fullName)}</h2>
+            <span className="agrivo-profile-role-badge">{t("buyerProfile.role")}</span>
           </div>
 
           <div className="agrivo-profile-overview-meta">
@@ -187,7 +259,7 @@ function ProfileOverviewCard({
               {profile.emailVerified ? (
                 <span className="agrivo-profile-verified-badge">
                   <BadgeCheck className="h-3 w-3" />
-                  Verified
+                  {t("common.verified")}
                 </span>
               ) : null}
             </p>
@@ -197,21 +269,21 @@ function ProfileOverviewCard({
               {profile.phoneVerified ? (
                 <span className="agrivo-profile-verified-badge">
                   <BadgeCheck className="h-3 w-3" />
-                  Verified
+                  {t("common.verified")}
                 </span>
               ) : null}
             </p>
             <p className="agrivo-profile-meta-row">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
-              <span>{profile.location}</span>
+              <span>{translateProfileText(t, profile.location)}</span>
             </p>
             <p className="agrivo-profile-meta-row">
               <Building2 className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
-              <span>{profile.buyerType}</span>
+              <span>{translateProfileText(t, profile.buyerType)}</span>
             </p>
             <p className="agrivo-profile-meta-row">
               <Star className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
-              <span>Joined {formatJoinedDate(profile.joinedAt)}</span>
+              <span>{t("buyerProfile.joined").replace("{date}", formatProfileJoinedDate(profile.joinedAt, language))}</span>
             </p>
           </div>
         </div>
@@ -226,14 +298,14 @@ function ProfileOverviewCard({
               onClick={onCancel}
               disabled={isSaving}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={onSave}
               disabled={isSaving}
             >
-              {isSaving ? "Saving..." : "Save Changes"}
+              {isSaving ? t("buyerProfile.editModal.saving", "Saving...") : t("buyerProfile.editModal.saveChanges")}
             </Button>
           </>
         ) : (
@@ -243,7 +315,7 @@ function ProfileOverviewCard({
               onClick={onEditProfile}
             >
               <Pencil className="mr-2 h-4 w-4" />
-              Edit Profile
+              {t("buyerProfile.editProfile")}
             </Button>
             <Button
               variant="outline"
@@ -251,7 +323,7 @@ function ProfileOverviewCard({
               onClick={onChangePhoto}
             >
               <Camera className="mr-2 h-4 w-4" />
-              Change Photo
+              {t("buyerProfile.changePhoto")}
             </Button>
           </>
         )}
@@ -271,11 +343,12 @@ function ProfileStatsCards({
   savedProducts: number;
   bulkRequests: number;
 }) {
+  const { t } = useLanguage();
   const cards = [
-    { label: "Total Orders", value: totalOrders, icon: ClipboardList },
-    { label: "Active Orders", value: activeOrders, icon: ShoppingBag },
-    { label: "Saved Products", value: savedProducts, icon: Heart },
-    { label: "Bulk Requests", value: bulkRequests, icon: Package },
+    { label: t("buyerProfile.stats.totalOrders"), value: totalOrders, icon: ClipboardList },
+    { label: t("buyerProfile.stats.activeOrders"), value: activeOrders, icon: ShoppingBag },
+    { label: t("buyerProfile.stats.savedProducts"), value: savedProducts, icon: Heart },
+    { label: t("buyerProfile.stats.bulkRequests"), value: bulkRequests, icon: Package },
   ];
 
   return (
@@ -309,6 +382,7 @@ function AddressFormDialog({
   hasExistingAddresses: boolean;
   onSave: (data: Omit<DeliveryAddress, "id" | "isDefault"> & { isDefault?: boolean }) => void;
 }) {
+  const { t } = useLanguage();
   const [label, setLabel] = useState("");
   const [cityDistrict, setCityDistrict] = useState("");
   const [fullAddress, setFullAddress] = useState("");
@@ -333,46 +407,46 @@ function AddressFormDialog({
       <DialogContent className="agrivo-profile-dialog sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-            {initial ? "Edit Delivery Address" : "Add Delivery Address"}
+            {initial ? t("buyerProfile.addressModal.editTitle") : t("buyerProfile.addressModal.addTitle")}
           </DialogTitle>
           <DialogDescription className="text-sm text-[#5F6F64]">
-            Save addresses for faster checkout and bulk order delivery.
+            {t("buyerProfile.addressModal.subtitle", "Save addresses for faster checkout and bulk order delivery.")}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-1">
           <div>
-            <Label htmlFor="addr-label">Address label</Label>
+            <Label htmlFor="addr-label">{t("buyerProfile.addressModal.addressTitle")}</Label>
             <Input
               id="addr-label"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="e.g. Main Shop, Warehouse"
+              placeholder={t("buyerProfile.addressModal.addressTitlePlaceholder", "e.g. Main Shop, Warehouse")}
               className={inputClass}
             />
           </div>
           <div>
-            <Label htmlFor="addr-city">City / district</Label>
+            <Label htmlFor="addr-city">{t("buyerProfile.addressModal.cityDistrict")}</Label>
             <Input
               id="addr-city"
               value={cityDistrict}
               onChange={(e) => setCityDistrict(e.target.value)}
-              placeholder="Baku, Nizami district"
+              placeholder={t("buyerProfile.mock.locations.bakuNizami")}
               className={inputClass}
             />
           </div>
           <div>
-            <Label htmlFor="addr-full">Full address</Label>
+            <Label htmlFor="addr-full">{t("buyerProfile.addressModal.fullAddress")}</Label>
             <Textarea
               id="addr-full"
               value={fullAddress}
               onChange={(e) => setFullAddress(e.target.value)}
-              placeholder="Street, building, entrance"
+              placeholder={t("buyerProfile.addressModal.fullAddressPlaceholder", "Street, building, entrance")}
               className="mt-1.5 min-h-[80px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
             />
           </div>
           <div>
-            <Label htmlFor="addr-phone">Contact phone</Label>
+            <Label htmlFor="addr-phone">{t("buyerProfile.addressModal.phoneNumber")}</Label>
             <Input
               id="addr-phone"
               type="tel"
@@ -390,7 +464,7 @@ function AddressFormDialog({
                 onChange={(e) => setIsDefault(e.target.checked)}
                 className="h-4 w-4 rounded border-[#DEECE0] text-[#14532D] focus:ring-[#14532D]"
               />
-              Set as default address
+              {t("buyerProfile.addresses.setAsDefault")}
             </label>
           ) : null}
         </div>
@@ -401,7 +475,7 @@ function AddressFormDialog({
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
@@ -417,7 +491,7 @@ function AddressFormDialog({
               onOpenChange(false);
             }}
           >
-            Save Address
+            {t("buyerProfile.addressModal.saveAddress")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -434,6 +508,7 @@ function ChangePasswordDialog({
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
 }) {
+  const { t } = useLanguage();
   const [current, setCurrent] = useState("");
   const [next, setNext] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -451,13 +526,13 @@ function ChangePasswordDialog({
   const handleSubmit = () => {
     const nextErrors: Record<string, string> = {};
     if (!current.trim()) {
-      nextErrors.current = "Current password is required.";
+      nextErrors.current = t("buyerProfile.passwordModal.currentPasswordRequired", "Current password is required.");
     }
     if (next.length < 6) {
-      nextErrors.next = "New password must be at least 6 characters.";
+      nextErrors.next = t("buyerProfile.passwordModal.newPasswordMin", "New password must be at least 6 characters.");
     }
     if (next !== confirm) {
-      nextErrors.confirm = "Passwords do not match.";
+      nextErrors.confirm = t("buyerProfile.passwordModal.passwordsMismatch", "Passwords do not match.");
     }
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
@@ -472,15 +547,15 @@ function ChangePasswordDialog({
       <DialogContent className="agrivo-profile-dialog sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-            Change Password
+            {t("buyerProfile.passwordModal.title")}
           </DialogTitle>
           <DialogDescription className="text-sm text-[#5F6F64]">
-            Update your account password. This is a mock flow for now.
+            {t("buyerProfile.passwordModal.subtitle", "Update your account password. This is a mock flow for now.")}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-1">
           <div>
-            <Label htmlFor="pwd-current">Current password</Label>
+            <Label htmlFor="pwd-current">{t("buyerProfile.passwordModal.currentPassword")}</Label>
             <Input
               id="pwd-current"
               type="password"
@@ -500,7 +575,7 @@ function ChangePasswordDialog({
             ) : null}
           </div>
           <div>
-            <Label htmlFor="pwd-new">New password</Label>
+            <Label htmlFor="pwd-new">{t("buyerProfile.passwordModal.newPassword")}</Label>
             <Input
               id="pwd-new"
               type="password"
@@ -518,7 +593,7 @@ function ChangePasswordDialog({
             {errors.next ? <p className="agrivo-profile-field-error">{errors.next}</p> : null}
           </div>
           <div>
-            <Label htmlFor="pwd-confirm">Confirm new password</Label>
+            <Label htmlFor="pwd-confirm">{t("buyerProfile.passwordModal.confirmPassword")}</Label>
             <Input
               id="pwd-confirm"
               type="password"
@@ -544,13 +619,13 @@ function ChangePasswordDialog({
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
             onClick={handleSubmit}
           >
-            Update Password
+            {t("buyerProfile.passwordModal.savePassword")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -560,6 +635,7 @@ function ChangePasswordDialog({
 
 export function BuyerProfilePage() {
   const { user, logout } = useAuth();
+  const { t, language } = useLanguage();
   const { savedProducts } = useSavedProducts();
 
   const [profile, setProfile] = useState<BuyerProfile | null>(null);
@@ -603,14 +679,18 @@ export function BuyerProfilePage() {
           setDraft(loaded);
         })
         .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to load buyer profile."),
+          setApiError(
+            error instanceof Error
+              ? error.message
+              : t("buyerProfile.feedback.failedLoad", "Failed to load buyer profile."),
+          ),
         );
       return;
     }
     const loaded = getBuyerProfile(user);
     setProfile(loaded);
     setDraft(loaded);
-  }, [user]);
+  }, [t, user]);
 
   useEffect(() => {
     refresh();
@@ -661,10 +741,10 @@ export function BuyerProfilePage() {
   const handleSaveAll = async () => {
     if (!draft || !user) return;
 
-    const errors = validateBuyerProfile(draft);
+    const errors = validateBuyerProfile(draft, t);
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
-      showToast("Please fix the highlighted fields.");
+      showToast(t("buyerProfile.feedback.fixHighlighted", "Please fix the highlighted fields."));
       return;
     }
 
@@ -690,7 +770,11 @@ export function BuyerProfilePage() {
           phone: next.phone,
         });
       } catch (error) {
-        setApiError(error instanceof Error ? error.message : "Failed to save buyer profile.");
+        setApiError(
+          error instanceof Error
+            ? error.message
+            : t("buyerProfile.feedback.failedSave", "Failed to save buyer profile."),
+        );
       }
     }
     syncAuthUser(next);
@@ -698,7 +782,7 @@ export function BuyerProfilePage() {
     setSavedSnapshot(null);
     setFormErrors({});
     setIsSaving(false);
-    showToast("Profile updated successfully.");
+    showToast(t("buyerProfile.editModal.success"));
   };
 
   const updateDraft = (updates: Partial<BuyerProfile>) => {
@@ -783,7 +867,7 @@ export function BuyerProfilePage() {
       {isEditing ? (
         <div className="agrivo-profile-editing-banner">
           <Pencil className="h-4 w-4 text-[#14532D]" />
-          <span>You are editing your profile. Save or cancel your changes.</span>
+          <span>{t("buyerProfile.editingBanner")}</span>
         </div>
       ) : null}
 
@@ -806,14 +890,14 @@ export function BuyerProfilePage() {
 
       <div className="agrivo-profile-layout">
         <div className="agrivo-profile-column">
-          <SectionCard title="Personal Information" icon={UserRound}>
+          <SectionCard title={t("buyerProfile.personal.title")} icon={UserRound}>
             {isEditing ? (
               <div className="agrivo-profile-form-grid">
                 <div>
-                  <Label htmlFor="profile-name">Full Name</Label>
+                  <Label htmlFor="profile-name">{t("buyerProfile.personal.fullName")}</Label>
                   <Input
                     id="profile-name"
-                    value={displayProfile.fullName}
+                    value={translateProfileText(t, displayProfile.fullName)}
                     onChange={(e) => updateDraft({ fullName: e.target.value })}
                     className={inputClass}
                     disabled={isSaving}
@@ -823,7 +907,7 @@ export function BuyerProfilePage() {
                   ) : null}
                 </div>
                 <div>
-                  <Label htmlFor="profile-email">Email</Label>
+                  <Label htmlFor="profile-email">{t("buyerProfile.personal.email")}</Label>
                   <Input
                     id="profile-email"
                     type="email"
@@ -837,7 +921,7 @@ export function BuyerProfilePage() {
                   ) : null}
                 </div>
                 <div>
-                  <Label htmlFor="profile-phone">Phone Number</Label>
+                  <Label htmlFor="profile-phone">{t("buyerProfile.personal.phoneNumber")}</Label>
                   <Input
                     id="profile-phone"
                     type="tel"
@@ -852,7 +936,7 @@ export function BuyerProfilePage() {
                 </div>
                 <div className="agrivo-profile-password-row">
                   <div>
-                    <Label>Password</Label>
+                    <Label>{t("buyerProfile.personal.password")}</Label>
                     <p className="mt-1.5 text-sm font-medium text-[#102018]">••••••••</p>
                   </div>
                   <Button
@@ -862,27 +946,27 @@ export function BuyerProfilePage() {
                     className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
                     onClick={() => setPasswordDialogOpen(true)}
                   >
-                    Change Password
+                    {t("buyerProfile.personal.changePassword")}
                   </Button>
                 </div>
               </div>
             ) : (
               <dl className="agrivo-profile-read-grid">
                 <div>
-                  <dt>Full Name</dt>
-                  <dd>{displayProfile.fullName}</dd>
+                  <dt>{t("buyerProfile.personal.fullName")}</dt>
+                  <dd>{translateProfileText(t, displayProfile.fullName)}</dd>
                 </div>
                 <div>
-                  <dt>Email</dt>
+                  <dt>{t("buyerProfile.personal.email")}</dt>
                   <dd>{displayProfile.email}</dd>
                 </div>
                 <div>
-                  <dt>Phone Number</dt>
+                  <dt>{t("buyerProfile.personal.phoneNumber")}</dt>
                   <dd>{displayProfile.phone}</dd>
                 </div>
                 <div className="agrivo-profile-password-row">
                   <div>
-                    <dt>Password</dt>
+                    <dt>{t("buyerProfile.personal.password")}</dt>
                     <dd>••••••••</dd>
                   </div>
                   <Button
@@ -892,18 +976,18 @@ export function BuyerProfilePage() {
                     className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
                     onClick={() => setPasswordDialogOpen(true)}
                   >
-                    Change Password
+                    {t("buyerProfile.personal.changePassword")}
                   </Button>
                 </div>
               </dl>
             )}
           </SectionCard>
 
-          <SectionCard title="Business Information" icon={Building2}>
+          <SectionCard title={t("buyerProfile.business.title")} icon={Building2}>
             {isEditing ? (
               <div className="agrivo-profile-form-grid">
                 <div>
-                  <Label htmlFor="biz-name">Business name</Label>
+                  <Label htmlFor="biz-name">{t("buyerProfile.business.businessName")}</Label>
                   <Input
                     id="biz-name"
                     value={displayProfile.businessName}
@@ -913,7 +997,7 @@ export function BuyerProfilePage() {
                   />
                 </div>
                 <div>
-                  <Label>Buyer type</Label>
+                  <Label>{t("buyerProfile.business.buyerType")}</Label>
                   <Select
                     value={displayProfile.buyerType}
                     onValueChange={(v) => updateDraft({ buyerType: v as BuyerType })}
@@ -925,7 +1009,7 @@ export function BuyerProfilePage() {
                     <SelectContent>
                       {BUYER_TYPES.map((type) => (
                         <SelectItem key={type} value={type}>
-                          {type}
+                          {translateProfileText(t, type)}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -935,7 +1019,7 @@ export function BuyerProfilePage() {
                   ) : null}
                 </div>
                 <div className="agrivo-profile-form-field-full">
-                  <Label htmlFor="biz-address">Business address</Label>
+                  <Label htmlFor="biz-address">{t("buyerProfile.business.businessAddress")}</Label>
                   <Input
                     id="biz-address"
                     value={displayProfile.businessAddress}
@@ -945,23 +1029,23 @@ export function BuyerProfilePage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="biz-tax">Tax ID / VÖEN (optional)</Label>
+                  <Label htmlFor="biz-tax">{t("buyerProfile.business.taxIdOptional", "Tax ID / VÖEN (optional)")}</Label>
                   <Input
                     id="biz-tax"
                     value={displayProfile.taxId}
                     onChange={(e) => updateDraft({ taxId: e.target.value })}
-                    placeholder="Optional"
+                    placeholder={t("buyerProfile.business.optional", "Optional")}
                     className={inputClass}
                     disabled={isSaving}
                   />
                 </div>
                 <div className="agrivo-profile-form-field-full">
-                  <Label>Preferred product categories</Label>
+                  <Label>{t("buyerProfile.business.preferredProductCategories")}</Label>
                   <div className="agrivo-profile-chip-group">
                     {CATEGORIES.map((category) => (
                       <ChipToggle
                         key={category}
-                        label={category}
+                        label={translateProfileText(t, category)}
                         selected={displayProfile.businessCategories.includes(category)}
                         onClick={() => toggleDraftCategory("businessCategories", category)}
                         disabled={isSaving}
@@ -973,37 +1057,41 @@ export function BuyerProfilePage() {
             ) : (
               <dl className="agrivo-profile-read-grid">
                 <div>
-                  <dt>Business name</dt>
-                  <dd>{displayProfile.businessName}</dd>
+                  <dt>{t("buyerProfile.business.businessName")}</dt>
+                  <dd>{translateProfileText(t, displayProfile.businessName)}</dd>
                 </div>
                 <div>
-                  <dt>Buyer type</dt>
-                  <dd>{displayProfile.buyerType}</dd>
+                  <dt>{t("buyerProfile.business.buyerType")}</dt>
+                  <dd>{translateProfileText(t, displayProfile.buyerType)}</dd>
                 </div>
                 <div>
-                  <dt>Business address</dt>
-                  <dd>{displayProfile.businessAddress}</dd>
+                  <dt>{t("buyerProfile.business.businessAddress")}</dt>
+                  <dd>{translateProfileText(t, displayProfile.businessAddress)}</dd>
                 </div>
                 {displayProfile.taxId ? (
                   <div>
-                    <dt>Tax ID / VÖEN</dt>
+                    <dt>{t("buyerProfile.business.taxId", "Tax ID / VÖEN")}</dt>
                     <dd>{displayProfile.taxId}</dd>
                   </div>
                 ) : null}
                 <div>
-                  <dt>Preferred product categories</dt>
-                  <dd>{displayProfile.businessCategories.join(", ") || "Not set"}</dd>
+                  <dt>{t("buyerProfile.business.preferredProductCategories")}</dt>
+                  <dd>
+                    {displayProfile.businessCategories.length
+                      ? displayProfile.businessCategories.map((c) => translateProfileText(t, c)).join(", ")
+                      : t("buyerProfile.notSet", "Not set")}
+                  </dd>
                 </div>
               </dl>
             )}
           </SectionCard>
 
-          <SectionCard title="Delivery Addresses" icon={MapPin}>
+          <SectionCard title={t("buyerProfile.addresses.title")} icon={MapPin}>
             {addresses.length === 0 ? (
               <div className="agrivo-profile-address-empty">
-                <p className="font-semibold text-[#102018]">No delivery addresses yet.</p>
+                <p className="font-semibold text-[#102018]">{t("buyerProfile.addresses.emptyTitle", "No delivery addresses yet.")}</p>
                 <p className="mt-1 text-sm text-[#5F6F64]">
-                  Add an address to make checkout faster.
+                  {t("buyerProfile.addresses.emptySubtitle", "Add an address to make checkout faster.")}
                 </p>
               </div>
             ) : (
@@ -1011,13 +1099,13 @@ export function BuyerProfilePage() {
                 {addresses.map((address) => (
                   <article key={address.id} className="agrivo-profile-address-card">
                     <div className="agrivo-profile-address-card-header">
-                      <h4 className="font-semibold text-[#102018]">{address.label}</h4>
+                      <h4 className="font-semibold text-[#102018]">{translateProfileText(t, address.label)}</h4>
                       {address.isDefault ? (
-                        <span className="agrivo-profile-default-badge">Default</span>
+                        <span className="agrivo-profile-default-badge">{t("buyerProfile.addresses.default")}</span>
                       ) : null}
                     </div>
-                    <p className="mt-1 text-sm text-[#5F6F64]">{address.cityDistrict}</p>
-                    <p className="text-sm text-[#102018]">{address.fullAddress}</p>
+                    <p className="mt-1 text-sm text-[#5F6F64]">{translateProfileText(t, address.cityDistrict)}</p>
+                    <p className="text-sm text-[#102018]">{translateProfileText(t, address.fullAddress)}</p>
                     <p className="mt-1 text-sm text-[#6b7a70]">{address.phone}</p>
                     <div className="agrivo-profile-address-actions">
                       <Button
@@ -1029,7 +1117,7 @@ export function BuyerProfilePage() {
                           setAddressDialogOpen(true);
                         }}
                       >
-                        Edit
+                        {t("buyerProfile.addresses.edit")}
                       </Button>
                       {!address.isDefault ? (
                         <Button
@@ -1040,10 +1128,10 @@ export function BuyerProfilePage() {
                             applyAddressChange((current) =>
                               mergeSetDefaultDeliveryAddress(current, address.id),
                             );
-                            if (!isEditing) showToast("Default address updated.");
+                            if (!isEditing) showToast(t("buyerProfile.addressModal.defaultUpdated"));
                           }}
                         >
-                          Set as default
+                          {t("buyerProfile.addresses.setAsDefault")}
                         </Button>
                       ) : null}
                       <Button
@@ -1054,11 +1142,15 @@ export function BuyerProfilePage() {
                           applyAddressChange((current) =>
                             mergeDeleteDeliveryAddress(current, address.id),
                           );
-                          showToast(isEditing ? "Address removed from draft." : "Address removed.");
+                          showToast(
+                            isEditing
+                              ? t("buyerProfile.addressModal.deletedDraft", "Address removed from draft.")
+                              : t("buyerProfile.addressModal.deleted"),
+                          );
                         }}
                       >
                         <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                        Delete
+                        {t("buyerProfile.addresses.delete")}
                       </Button>
                     </div>
                   </article>
@@ -1074,21 +1166,21 @@ export function BuyerProfilePage() {
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Add Delivery Address
+              {t("buyerProfile.addresses.addDeliveryAddress")}
             </Button>
           </SectionCard>
         </div>
 
         <div className="agrivo-profile-column">
-          <SectionCard title="Buying Preferences" icon={ShoppingBag}>
+          <SectionCard title={t("buyerProfile.preferences.title")} icon={ShoppingBag}>
             <div className="space-y-5">
               <div>
-                <Label>Preferred categories</Label>
+                <Label>{t("buyerProfile.preferences.preferredCategories")}</Label>
                 <div className="agrivo-profile-chip-group mt-2">
                   {CATEGORIES.map((category) => (
                     <ChipToggle
                       key={category}
-                      label={category}
+                      label={translateProfileText(t, category)}
                       selected={displayProfile.preferredCategories.includes(category)}
                       onClick={() => toggleDraftCategory("preferredCategories", category)}
                       disabled={!isEditing || isSaving}
@@ -1098,12 +1190,12 @@ export function BuyerProfilePage() {
               </div>
 
               <div>
-                <Label>Preferred regions</Label>
+                <Label>{t("buyerProfile.preferences.preferredRegions")}</Label>
                 <div className="agrivo-profile-chip-group mt-2">
                   {REGION_OPTIONS.map((region) => (
                     <ChipToggle
                       key={region}
-                      label={region}
+                      label={translateProfileText(t, region)}
                       selected={displayProfile.preferredRegions.includes(region)}
                       onClick={() => toggleDraftRegion(region)}
                       disabled={!isEditing || isSaving}
@@ -1113,7 +1205,7 @@ export function BuyerProfilePage() {
               </div>
 
               <div>
-                <Label>Preferred delivery method</Label>
+                <Label>{t("buyerProfile.preferences.preferredDeliveryMethod")}</Label>
                 {isEditing ? (
                   <Select
                     value={displayProfile.preferredDeliveryMethod}
@@ -1128,25 +1220,25 @@ export function BuyerProfilePage() {
                     <SelectContent>
                       {DELIVERY_METHODS.map((method) => (
                         <SelectItem key={method} value={method}>
-                          {method}
+                          {translateProfileText(t, method)}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 ) : (
                   <p className="mt-2 text-sm font-semibold text-[#102018]">
-                    {displayProfile.preferredDeliveryMethod}
+                    {translateProfileText(t, displayProfile.preferredDeliveryMethod)}
                   </p>
                 )}
               </div>
 
               <div>
-                <Label>Notification preference</Label>
+                <Label>{t("buyerProfile.preferences.notificationPreference")}</Label>
                 <div className="agrivo-profile-chip-group mt-2">
                   {NOTIFICATION_OPTIONS.map((option) => (
                     <ChipToggle
                       key={option}
-                      label={option}
+                      label={translateProfileText(t, option)}
                       selected={displayProfile.notificationPreference === option}
                       onClick={() => updateDraft({ notificationPreference: option })}
                       disabled={!isEditing || isSaving}
@@ -1157,10 +1249,10 @@ export function BuyerProfilePage() {
             </div>
           </SectionCard>
 
-          <SectionCard title="Account Security" icon={Shield}>
+          <SectionCard title={t("buyerProfile.security.title")} icon={Shield}>
             <dl className="agrivo-profile-security-list">
               <div>
-                <dt>Password</dt>
+                <dt>{t("buyerProfile.security.password")}</dt>
                 <dd className="flex flex-wrap items-center justify-between gap-2">
                   <span>••••••••</span>
                   <Button
@@ -1170,17 +1262,17 @@ export function BuyerProfilePage() {
                     onClick={() => setPasswordDialogOpen(true)}
                   >
                     <KeyRound className="mr-1.5 h-3.5 w-3.5" />
-                    Change Password
+                    {t("buyerProfile.security.changePassword")}
                   </Button>
                 </dd>
               </div>
               <div>
-                <dt>Login email</dt>
+                <dt>{t("buyerProfile.security.loginEmail")}</dt>
                 <dd>{displayProfile.email}</dd>
               </div>
               <div>
-                <dt>Last login</dt>
-                <dd>{displayProfile.lastLogin}</dd>
+                <dt>{t("buyerProfile.security.lastLogin")}</dt>
+                <dd>{translateProfileText(t, displayProfile.lastLogin)}</dd>
               </div>
             </dl>
             <Button
@@ -1188,11 +1280,11 @@ export function BuyerProfilePage() {
               className="mt-4 w-full rounded-full border-[#fecaca] text-[#b91c1c] hover:bg-[#fef2f2] sm:w-auto"
               onClick={() => {
                 logout();
-                window.location.hash = "login";
+                navigateToHash("login");
               }}
             >
               <LogOut className="mr-2 h-4 w-4" />
-              Logout
+              {t("buyerProfile.security.logout")}
             </Button>
           </SectionCard>
         </div>
@@ -1213,25 +1305,28 @@ export function BuyerProfilePage() {
           } else {
             applyAddressChange((current) => mergeAddDeliveryAddress(current, data));
           }
-          showToast(isEditing ? "Address updated in draft." : "Address saved.");
+          showToast(
+            isEditing
+              ? t("buyerProfile.addressModal.savedDraft", "Address updated in draft.")
+              : t("buyerProfile.addressModal.saved"),
+          );
         }}
       />
 
       <ChangePasswordDialog
         open={passwordDialogOpen}
         onOpenChange={setPasswordDialogOpen}
-        onSuccess={() => showToast("Password updated successfully.")}
+        onSuccess={() => showToast(t("buyerProfile.passwordModal.success"))}
       />
 
       <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
         <DialogContent className="agrivo-profile-dialog sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-              Change Photo
+              {t("buyerProfile.changePhoto")}
             </DialogTitle>
             <DialogDescription className="text-sm text-[#5F6F64]">
-              Photo upload will be available in a future update. Your initials will continue to be
-              used for now.
+              {t("buyerProfile.feedback.photoFuture")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1239,7 +1334,7 @@ export function BuyerProfilePage() {
               className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={() => setPhotoDialogOpen(false)}
             >
-              Got it
+              {t("common.close")}
             </Button>
           </DialogFooter>
         </DialogContent>

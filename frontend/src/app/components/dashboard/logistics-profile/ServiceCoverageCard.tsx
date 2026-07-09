@@ -5,6 +5,12 @@ import {
   toggleArrayItem,
   type LogisticsDashboardProfile,
 } from "../../../utils/logisticsProfileStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  formatLocalizedDeliveryRadius,
+  translateRouteLabel,
+  translateServiceRegion,
+} from "../../../../i18n/logisticsProfileHelpers";
 import { Input } from "../../ui/input";
 import { ChipToggle } from "../farmer-profile/ChipToggle";
 import { ProfileCard, ProfileCardBody, ProfileCardHeader } from "../farmer-profile/ProfileLayout";
@@ -24,17 +30,19 @@ export function ServiceCoverageCard({
   isEditing: boolean;
   onChange: (updates: Partial<LogisticsDashboardProfile>) => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <ProfileCard>
-      <ProfileCardHeader icon={MapPinned} title="Service Coverage" />
+      <ProfileCardHeader icon={MapPinned} title={t("logisticsProfile.sections.serviceCoverage")} />
       <ProfileCardBody className="agrivo-profile-info-card-body">
-        <ProfileInfoGroup label="Service Regions">
+        <ProfileInfoGroup label={t("logisticsProfile.fields.serviceRegions")}>
           {isEditing ? (
             <div className="agrivo-profile-chip-group">
               {LOGISTICS_SERVICE_REGIONS.map((region) => (
                 <ChipToggle
                   key={region}
-                  label={region}
+                  label={translateServiceRegion(t, region)}
                   selected={profile.serviceRegions.includes(region)}
                   onClick={() =>
                     onChange({
@@ -49,25 +57,25 @@ export function ServiceCoverageCard({
               {profile.serviceRegions.length > 0 ? (
                 profile.serviceRegions.map((region) => (
                   <span key={region} className="agrivo-logistics-preview-chip">
-                    {region}
+                    {translateServiceRegion(t, region)}
                   </span>
                 ))
               ) : (
                 <span className="agrivo-profile-info-field__value--placeholder">
-                  Select service regions
+                  {t("logisticsProfile.placeholders.serviceRegions")}
                 </span>
               )}
             </div>
           )}
         </ProfileInfoGroup>
 
-        <ProfileInfoGroup label="Main Delivery Routes">
+        <ProfileInfoGroup label={t("logisticsProfile.fields.mainDeliveryRoutes")}>
           {isEditing ? (
             <div className="agrivo-profile-chip-group">
               {LOGISTICS_ROUTE_SUGGESTIONS.map((route) => (
                 <ChipToggle
                   key={route}
-                  label={route}
+                  label={translateRouteLabel(t, route)}
                   selected={profile.mainRoutes.includes(route)}
                   onClick={() =>
                     onChange({
@@ -83,12 +91,14 @@ export function ServiceCoverageCard({
                 profile.mainRoutes.map((route) => (
                   <li key={route} className="agrivo-logistics-route-item">
                     <MapPinned className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
-                    <span className="agrivo-profile-info-field__value">{route}</span>
+                    <span className="agrivo-profile-info-field__value">
+                      {translateRouteLabel(t, route)}
+                    </span>
                   </li>
                 ))
               ) : (
                 <li className="agrivo-profile-info-field__value--placeholder">
-                  Add main delivery routes
+                  {t("logisticsProfile.placeholders.mainRoutes")}
                 </li>
               )}
             </ul>
@@ -97,7 +107,7 @@ export function ServiceCoverageCard({
 
         <ProfileInfoGrid>
           <ProfileInfoField
-            label="Delivery Radius / Coverage Area"
+            label={t("logisticsProfile.fields.deliveryRadius")}
             isEditing={isEditing}
             edit={
               <Input
@@ -108,23 +118,25 @@ export function ServiceCoverageCard({
               />
             }
           >
-            {profile.deliveryRadius || "Add coverage area"}
+            {profile.deliveryRadius
+              ? formatLocalizedDeliveryRadius(t, profile.deliveryRadius)
+              : t("logisticsProfile.placeholders.coverageArea")}
           </ProfileInfoField>
 
           <ProfileInfoField
-            label="Operating Hours"
+            label={t("logisticsProfile.fields.operatingHours")}
             isEditing={isEditing}
             edit={
               <Input
                 id="operating-hours"
                 value={profile.operatingHours}
                 onChange={(e) => onChange({ operatingHours: e.target.value })}
-                placeholder="e.g. 08:00 - 20:00"
+                placeholder={t("logisticsProfile.placeholders.operatingHoursExample")}
                 className={profileInfoInputClassName}
               />
             }
           >
-            {profile.operatingHours || "Add operating hours"}
+            {profile.operatingHours || t("logisticsProfile.placeholders.operatingHours")}
           </ProfileInfoField>
         </ProfileInfoGrid>
       </ProfileCardBody>

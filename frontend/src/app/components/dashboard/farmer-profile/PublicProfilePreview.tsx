@@ -1,18 +1,28 @@
 import { Clock3, Eye, MapPin, MessageCircle, Star } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  formatLocalizedPublicLocation,
+  formatLocalizedPublicSchedule,
+  formatLocalizedRating,
+  getLocalizedProduct,
+  translateProfileDescription,
+} from "../../../../i18n/farmerDashboardProfileHelpers";
 import {
   getProfileInitials,
-  getPublicLocationLine,
   type FarmerDashboardProfile,
 } from "../../../utils/farmerProfileStorage";
-import { formatPublicScheduleLines } from "../../../utils/workingSchedule";
 import { Button } from "../../ui/button";
 import { ProfileCard, ProfileCardBody, ProfileCardHeader } from "./ProfileLayout";
 
 export function PublicProfilePreview({ profile }: { profile: FarmerDashboardProfile }) {
+  const { t, language } = useLanguage();
   const initials = getProfileInitials(profile.farmName || profile.ownerName);
-  const description =
-    profile.description.trim() || "Add farm description to help buyers understand your farm.";
-  const schedule = formatPublicScheduleLines(
+  const description = profile.description.trim()
+    ? translateProfileDescription(t, profile.description)
+    : t("farmerDashboardProfile.placeholders.descriptionPreview");
+  const schedule = formatLocalizedPublicSchedule(
+    t,
+    language,
     profile.workingDays,
     profile.openingTime,
     profile.closingTime,
@@ -20,7 +30,7 @@ export function PublicProfilePreview({ profile }: { profile: FarmerDashboardProf
 
   return (
     <ProfileCard variant="preview">
-      <ProfileCardHeader icon={Eye} title="Public Profile Preview" />
+      <ProfileCardHeader icon={Eye} title={t("farmerDashboardProfile.sections.publicProfilePreview")} />
       <ProfileCardBody className="agrivo-farmer-dash-preview-body">
         <div className="agrivo-farmer-dash-preview-header">
           {profile.avatar ? (
@@ -37,15 +47,15 @@ export function PublicProfilePreview({ profile }: { profile: FarmerDashboardProf
 
           <div className="min-w-0 flex-1">
             <h4 className="agrivo-heading truncate text-base font-bold text-[#102018] sm:text-lg">
-              {profile.farmName || "Farm name"}
+              {profile.farmName || t("farmerDashboardProfile.placeholders.farmNamePreview")}
             </h4>
             <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-[#5F6F64] sm:text-sm">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
-              {getPublicLocationLine(profile)}
+              {formatLocalizedPublicLocation(t, language, profile)}
             </p>
             <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-[#14532D] sm:text-sm">
               <Star className="h-3.5 w-3.5 fill-[#facc15] text-[#facc15]" />
-              {profile.rating.toFixed(1)} rating
+              {formatLocalizedRating(t, profile.rating)}
             </p>
           </div>
         </div>
@@ -56,11 +66,13 @@ export function PublicProfilePreview({ profile }: { profile: FarmerDashboardProf
           {profile.mainProducts.length > 0 ? (
             profile.mainProducts.map((product) => (
               <span key={product} className="agrivo-farmer-dash-preview-chip">
-                {product}
+                {getLocalizedProduct(product, language, t)}
               </span>
             ))
           ) : (
-            <span className="text-xs text-[#6b7a70] sm:text-sm">Add main products</span>
+            <span className="text-xs text-[#6b7a70] sm:text-sm">
+              {t("farmerDashboardProfile.placeholders.mainProducts")}
+            </span>
           )}
         </div>
 
@@ -68,7 +80,7 @@ export function PublicProfilePreview({ profile }: { profile: FarmerDashboardProf
           <div className="agrivo-farmer-dash-preview-schedule">
             <p className="agrivo-farmer-dash-preview-schedule-label">
               <Clock3 className="h-3.5 w-3.5 text-[#43A047]" />
-              Working hours
+              {t("farmerDashboardProfile.workingHours")}
             </p>
             <p className="text-sm font-semibold text-[#102018]">{schedule.daysLine}</p>
             {schedule.hoursLine ? (
@@ -85,7 +97,7 @@ export function PublicProfilePreview({ profile }: { profile: FarmerDashboardProf
           disabled
         >
           <MessageCircle className="mr-2 h-3.5 w-3.5" />
-          Contact Farmer
+          {t("farmerDashboardProfile.actions.contactFarmer")}
         </Button>
       </ProfileCardBody>
     </ProfileCard>

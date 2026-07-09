@@ -1,4 +1,6 @@
 import type { EtaStatus } from "../../../utils/inTransitStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { formatEtaLabel } from "../../../../i18n/inTransitHelpers";
 import { cn } from "../../ui/utils";
 
 const ETA_TONES: Record<EtaStatus, string> = {
@@ -16,9 +18,10 @@ export function EtaBadge({
   etaStatus: EtaStatus;
   className?: string;
 }) {
+  const { t } = useLanguage();
   return (
     <span className={cn("agrivo-transit-eta", ETA_TONES[etaStatus], className)}>
-      ETA {eta}
+      {formatEtaLabel(t, eta)}
     </span>
   );
 }

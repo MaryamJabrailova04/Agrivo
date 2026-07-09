@@ -5,6 +5,14 @@ import {
   type FarmerManagementOrder,
   type FarmerManagementOrderStatus,
 } from "../../../utils/farmerOrdersStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  getLocalizedOrderProductName,
+  getLocalizedOrderVariety,
+  getPrimaryOrderAction,
+  translateFarmerOrderDelivery,
+  translateOrderDateLabel,
+} from "../../../../i18n/farmerOrderHelpers";
 import { ProductVarietyBadge } from "../../products/ProductVarietyBadge";
 import { Button } from "../../ui/button";
 import { FarmerMgmtOrderStatusBadge } from "./FarmerMgmtOrderStatusBadge";
@@ -17,18 +25,23 @@ interface OrderCardProps {
 }
 
 export function OrderCard({ order, onViewDetails, onStatusChange, onReject }: OrderCardProps) {
-  const primaryAction = getPrimaryAction(order.status);
+  const { t, language } = useLanguage();
+  const primaryAction = getPrimaryOrderAction(order.status, t);
+  const productName = getLocalizedOrderProductName(order, language, t);
+  const variety = getLocalizedOrderVariety(order, language);
 
   return (
     <article className="agrivo-farmer-order-card agrivo-card">
       <div className="agrivo-farmer-order-card__header">
         <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">Order ID</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+            {t("farmerOrders.labels.orderId")}
+          </p>
           <p className="mt-0.5 truncate text-sm font-bold text-[#102018]">{order.orderId}</p>
         </div>
         <div className="flex shrink-0 flex-col items-end gap-1.5">
           <FarmerMgmtOrderStatusBadge status={order.status} />
-          <p className="text-xs text-[#6b7a70]">{order.orderDateLabel}</p>
+          <p className="text-xs text-[#6b7a70]">{translateOrderDateLabel(t, order.orderDateLabel)}</p>
         </div>
       </div>
 
@@ -45,26 +58,26 @@ export function OrderCard({ order, onViewDetails, onStatusChange, onReject }: Or
 
         <div className="agrivo-farmer-order-card__product">
           <div className="agrivo-product-title-block !mt-0">
-            <p className="text-sm font-semibold text-[#102018]">{order.productName}</p>
-            <ProductVarietyBadge variety={order.variety} />
+            <p className="text-sm font-semibold text-[#102018]">{productName}</p>
+            <ProductVarietyBadge variety={variety} label={t("farmerOrders.labels.sort")} />
           </div>
         </div>
 
         <dl className="agrivo-farmer-order-card__meta">
           <div>
-            <dt>Quantity</dt>
+            <dt>{t("farmerOrders.labels.quantity")}</dt>
             <dd>{formatOrderQuantity(order)}</dd>
           </div>
           <div>
-            <dt>Total price</dt>
+            <dt>{t("farmerOrders.labels.totalPrice")}</dt>
             <dd>{formatOrderCurrency(order.totalPrice)}</dd>
           </div>
           <div className="agrivo-farmer-order-card__meta-delivery">
             <dt>
               <Truck className="h-3.5 w-3.5" aria-hidden />
-              Delivery
+              {t("farmerOrders.labels.delivery")}
             </dt>
-            <dd>{order.deliveryMethod}</dd>
+            <dd>{translateFarmerOrderDelivery(t, order.deliveryMethod)}</dd>
           </div>
         </dl>
       </div>
@@ -77,7 +90,7 @@ export function OrderCard({ order, onViewDetails, onStatusChange, onReject }: Or
           onClick={() => onViewDetails(order)}
         >
           <Eye className="mr-2 h-4 w-4" />
-          View Details
+          {t("farmerOrders.actions.viewDetails")}
         </Button>
 
         {primaryAction ? (
@@ -97,27 +110,10 @@ export function OrderCard({ order, onViewDetails, onStatusChange, onReject }: Or
             className="rounded-full border-[#fecaca] text-[#b91c1c] hover:bg-[#fef2f2]"
             onClick={() => onReject(order)}
           >
-            Reject
+            {t("farmerOrders.actions.reject")}
           </Button>
         ) : null}
       </div>
     </article>
   );
-}
-
-function getPrimaryAction(
-  status: FarmerManagementOrderStatus,
-): { label: string; nextStatus: FarmerManagementOrderStatus } | null {
-  switch (status) {
-    case "pending":
-      return { label: "Accept Order", nextStatus: "accepted" };
-    case "accepted":
-      return { label: "Mark as Preparing", nextStatus: "preparing" };
-    case "preparing":
-      return { label: "Mark as Ready", nextStatus: "ready_for_pickup" };
-    case "ready_for_pickup":
-      return { label: "Mark as Delivered", nextStatus: "delivered" };
-    default:
-      return null;
-  }
 }

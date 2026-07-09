@@ -1,7 +1,8 @@
 import {
-  PICKUP_STATUS_LABELS,
   type PickupTaskStatus,
 } from "../../../utils/pickupTasksStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translatePickupStatus } from "../../../../i18n/pickupTasksHelpers";
 import { cn } from "../../ui/utils";
 
 const STATUS_TONES: Record<PickupTaskStatus, string> = {
@@ -21,9 +22,10 @@ export function PickupStatusBadge({
   status: PickupTaskStatus;
   className?: string;
 }) {
+  const { t } = useLanguage();
   return (
     <span className={cn("agrivo-pickup-status", STATUS_TONES[status], className)}>
-      {PICKUP_STATUS_LABELS[status]}
+      {translatePickupStatus(t, status)}
     </span>
   );
 }

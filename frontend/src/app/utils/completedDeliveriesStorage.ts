@@ -43,6 +43,13 @@ export interface CompletedDelivery {
   feedback: string;
   issue: string | null;
   notes: string | null;
+  productKey?: string;
+  sortKey?: string;
+  pickupLocationLocalized?: { en: string; az: string };
+  dropoffLocationLocalized?: { en: string; az: string };
+  pickupAddressLocalized?: { en: string; az: string };
+  dropoffAddressLocalized?: { en: string; az: string };
+  notesLocalized?: { en: string; az: string };
 }
 
 export interface CompletedSummary {
@@ -61,6 +68,7 @@ export interface PerformanceSummary {
 }
 
 export interface TopRoute {
+  id: string;
   route: string;
   count: number;
 }

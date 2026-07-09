@@ -8,6 +8,13 @@ import { ProductAddToCartButton } from "../products/ProductAddToCartButton";
 import { ProductImage } from "../products/ProductImage";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import {
+  formatLocalizedQuantity,
+  localizePriceUnit,
+  translateBuyerProductName,
+} from "../../../i18n/buyerDashboardHelpers";
 import {
   Select,
   SelectContent,
@@ -23,15 +30,15 @@ const filterControlClass =
 
 type SortOption = "recent" | "price-asc" | "price-desc" | "name";
 
-function formatSavedDate(iso: string): string {
+function formatSavedDate(iso: string, locale: string): string {
   try {
-    return new Date(iso).toLocaleDateString("en-US", {
+    return new Date(iso).toLocaleDateString(locale, {
       month: "short",
       day: "numeric",
       year: "numeric",
     });
   } catch {
-    return "Recently";
+    return "";
   }
 }
 
@@ -42,15 +49,16 @@ function SavedProductCard({
   product: SavedProduct;
   onRemove: (slug: string) => void;
 }) {
+  const { t, language } = useLanguage();
   return (
     <article className="agrivo-saved-product-card agrivo-card">
       <div className="relative p-3 pb-0">
         <div className="agrivo-saved-product-image">
           <ProductImage
-            name={product.name}
+            name={translateBuyerProductName(t, product.name)}
             src={product.image}
             category={product.category}
-            alt={`${product.name} product image`}
+            alt={`${translateBuyerProductName(t, product.name)} product image`}
             className="h-full w-full"
           />
         </div>
@@ -58,7 +66,7 @@ function SavedProductCard({
         <ProductSaveButton product={product} slug={product.slug} className="agrivo-product-save-btn--overlay" />
         <span className="agrivo-saved-product-saved-badge">
           <Heart className="h-3 w-3 fill-current" />
-          Saved
+          {t("saved.saved")}
         </span>
       </div>
 
@@ -70,20 +78,20 @@ function SavedProductCard({
 
         <div className="agrivo-product-title-block">
           <h3 className="agrivo-heading line-clamp-2 min-h-[2.75rem] text-lg font-bold text-[#102018]">
-            {product.name}
+            {translateBuyerProductName(t, product.name)}
           </h3>
           <ProductVarietyBadge variety={product.variety} />
         </div>
-        <p className="mt-1 text-sm text-[#5F6F64]">Farmer: {product.farmer}</p>
+        <p className="mt-1 text-sm text-[#5F6F64]">{t("buyerDashboard.recentOrders.farmer")}: {product.farmer}</p>
 
         <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Price</p>
-            <p className="mt-0.5 font-bold text-[#14532D]">{product.price}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">{t("products.price", "Price")}</p>
+            <p className="mt-0.5 font-bold text-[#14532D]">{localizePriceUnit(t, language, product.price)}</p>
           </div>
           <div>
-            <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Available</p>
-            <p className="mt-0.5 font-semibold text-[#102018]">{product.quantity}</p>
+            <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">{t("products.available", "Available")}</p>
+            <p className="mt-0.5 font-semibold text-[#102018]">{formatLocalizedQuantity(t, language, product.quantity)}</p>
           </div>
         </div>
 
@@ -91,27 +99,27 @@ function SavedProductCard({
           {product.deliveryAvailable ? (
             <span className="agrivo-saved-product-tag agrivo-saved-product-tag--delivery">
               <Truck className="h-3 w-3" />
-              Delivery available
+              {t("landing.tags.deliveryAvailable")}
             </span>
           ) : (
-            <span className="agrivo-saved-product-tag">Pickup only</span>
+            <span className="agrivo-saved-product-tag">{t("products.pickupOnly", "Pickup only")}</span>
           )}
-          <span className="text-xs text-[#6b7a70]">Saved {formatSavedDate(product.savedAt)}</span>
+          <span className="text-xs text-[#6b7a70]">{t("saved.saved")} {formatSavedDate(product.savedAt, language === "az" ? "az-AZ" : "en-US")}</span>
         </div>
 
         <div className="agrivo-saved-product-actions mt-auto pt-4">
           <Button
             className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
             onClick={() => {
-              window.location.hash = getProductDetailHash(product.slug);
+              navigateToHash(getProductDetailHash(product.slug));
             }}
           >
-            View Details
+            {t("products.viewDetails", "View Details")}
           </Button>
           <ProductAddToCartButton
             product={product}
             className="rounded-full border border-[#dbe7d4] bg-white px-4 text-sm font-semibold text-[#14532D] hover:bg-[#EAF7EC]"
-            label="Add to Cart"
+            label={t("buyerDashboard.savedProducts.addToCart")}
           />
           <Button
             variant="outline"
@@ -119,7 +127,7 @@ function SavedProductCard({
             onClick={() => onRemove(product.slug)}
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Remove
+            {t("saved.remove")}
           </Button>
         </div>
       </div>
@@ -128,6 +136,7 @@ function SavedProductCard({
 }
 
 export function BuyerSavedProductsPage() {
+  const { t } = useLanguage();
   const { savedProducts, removeSaved } = useSavedProducts();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
@@ -201,24 +210,24 @@ export function BuyerSavedProductsPage() {
   return (
     <div className="agrivo-buyer-saved space-y-6">
       <section className="agrivo-dashboard-panel">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#15803d]">Saved Products</p>
-        <h2 className="agrivo-heading mt-1 text-2xl font-bold text-[#102018] sm:text-3xl">Saved Products</h2>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#15803d]">{t("buyerDashboard.savedProducts.title")}</p>
+        <h2 className="agrivo-heading mt-1 text-2xl font-bold text-[#102018] sm:text-3xl">{t("buyerDashboard.savedProducts.title")}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-          Products you saved from verified farmers for later ordering.
+          {t("saved.description", "Products you saved from verified farmers for later ordering.")}
         </p>
 
         {savedProducts.length > 0 ? (
           <div className="agrivo-buyer-saved-summary mt-6">
             <div className="agrivo-buyer-saved-summary-card">
-              <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Saved Products</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">{t("buyerDashboard.savedProducts.title")}</p>
               <p className="agrivo-heading mt-1 text-2xl font-bold text-[#102018]">{summary.total}</p>
             </div>
             <div className="agrivo-buyer-saved-summary-card">
-              <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Delivery Available</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">{t("landing.tags.deliveryAvailable")}</p>
               <p className="agrivo-heading mt-1 text-2xl font-bold text-[#102018]">{summary.deliveryCount}</p>
             </div>
             <div className="agrivo-buyer-saved-summary-card">
-              <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Verified Farmers</p>
+              <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">{t("landing.tags.verifiedFarmer")}</p>
               <p className="agrivo-heading mt-1 text-2xl font-bold text-[#102018]">{summary.verifiedFarmers}</p>
             </div>
           </div>
@@ -232,7 +241,7 @@ export function BuyerSavedProductsPage() {
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b7a70]" />
               <Input
                 className={`${filterControlClass} pl-11`}
-                placeholder="Search saved products, farmers, or locations..."
+                placeholder={t("saved.searchPlaceholder", "Search saved products, farmers, or locations...")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -240,10 +249,10 @@ export function BuyerSavedProductsPage() {
 
             <Select value={category} onValueChange={setCategory}>
               <SelectTrigger className={`${filterControlClass} w-full sm:w-[170px]`}>
-                <SelectValue placeholder="Category" />
+                <SelectValue placeholder={t("products.category", "Category")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
+                <SelectItem value="all">{t("products.allCategories", "All categories")}</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
@@ -254,10 +263,10 @@ export function BuyerSavedProductsPage() {
 
             <Select value={region} onValueChange={setRegion}>
               <SelectTrigger className={`${filterControlClass} w-full sm:w-[180px]`}>
-                <SelectValue placeholder="Location" />
+                <SelectValue placeholder={t("orders.location", "Location")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All locations</SelectItem>
+                <SelectItem value="all">{t("orders.allLocations", "All locations")}</SelectItem>
                 {regions.map((loc) => (
                   <SelectItem key={loc} value={loc}>
                     {loc}
@@ -268,13 +277,13 @@ export function BuyerSavedProductsPage() {
 
             <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
               <SelectTrigger className={`${filterControlClass} w-full sm:w-[170px]`}>
-                <SelectValue placeholder="Sort" />
+                <SelectValue placeholder={t("orders.sort", "Sort")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="recent">Recently saved</SelectItem>
-                <SelectItem value="price-asc">Price: low to high</SelectItem>
-                <SelectItem value="price-desc">Price: high to low</SelectItem>
-                <SelectItem value="name">Name A-Z</SelectItem>
+                <SelectItem value="recent">{t("saved.sort.recent", "Recently saved")}</SelectItem>
+                <SelectItem value="price-asc">{t("saved.sort.priceAsc", "Price: low to high")}</SelectItem>
+                <SelectItem value="price-desc">{t("saved.sort.priceDesc", "Price: high to low")}</SelectItem>
+                <SelectItem value="name">{t("saved.sort.name", "Name A-Z")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -287,17 +296,17 @@ export function BuyerSavedProductsPage() {
             <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-[#ecfdf5]">
               <Heart className="h-6 w-6 text-[#14532D]" />
             </div>
-            <h3 className="agrivo-heading mt-4 text-xl font-bold text-[#102018]">No saved products yet</h3>
+            <h3 className="agrivo-heading mt-4 text-xl font-bold text-[#102018]">{t("saved.emptyTitle", "No saved products yet")}</h3>
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#5F6F64]">
-              Save products from the marketplace to quickly find them later.
+              {t("saved.emptySubtitle", "Save products from the marketplace to quickly find them later.")}
             </p>
             <Button
               className="mt-6 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={() => {
-                window.location.hash = "products";
+                navigateToHash("products");
               }}
             >
-              Browse Marketplace
+              {t("buyerDashboard.hero.browseMarketplace")}
             </Button>
           </div>
         </section>
@@ -314,8 +323,8 @@ export function BuyerSavedProductsPage() {
       ) : (
         <section className="agrivo-dashboard-panel">
           <div className="agrivo-dashboard-empty py-10">
-            <h3 className="agrivo-heading text-lg font-bold text-[#102018]">No matches found</h3>
-            <p className="mt-2 text-sm text-[#5F6F64]">Try adjusting your search or filters.</p>
+            <h3 className="agrivo-heading text-lg font-bold text-[#102018]">{t("orders.noMatchTitle", "No matches found")}</h3>
+            <p className="mt-2 text-sm text-[#5F6F64]">{t("orders.noMatchSubtitle", "Try adjusting your search or filters.")}</p>
             <Button
               variant="outline"
               className="mt-4 rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
@@ -326,7 +335,7 @@ export function BuyerSavedProductsPage() {
                 setSort("recent");
               }}
             >
-              Clear filters
+              {t("orders.clearFilters", "Clear filters")}
             </Button>
           </div>
         </section>

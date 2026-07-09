@@ -1,4 +1,5 @@
 import { ArrowLeft } from "lucide-react";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 
 interface DashboardBackLinkProps {
   label: string;
@@ -10,7 +11,7 @@ export function DashboardBackLink({ label, hash }: DashboardBackLinkProps) {
     <button
       type="button"
       onClick={() => {
-        window.location.hash = hash;
+        navigateToHash(hash);
       }}
       className="mb-6 inline-flex items-center gap-2 text-sm font-medium text-[#5F6F64] transition hover:text-[#14532D]"
     >

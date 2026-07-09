@@ -7,49 +7,51 @@ import {
   Truck,
 } from "lucide-react";
 import type { InTransitSummary } from "../../../utils/inTransitStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 
 interface StatCard {
-  label: string;
+  labelKey: string;
   value: number;
-  hint: string;
+  hintKey: string;
   icon: LucideIcon;
   accent: "active" | "ontime" | "delayed" | "near" | "issues";
 }
 
 export function InTransitStats({ summary }: { summary: InTransitSummary }) {
+  const { t } = useLanguage();
   const cards: StatCard[] = [
     {
-      label: "Active Trips",
+      labelKey: "inTransitPage.stats.activeTrips",
       value: summary.activeTrips,
-      hint: "On the road now",
+      hintKey: "inTransitPage.stats.onTheRoadNow",
       icon: Truck,
       accent: "active",
     },
     {
-      label: "On Time",
+      labelKey: "inTransitPage.stats.onTime",
       value: summary.onTime,
-      hint: "Within ETA window",
+      hintKey: "inTransitPage.stats.withinEtaWindow",
       icon: CheckCircle2,
       accent: "ontime",
     },
     {
-      label: "Delayed",
+      labelKey: "inTransitPage.stats.delayed",
       value: summary.delayed,
-      hint: "Behind schedule",
+      hintKey: "inTransitPage.stats.behindSchedule",
       icon: AlertTriangle,
       accent: "delayed",
     },
     {
-      label: "Near Destination",
+      labelKey: "inTransitPage.stats.nearDestination",
       value: summary.nearDestination,
-      hint: "Approaching buyer",
+      hintKey: "inTransitPage.stats.approachingBuyer",
       icon: MapPin,
       accent: "near",
     },
     {
-      label: "Issues Reported",
+      labelKey: "inTransitPage.stats.issuesReported",
       value: summary.issuesReported,
-      hint: "Needs attention",
+      hintKey: "inTransitPage.stats.needsAttention",
       icon: Navigation,
       accent: "issues",
     },
@@ -61,7 +63,7 @@ export function InTransitStats({ summary }: { summary: InTransitSummary }) {
         const Icon = card.icon;
         return (
           <div
-            key={card.label}
+            key={card.labelKey}
             className={`agrivo-transit-stat-card agrivo-card agrivo-transit-stat-card--${card.accent}`}
           >
             <div className="flex items-start justify-between gap-3">
@@ -70,8 +72,8 @@ export function InTransitStats({ summary }: { summary: InTransitSummary }) {
               </div>
               <span className="agrivo-heading text-2xl font-bold text-[#102018]">{card.value}</span>
             </div>
-            <p className="mt-3 text-sm font-semibold text-[#102018]">{card.label}</p>
-            <p className="mt-0.5 text-xs text-[#6b7a70]">{card.hint}</p>
+            <p className="mt-3 text-sm font-semibold text-[#102018]">{t(card.labelKey)}</p>
+            <p className="mt-0.5 text-xs text-[#6b7a70]">{t(card.hintKey)}</p>
           </div>
         );
       })}

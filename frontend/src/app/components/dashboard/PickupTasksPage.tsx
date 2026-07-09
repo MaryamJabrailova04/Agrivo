@@ -1,17 +1,21 @@
 import { CheckCircle2, Info, MapPin, RefreshCw, Route, UserPlus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import {
+  translatePickupAction,
+  translatePickupStatus,
+} from "../../../i18n/pickupTasksHelpers";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   applyPickupTaskAction,
   computePickupReadinessSummary,
   computePickupTaskSummary,
   filterPickupTasks,
   getLogisticsSectionHash,
-  getPickupActionLabel,
   getPickupTasks,
   getPickupTaskRegions,
   getUpcomingPickups,
-  PICKUP_STATUS_LABELS,
   resolvePickupTasksUserId,
   seedPickupAlerts,
   type PickupPriorityFilter,
@@ -32,10 +36,11 @@ import { UrgentPickupAlerts } from "./logistics-pickup/UrgentPickupAlerts";
 import { UpcomingPickupSchedule } from "./logistics-pickup/UpcomingPickupSchedule";
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 export function PickupTasksPage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const userId = resolvePickupTasksUserId(user);
 
@@ -65,6 +70,11 @@ export function PickupTasksPage() {
     window.setTimeout(() => setToast(null), 3200);
   }, []);
 
+  const handleRefresh = useCallback(() => {
+    refresh();
+    showToast(t("pickupTasks.feedback.tasksRefreshed"));
+  }, [refresh, showToast, t]);
+
   const summary = useMemo(() => computePickupTaskSummary(tasks), [tasks]);
   const readiness = useMemo(() => computePickupReadinessSummary(tasks), [tasks]);
   const regions = useMemo(() => getPickupTaskRegions(tasks), [tasks]);
@@ -85,11 +95,12 @@ export function PickupTasksPage() {
 
     if (action === "open_route") {
       setRouteTask(task);
+      showToast(t("pickupTasks.feedback.routeOpened"));
       return;
     }
 
     if (action === "contact_farmer") {
-      showToast(`Calling ${task.farmerName} at ${task.farmerPhone}`);
+      showToast(t("pickupTasks.feedback.contactFarmer"));
       return;
     }
 
@@ -97,11 +108,24 @@ export function PickupTasksPage() {
     setTasks(next);
     const updated = next.find((item) => item.id === task.id);
 
-    showToast(
-      updated
-        ? `${task.taskId}: ${getPickupActionLabel(action)} — now ${PICKUP_STATUS_LABELS[updated.status]}.`
-        : `${task.taskId}: ${getPickupActionLabel(action)} completed.`,
-    );
+    if (!updated) {
+      showToast(t("pickupTasks.feedback.couldNotUpdateTask"));
+      return;
+    }
+
+    if (action === "start_pickup") {
+      showToast(t("pickupTasks.feedback.pickupStartedSuccessfully"));
+    } else if (action === "assign_driver") {
+      showToast(t("pickupTasks.feedback.driverAssignedSuccessfully"));
+    } else {
+      showToast(
+        t("pickupTasks.feedback.statusUpdatedWithTask", {
+          taskId: task.taskId,
+          action: translatePickupAction(t, action),
+          status: translatePickupStatus(t, updated.status),
+        }),
+      );
+    }
 
     if (detailTask?.id === task.id && updated) {
       setDetailTask(updated);
@@ -113,7 +137,7 @@ export function PickupTasksPage() {
       (task) => task.status === "scheduled" && !task.driverName,
     );
     if (!candidate || !userId) {
-      showToast("No scheduled pickup waiting for driver assignment.");
+      showToast(t("pickupTasks.feedback.noScheduledForDriver"));
       return;
     }
     handleAction(candidate, "assign_driver");
@@ -133,10 +157,10 @@ export function PickupTasksPage() {
       <div className="agrivo-pickup-header">
         <div>
           <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
-            Pickup Tasks
+            {t("pickupTasks.title")}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            Manage farm pickups, track collection readiness, and update handoff progress.
+            {t("pickupTasks.subtitle")}
           </p>
         </div>
 
@@ -144,7 +168,7 @@ export function PickupTasksPage() {
           <div className="agrivo-pickup-helper-card">
             <Info className="h-4 w-4 shrink-0 text-[#15803d]" />
             <p className="text-sm font-medium text-[#14532D]">
-              Handle ready and high-priority pickups first.
+              {t("pickupTasks.helper")}
             </p>
           </div>
 
@@ -152,10 +176,10 @@ export function PickupTasksPage() {
             <Button
               variant="outline"
               className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
-              onClick={refresh}
+              onClick={handleRefresh}
             >
               <RefreshCw className="mr-2 h-4 w-4" />
-              Refresh Tasks
+              {t("pickupTasks.actions.refreshTasks")}
             </Button>
             <Button
               variant="outline"
@@ -163,14 +187,14 @@ export function PickupTasksPage() {
               onClick={handleAssignDriver}
             >
               <UserPlus className="mr-2 h-4 w-4" />
-              Assign Driver
+              {t("pickupTasks.actions.assignDriver")}
             </Button>
             <Button
               className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={() => navigate(getLogisticsSectionHash("overview"))}
             >
               <Route className="mr-2 h-4 w-4" />
-              View Route Plan
+              {t("pickupTasks.actions.viewRoutePlan")}
             </Button>
           </div>
         </div>
@@ -202,23 +226,23 @@ export function PickupTasksPage() {
             </div>
           ) : tasks.length > 0 ? (
             <div className="agrivo-dashboard-panel agrivo-pickup-empty-filter">
-              <p className="text-sm text-[#5F6F64]">No pickup tasks match your current filters.</p>
+              <p className="text-sm text-[#5F6F64]">{t("pickupTasks.empty.noMatch")}</p>
             </div>
           ) : (
             <div className="agrivo-dashboard-panel">
               <div className="agrivo-dashboard-empty agrivo-pickup-empty">
                 <MapPin className="h-10 w-10 text-[#86efac]" strokeWidth={1.5} />
                 <h3 className="agrivo-heading mt-4 text-lg font-bold text-[#102018]">
-                  No pickup tasks
+                  {t("pickupTasks.empty.noneTitle")}
                 </h3>
                 <p className="mt-2 max-w-md text-sm leading-6 text-[#5F6F64]">
-                  When farm pickup tasks are assigned, they will appear here.
+                  {t("pickupTasks.empty.noneDescription")}
                 </p>
                 <Button
                   className="mt-5 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
                   onClick={() => navigate(getLogisticsSectionHash("overview"))}
                 >
-                  Back to Overview
+                  {t("pickupTasks.actions.backToOverview")}
                 </Button>
               </div>
             </div>

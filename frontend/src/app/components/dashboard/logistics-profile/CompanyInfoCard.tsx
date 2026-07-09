@@ -1,5 +1,11 @@
 import { Building2 } from "lucide-react";
 import type { LogisticsDashboardProfile } from "../../../utils/logisticsProfileStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  getLocalizedAddress,
+  getLocalizedDescription,
+  translateValidationError,
+} from "../../../../i18n/logisticsProfileHelpers";
 import { Input } from "../../ui/input";
 import { Textarea } from "../../ui/textarea";
 import { ProfileCard, ProfileCardBody, ProfileCardHeader } from "../farmer-profile/ProfileLayout";
@@ -20,16 +26,18 @@ export function CompanyInfoCard({
   errors: Record<string, string>;
   onChange: (updates: Partial<LogisticsDashboardProfile>) => void;
 }) {
+  const { t, language } = useLanguage();
+
   return (
     <ProfileCard>
-      <ProfileCardHeader icon={Building2} title="Company Information" />
+      <ProfileCardHeader icon={Building2} title={t("logisticsProfile.sections.companyInformation")} />
       <ProfileCardBody className="agrivo-profile-info-card-body">
         <ProfileInfoGrid>
           <ProfileInfoField
-            label="Company Name"
+            label={t("logisticsProfile.fields.companyName")}
             emphasized
             isEditing={isEditing}
-            error={errors.companyName}
+            error={errors.companyName ? translateValidationError(t, errors.companyName) : undefined}
             edit={
               <Input
                 id="company-name"
@@ -39,14 +47,16 @@ export function CompanyInfoCard({
               />
             }
           >
-            {profile.companyName || "Add company name"}
+            {profile.companyName || t("logisticsProfile.placeholders.companyName")}
           </ProfileInfoField>
 
           <ProfileInfoField
-            label="Contact Person"
+            label={t("logisticsProfile.fields.contactPerson")}
             emphasized
             isEditing={isEditing}
-            error={errors.contactPerson}
+            error={
+              errors.contactPerson ? translateValidationError(t, errors.contactPerson) : undefined
+            }
             edit={
               <Input
                 id="contact-person"
@@ -56,27 +66,27 @@ export function CompanyInfoCard({
               />
             }
           >
-            {profile.contactPerson || "Add contact person"}
+            {profile.contactPerson || t("logisticsProfile.placeholders.contactPerson")}
           </ProfileInfoField>
 
           <ProfileInfoField
-            label="Company Registration Number"
+            label={t("logisticsProfile.fields.registrationNumber")}
             isEditing={isEditing}
             edit={
               <Input
                 id="registration-number"
                 value={profile.registrationNumber}
                 onChange={(e) => onChange({ registrationNumber: e.target.value })}
-                placeholder="Optional"
+                placeholder={t("logisticsProfile.placeholders.optional")}
                 className={profileInfoInputClassName}
               />
             }
           >
-            {profile.registrationNumber || "Not added"}
+            {profile.registrationNumber || t("logisticsProfile.placeholders.notAdded")}
           </ProfileInfoField>
 
           <ProfileInfoField
-            label="Headquarters Address"
+            label={t("logisticsProfile.fields.headquartersAddress")}
             isEditing={isEditing}
             edit={
               <Input
@@ -87,12 +97,12 @@ export function CompanyInfoCard({
               />
             }
           >
-            {profile.address || "Add headquarters address"}
+            {getLocalizedAddress(profile, language, t)}
           </ProfileInfoField>
         </ProfileInfoGrid>
 
         <ProfileInfoField
-          label="Company Description"
+          label={t("logisticsProfile.fields.companyDescription")}
           multiline
           fullWidth
           isEditing={isEditing}
@@ -106,7 +116,8 @@ export function CompanyInfoCard({
             />
           }
         >
-          {profile.description || "Add company description"}
+          {getLocalizedDescription(profile, language) ||
+            t("logisticsProfile.placeholders.companyDescription")}
         </ProfileInfoField>
       </ProfileCardBody>
     </ProfileCard>

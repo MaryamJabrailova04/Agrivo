@@ -13,9 +13,10 @@ import {
 } from "lucide-react";
 import type { ComponentProps } from "react";
 import {
-  getPickupActionLabel,
   type PickupTaskAction,
 } from "../../../utils/pickupTasksStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translatePickupAction } from "../../../../i18n/pickupTasksHelpers";
 import { cn } from "../../ui/utils";
 
 export const pickupActionButtonVariants = cva(
@@ -64,6 +65,7 @@ export function PickupActionButton({
   type = "button",
   ...props
 }: PickupActionButtonProps) {
+  const { t } = useLanguage();
   const Icon = ACTION_ICONS[action];
 
   return (
@@ -73,7 +75,7 @@ export function PickupActionButton({
       {...props}
     >
       <Icon aria-hidden />
-      <span>{label ?? getPickupActionLabel(action)}</span>
+      <span>{label ?? translatePickupAction(t, action)}</span>
     </button>
   );
 }

@@ -2,6 +2,8 @@ import { CheckCircle2, ClipboardList, Info, Package, Pencil } from "lucide-react
 import { useCallback, useEffect, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { getFarmerSectionHash } from "../../data/farmerDashboard";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
+import { useLanguage } from "../../../i18n/LanguageContext";
 import {
   addFarmerProduct,
   computeProductsSummary,
@@ -14,10 +16,11 @@ import { isApiMode } from "../../../config/dataMode";
 import { createProduct } from "../../../api/productsApi";
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 export function FarmerAddProductPage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const userId = user ? resolveFarmerProductsUserId(user) : null;
 
@@ -80,14 +83,16 @@ export function FarmerAddProductPage() {
 
       refreshStats();
       showToast(
-        mode === "publish" ? "Product published successfully." : "Product saved as draft.",
+        mode === "publish"
+          ? t("farmerAddProduct.feedback.published")
+          : t("farmerAddProduct.feedback.savedDraft"),
       );
 
       window.setTimeout(() => {
         navigate(getFarmerSectionHash("products"));
       }, 800);
     } catch (apiError) {
-      setError(apiError instanceof Error ? apiError.message : "Failed to save product.");
+      setError(apiError instanceof Error ? apiError.message : t("farmerAddProduct.feedback.failedSave"));
     } finally {
       setIsSaving(false);
     }
@@ -97,21 +102,21 @@ export function FarmerAddProductPage() {
 
   const statCards = [
     {
-      label: "Total Products",
+      label: t("farmerAddProduct.stats.totalProducts"),
       value: stats.totalProducts,
-      hint: "All your listings",
+      hint: t("farmerAddProduct.stats.allListings"),
       icon: Package,
     },
     {
-      label: "Active Listings",
+      label: t("farmerAddProduct.stats.activeListings"),
       value: stats.activeListings,
-      hint: "Live in marketplace",
+      hint: t("farmerAddProduct.stats.liveMarketplace"),
       icon: ClipboardList,
     },
     {
-      label: "Draft Products",
+      label: t("farmerAddProduct.stats.draftProducts"),
       value: stats.draftProducts,
-      hint: "Not yet published",
+      hint: t("farmerAddProduct.stats.notPublished"),
       icon: Pencil,
     },
   ];
@@ -134,16 +139,16 @@ export function FarmerAddProductPage() {
       <div className="agrivo-farmer-add-product-header">
         <div>
           <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
-            Add New Product
+            {t("farmerAddProduct.title")}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            List your fresh farm products and make them available for buyers.
+            {t("farmerAddProduct.subtitle")}
           </p>
         </div>
         <aside className="agrivo-farmer-add-product-info-card">
           <Info className="h-5 w-5 shrink-0 text-[#43A047]" />
           <p className="text-sm leading-6 text-[#3f5247]">
-            Products you publish will appear in the marketplace for buyers.
+            {t("farmerAddProduct.infoBox")}
           </p>
         </aside>
       </div>
@@ -170,9 +175,11 @@ export function FarmerAddProductPage() {
         <div className="mb-4 flex flex-col gap-2 border-b border-[#edf2ea] pb-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#15803d]">
-              New listing
+              {t("farmerAddProduct.section.newListing")}
             </p>
-            <h3 className="agrivo-heading mt-1 text-lg font-bold text-[#102018]">Product details</h3>
+            <h3 className="agrivo-heading mt-1 text-lg font-bold text-[#102018]">
+              {t("farmerAddProduct.section.productDetails")}
+            </h3>
           </div>
           <Button
             type="button"
@@ -180,7 +187,7 @@ export function FarmerAddProductPage() {
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => navigate(getFarmerSectionHash("products"))}
           >
-            View My Products
+            {t("farmerAddProduct.actions.viewMyProducts")}
           </Button>
         </div>
 

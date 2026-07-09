@@ -1,6 +1,10 @@
 import { getAuthUser } from "../auth/authStorage";
 import { getFarmerByName } from "./farmers";
 import {
+  normalizeCropTypeKey,
+  normalizeJobTypeKey,
+} from "../../i18n/farmerJobFormHelpers";
+import {
   mockFarmJobs,
   slugifyJobTitle,
   type FarmJob,
@@ -58,8 +62,8 @@ export function getFarmerJobById(jobId: string): FarmJob | undefined {
 
 export interface CreateJobInput {
   title: string;
-  jobType: JobType;
-  cropType: CropType;
+  jobType: string;
+  cropType: string;
   description: string;
   economicRegion: EconomicRegion;
   district: string;
@@ -99,6 +103,8 @@ export function createFarmerJob(input: CreateJobInput): FarmJob {
   if (input.equipmentProvided) included.push("Equipment provided");
 
   const linkedFarmer = user?.name ? getFarmerByName(user.name) : null;
+  const jobType = normalizeJobTypeKey(input.jobType) ?? input.jobType;
+  const cropType = normalizeCropTypeKey(input.cropType) ?? input.cropType;
 
   const job: FarmJob = {
     id,
@@ -112,8 +118,8 @@ export function createFarmerJob(input: CreateJobInput): FarmJob {
     village: input.village,
     economicRegion: input.economicRegion,
     exactLocation: input.exactLocation,
-    jobType: input.jobType,
-    cropType: input.cropType,
+    jobType: jobType as JobType,
+    cropType: cropType as CropType,
     workersNeeded: input.workersNeeded,
     dailyPay: input.dailyPay,
     startDate: input.startDate,
@@ -174,11 +180,18 @@ export function updateFarmerJob(jobId: string, input: Partial<CreateJobInput>): 
   const existing = stored[index];
   if (user && existing.ownerEmail !== user.email) return false;
 
+  const jobType = input.jobType
+    ? (normalizeJobTypeKey(input.jobType) ?? input.jobType)
+    : existing.jobType;
+  const cropType = input.cropType
+    ? (normalizeCropTypeKey(input.cropType) ?? input.cropType)
+    : existing.cropType;
+
   const updated: FarmJob = {
     ...existing,
     title: input.title ?? existing.title,
-    jobType: input.jobType ?? existing.jobType,
-    cropType: input.cropType ?? existing.cropType,
+    jobType: jobType as JobType,
+    cropType: cropType as CropType,
     description: input.description ?? existing.description,
     economicRegion: input.economicRegion ?? existing.economicRegion,
     district: input.district ?? existing.district,

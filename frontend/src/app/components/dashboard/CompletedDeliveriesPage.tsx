@@ -1,6 +1,8 @@
 import { BarChart3, CheckCircle2, Download, Truck } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
+import { useLanguage } from "../../../i18n/LanguageContext";
 import {
   computeCompletedSummary,
   computePerformanceSummary,
@@ -31,10 +33,11 @@ import { ReportsCard } from "./logistics-completed/ReportsCard";
 import { TopRoutesCard } from "./logistics-completed/TopRoutesCard";
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 export function CompletedDeliveriesPage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const userId = resolveCompletedDeliveriesUserId(user);
 
@@ -84,13 +87,17 @@ export function CompletedDeliveriesPage() {
   );
 
   const handleExport = () => {
-    const csv = exportCompletedDeliveriesToCSV(filteredDeliveries);
-    downloadCSV(csv, "agrivo-completed-deliveries.csv");
-    showToast(`Exported ${filteredDeliveries.length} delivery records.`);
+    try {
+      const csv = exportCompletedDeliveriesToCSV(filteredDeliveries);
+      downloadCSV(csv, "agrivo-completed-deliveries.csv");
+      showToast(t("completedDeliveries.feedback.csvExported"));
+    } catch {
+      showToast(t("completedDeliveries.feedback.couldNotExport"));
+    }
   };
 
-  const handleDownloadReceipt = (delivery: CompletedDelivery) => {
-    showToast(`Receipt for ${delivery.taskId} will download shortly.`);
+  const handleDownloadReceipt = (_delivery: CompletedDelivery) => {
+    showToast(t("completedDeliveries.feedback.receiptDownloading"));
   };
 
   if (!userId) return null;
@@ -107,10 +114,10 @@ export function CompletedDeliveriesPage() {
       <div className="agrivo-completed-header">
         <div>
           <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
-            Completed Deliveries
+            {t("completedDeliveries.title")}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            Review finished deliveries, delivery proof, customer feedback, and logistics performance.
+            {t("completedDeliveries.subtitle")}
           </p>
         </div>
         <div className="agrivo-completed-header__actions">
@@ -120,7 +127,7 @@ export function CompletedDeliveriesPage() {
             onClick={handleExport}
           >
             <Download className="mr-2 h-4 w-4" />
-            Export CSV
+            {t("completedDeliveries.actions.exportCsv")}
           </Button>
           <Button
             className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
@@ -131,7 +138,7 @@ export function CompletedDeliveriesPage() {
             }
           >
             <BarChart3 className="mr-2 h-4 w-4" />
-            Performance Summary
+            {t("completedDeliveries.actions.performanceSummary")}
           </Button>
         </div>
       </div>
@@ -171,23 +178,23 @@ export function CompletedDeliveriesPage() {
             </>
           ) : deliveries.length > 0 ? (
             <div className="agrivo-dashboard-panel agrivo-completed-empty-filter">
-              <p className="text-sm text-[#5F6F64]">No completed deliveries match your filters.</p>
+              <p className="text-sm text-[#5F6F64]">{t("completedDeliveries.empty.noMatch")}</p>
             </div>
           ) : (
             <div className="agrivo-dashboard-panel">
               <div className="agrivo-dashboard-empty agrivo-completed-empty">
                 <Truck className="h-10 w-10 text-[#86efac]" strokeWidth={1.5} />
                 <h3 className="agrivo-heading mt-4 text-lg font-bold text-[#102018]">
-                  No completed deliveries yet
+                  {t("completedDeliveries.empty.noneTitle")}
                 </h3>
                 <p className="mt-2 max-w-md text-sm leading-6 text-[#5F6F64]">
-                  Finished deliveries will appear here after drivers mark them as delivered.
+                  {t("completedDeliveries.empty.noneDescription")}
                 </p>
                 <Button
                   className="mt-5 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
                   onClick={() => navigate(getLogisticsSectionHash("in-transit"))}
                 >
-                  View In Transit
+                  {t("completedDeliveries.actions.viewInTransit")}
                 </Button>
               </div>
             </div>
@@ -200,8 +207,10 @@ export function CompletedDeliveriesPage() {
           <RecentFeedbackCard feedback={recentFeedback} />
           <ReportsCard
             onExport={handleExport}
-            onDownloadMonthly={() => showToast("Monthly report download started.")}
-            onDownloadDriver={() => showToast("Driver performance report download started.")}
+            onDownloadMonthly={() => showToast(t("completedDeliveries.feedback.monthlyReportDownloaded"))}
+            onDownloadDriver={() =>
+              showToast(t("completedDeliveries.feedback.driverPerformanceDownloaded"))
+            }
           />
         </aside>
       </div>

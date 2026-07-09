@@ -1,3 +1,4 @@
+import { navigateToHash } from "../../i18n/localizedRoutes";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -37,6 +38,12 @@ import {
   openGoogleMapsSearch,
 } from "../utils/googleMaps";
 import { buildWhatsAppUrl } from "../utils/whatsapp";
+import { useLanguage } from "../../i18n/LanguageContext";
+import {
+  formatCartSummary,
+  formatLogisticsHandoff,
+  localizeProductDetail,
+} from "../../i18n/productDetailHelpers";
 import { isApiMode } from "../../config/dataMode";
 import { getProductById, getProducts, type ApiProduct } from "../../api/productsApi";
 
@@ -45,10 +52,11 @@ interface ProductDetailPageProps {
 }
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 function ProductOriginPreview({ product }: { product: MarketplaceProductDetail }) {
+  const { t } = useLanguage();
   const villageLabel = product.village || districtShortName(product.district);
   const districtLabel = districtShortName(product.district);
   const originQuery = useMemo(
@@ -81,7 +89,7 @@ function ProductOriginPreview({ product }: { product: MarketplaceProductDetail }
         {mapStatus !== "error" ? (
           <iframe
             key={embedUrl}
-            title={`Origin map for ${product.farmer}`}
+            title={t("productDetail.origin.mapTitle").replace("{farmer}", product.farmer)}
             src={embedUrl}
             className="agrivo-product-origin-map__iframe"
             loading="lazy"
@@ -92,8 +100,10 @@ function ProductOriginPreview({ product }: { product: MarketplaceProductDetail }
         ) : (
           <div className="agrivo-product-origin-map__fallback">
             <MapPin className="h-8 w-8 text-[#43A047]" />
-            <p className="mt-3 text-sm font-semibold text-[#102018]">Map preview unavailable</p>
-            <p className="mt-1 text-sm text-[#5F6F64]">Open this location in Google Maps.</p>
+            <p className="mt-3 text-sm font-semibold text-[#102018]">
+              {t("productDetail.origin.mapUnavailable")}
+            </p>
+            <p className="mt-1 text-sm text-[#5F6F64]">{t("productDetail.origin.mapUnavailableHint")}</p>
             <Button
               variant="outline"
               size="sm"
@@ -101,7 +111,7 @@ function ProductOriginPreview({ product }: { product: MarketplaceProductDetail }
               onClick={handleOpenMaps}
             >
               <ExternalLink className="mr-2 h-4 w-4" />
-              Open in Google Maps
+              {t("productDetail.origin.openInGoogleMaps")}
             </Button>
           </div>
         )}
@@ -114,7 +124,9 @@ function ProductOriginPreview({ product }: { product: MarketplaceProductDetail }
 
         {mapStatus !== "error" ? (
           <div className="agrivo-product-origin-map__overlay">
-            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a70]">Origin farm</p>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a70]">
+              {t("productDetail.origin.originFarm")}
+            </p>
             <p className="mt-0.5 flex items-center gap-1 text-sm font-bold text-[#102018]">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
               <span className="truncate">{villageLabel}</span>
@@ -125,15 +137,21 @@ function ProductOriginPreview({ product }: { product: MarketplaceProductDetail }
 
       <div className="agrivo-product-origin-meta">
         <div className="agrivo-product-origin-meta-item">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a70]">Economic region</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a70]">
+            {t("productDetail.origin.economicRegion")}
+          </p>
           <p className="mt-1 text-sm font-semibold text-[#102018]">{product.economicRegion}</p>
         </div>
         <div className="agrivo-product-origin-meta-item">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a70]">District</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a70]">
+            {t("productDetail.origin.district")}
+          </p>
           <p className="mt-1 text-sm font-semibold text-[#102018]">{districtLabel}</p>
         </div>
         <div className="agrivo-product-origin-meta-item">
-          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a70]">Village</p>
+          <p className="text-[10px] font-semibold uppercase tracking-wide text-[#6b7a70]">
+            {t("productDetail.origin.village")}
+          </p>
           <p className="mt-1 text-sm font-semibold text-[#102018]">{villageLabel}</p>
         </div>
       </div>
@@ -141,7 +159,7 @@ function ProductOriginPreview({ product }: { product: MarketplaceProductDetail }
       <p className="agrivo-product-origin-farm-line">
         <Leaf className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
         <span>
-          {product.farmer}, {districtLabel}, Azerbaijan
+          {product.farmer}, {districtLabel}, {t("productDetail.origin.country")}
         </span>
       </p>
 
@@ -151,7 +169,7 @@ function ProductOriginPreview({ product }: { product: MarketplaceProductDetail }
         onClick={handleOpenMaps}
       >
         <ExternalLink className="mr-2 h-4 w-4" />
-        Open in Google Maps
+        {t("productDetail.origin.openInGoogleMaps")}
       </Button>
     </div>
   );
@@ -167,18 +185,19 @@ function DetailField({ label, value }: { label: string; value: string }) {
 }
 
 function ProductNotFound() {
+  const { t } = useLanguage();
   return (
     <div className="agrivo-shell agrivo-product-detail-page min-h-screen overflow-x-hidden bg-[#f8faf4]">
       <AgrivoNavbar activeItem="marketplace" />
       <div className="agrivo-header-spacer" aria-hidden="true" />
       <div className="agrivo-container py-16 text-center">
-        <h1 className="agrivo-heading text-2xl font-bold text-[#102018]">Product not found</h1>
-        <p className="mt-3 text-[#5F6F64]">We could not find this product.</p>
+        <h1 className="agrivo-heading text-2xl font-bold text-[#102018]">{t("product.notFound")}</h1>
+        <p className="mt-3 text-[#5F6F64]">{t("product.notFoundDesc")}</p>
         <Button
           className="mt-6 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
           onClick={() => navigate("products")}
         >
-          Back to Marketplace
+          {t("product.backToMarketplace")}
         </Button>
       </div>
     </div>
@@ -186,30 +205,32 @@ function ProductNotFound() {
 }
 
 function ProductLoading() {
+  const { t } = useLanguage();
   return (
     <div className="agrivo-shell agrivo-product-detail-page min-h-screen overflow-x-hidden bg-[#f8faf4]">
       <AgrivoNavbar activeItem="marketplace" />
       <div className="agrivo-header-spacer" aria-hidden="true" />
       <div className="agrivo-container py-16 text-center">
-        <h1 className="agrivo-heading text-2xl font-bold text-[#102018]">Loading product...</h1>
+        <h1 className="agrivo-heading text-2xl font-bold text-[#102018]">{t("product.loading")}</h1>
       </div>
     </div>
   );
 }
 
 function ProductLoadError({ message }: { message: string }) {
+  const { t } = useLanguage();
   return (
     <div className="agrivo-shell agrivo-product-detail-page min-h-screen overflow-x-hidden bg-[#f8faf4]">
       <AgrivoNavbar activeItem="marketplace" />
       <div className="agrivo-header-spacer" aria-hidden="true" />
       <div className="agrivo-container py-16 text-center">
-        <h1 className="agrivo-heading text-2xl font-bold text-[#102018]">Unable to load product</h1>
+        <h1 className="agrivo-heading text-2xl font-bold text-[#102018]">{t("product.loadError")}</h1>
         <p className="mt-3 text-[#5F6F64]">{message}</p>
         <Button
           className="mt-6 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
           onClick={() => navigate("products")}
         >
-          Back to Marketplace
+          {t("product.backToMarketplace")}
         </Button>
       </div>
     </div>
@@ -217,14 +238,15 @@ function ProductLoadError({ message }: { message: string }) {
 }
 
 function SimilarProducts({ products }: { products: HarvestListing[] }) {
+  const { t } = useLanguage();
   if (products.length === 0) return null;
 
   return (
     <section className="agrivo-product-detail-section">
-      <h2 className="agrivo-heading text-xl font-bold text-[#102018] sm:text-2xl">Similar Products</h2>
-      <p className="mt-2 text-sm text-[#5F6F64]">
-        More fresh supply from the same category and region.
-      </p>
+      <h2 className="agrivo-heading text-xl font-bold text-[#102018] sm:text-2xl">
+        {t("productDetail.sections.similarProducts")}
+      </h2>
+      <p className="mt-2 text-sm text-[#5F6F64]">{t("productDetail.similar.subtitle")}</p>
       <div className="agrivo-product-detail-similar-grid mt-6">
         {products.map((listing) => (
           <HarvestListingCard
@@ -254,7 +276,9 @@ function ProductDetailContent({
   similarProducts: HarvestListing[];
 }) {
   const { user, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const { cartCount } = useCart();
+  const display = useMemo(() => localizeProductDetail(t, product), [t, product]);
   const isBuyer = isAuthenticated && user?.role === "buyer";
   const isFarmer = isAuthenticated && user?.role === "farmer";
   const whatsappUrl = product.farmerWhatsapp
@@ -281,17 +305,17 @@ function ProductDetailContent({
           onClick={() => navigate("products")}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Marketplace
+          {t("product.backToMarketplace")}
         </button>
 
         <section className="agrivo-product-detail-hero agrivo-dashboard-panel mt-4">
           <div className="agrivo-product-detail-hero-grid">
             <div className="agrivo-product-detail-image-wrap">
               <ProductImage
-                name={product.name}
+                name={display.name}
                 src={product.image}
                 category={product.productType}
-                alt={`${product.name} product image`}
+                alt={`${display.name} product image`}
                 className="min-h-[280px] h-full w-full"
               />
               <ProductSaveButton slug={product.slug} className="agrivo-product-save-btn--overlay" />
@@ -299,16 +323,16 @@ function ProductDetailContent({
 
             <div className="agrivo-product-detail-hero-panel">
               <span className="agrivo-product-badge inline-flex rounded-full border border-[#bbf7d0] bg-[#ecfdf5] px-3 py-1 text-xs font-semibold text-[#166534]">
-                {product.badge}
+                {display.badge}
               </span>
 
               <h1 className="agrivo-heading mt-3 text-3xl font-bold text-[#102018] sm:text-4xl">
-                {product.name}
+                {display.name}
               </h1>
 
               <ProductVarietyBadge
-                variety={product.variety}
-                label="Variety"
+                variety={display.variety}
+                label={t("productDetail.hero.variety")}
                 size="md"
                 className="mt-2"
               />
@@ -320,12 +344,13 @@ function ProductDetailContent({
 
               <div className="mt-4">
                 <p className="text-sm text-[#5F6F64]">
-                  Farmer: <span className="font-semibold text-[#102018]">{product.farmer}</span>
+                  {t("productDetail.hero.farmer")}:{" "}
+                  <span className="font-semibold text-[#102018]">{product.farmer}</span>
                 </p>
                 {product.farmerVerified ? (
                   <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-[#166534]">
                     <BadgeCheck className="h-3.5 w-3.5" />
-                    Verified Farmer
+                    {t("productDetail.hero.verifiedFarmer")}
                   </p>
                 ) : null}
               </div>
@@ -339,27 +364,29 @@ function ProductDetailContent({
               <div className="agrivo-product-detail-quick-meta mt-4 grid grid-cols-2 gap-3">
                 <div className="agrivo-product-detail-quick-stat">
                   <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">
-                    Available quantity
+                    {t("productDetail.hero.availableQuantity")}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-[#102018]">{product.quantity}</p>
                 </div>
                 <div className="agrivo-product-detail-quick-stat">
-                  <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Harvested</p>
-                  <p className="mt-1 text-sm font-semibold text-[#102018]">{product.harvestDate}</p>
+                  <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">
+                    {t("productDetail.hero.harvested")}
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[#102018]">{display.harvestDate}</p>
                 </div>
                 <div className="agrivo-product-detail-quick-stat col-span-2">
                   <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">
-                    Delivery availability
+                    {t("productDetail.hero.deliveryAvailability")}
                   </p>
                   <p className="mt-1 text-sm font-semibold text-[#102018]">
-                    {product.deliveryAvailable ? "Delivery available" : "Pickup only"}
+                    {display.deliveryAvailableLabel}
                   </p>
                 </div>
               </div>
 
               {cartCount > 0 ? (
                 <p className="mt-4 rounded-xl border border-[#bbf7d0] bg-[#ecfdf5] px-3 py-2 text-sm font-medium text-[#166534]">
-                  Cart ({cartCount} item{cartCount === 1 ? "" : "s"})
+                  {formatCartSummary(t, cartCount)}
                 </p>
               ) : null}
 
@@ -369,14 +396,14 @@ function ProductDetailContent({
                     <ProductAddToCartButton
                       slug={product.slug}
                       className="agrivo-button-soft h-11 rounded-full bg-[#14532D] text-sm font-semibold text-white hover:bg-[#1D6A3B] sm:flex-1"
-                      label="Add to Cart"
+                      label={t("productDetail.hero.addToCart")}
                     />
                     <Button
                       variant="outline"
                       className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC] sm:flex-1"
                       onClick={() => navigate("dashboard/buyer/cart")}
                     >
-                      Order Now
+                      {t("productDetail.hero.orderNow")}
                     </Button>
                   </>
                 ) : !isAuthenticated ? (
@@ -384,7 +411,7 @@ function ProductDetailContent({
                     className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B] sm:flex-1"
                     onClick={() => navigate("login")}
                   >
-                    Login to Order
+                    {t("product.loginToOrder")}
                   </Button>
                 ) : isFarmer ? (
                   <Button
@@ -392,7 +419,7 @@ function ProductDetailContent({
                     className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC] sm:flex-1"
                     onClick={() => navigate("dashboard/farmer")}
                   >
-                    Go to Farmer Dashboard
+                    {t("productDetail.goToFarmerDashboard")}
                   </Button>
                 ) : null}
 
@@ -402,7 +429,7 @@ function ProductDetailContent({
                   onClick={handleContactSeller}
                 >
                   <MessageCircle className="mr-2 h-4 w-4" />
-                  Contact Seller
+                  {t("productDetail.hero.contactSeller")}
                 </Button>
 
                 {product.farmerSlug ? (
@@ -411,7 +438,7 @@ function ProductDetailContent({
                     className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC] sm:flex-1"
                     onClick={() => navigate(`farmers/${product.farmerSlug}`)}
                   >
-                    View Farmer Profile
+                    {t("productDetail.hero.viewFarmerProfile")}
                   </Button>
                 ) : null}
               </div>
@@ -422,32 +449,58 @@ function ProductDetailContent({
         <div className="agrivo-product-detail-layout mt-6">
           <div className="agrivo-product-detail-main space-y-6">
             <section className="agrivo-dashboard-panel">
-              <h2 className="agrivo-heading text-lg font-bold text-[#102018]">Product Details</h2>
-              {product.description ? (
-                <p className="mt-3 text-sm leading-6 text-[#5F6F64]">{product.description}</p>
+              <h2 className="agrivo-heading text-lg font-bold text-[#102018]">
+                {t("productDetail.sections.productDetails")}
+              </h2>
+              {display.description ? (
+                <p className="mt-3 text-sm leading-6 text-[#5F6F64]">{display.description}</p>
               ) : null}
               <dl className="agrivo-product-detail-fields mt-4">
-                <DetailField label="Category" value={product.category ?? "Produce"} />
-                {product.variety ? (
-                  <DetailField label="Variety / Sort" value={product.variety} />
+                <DetailField label={t("productDetail.details.category")} value={display.category} />
+                {display.variety ? (
+                  <DetailField label={t("productDetail.details.varietySort")} value={display.variety} />
                 ) : null}
-                <DetailField label="Unit" value={product.unit ?? "kg"} />
-                <DetailField label="Minimum order" value={product.minimumOrder ?? "20 kg"} />
-                <DetailField label="Available quantity" value={product.quantity} />
-                <DetailField label="Price per unit" value={product.priceDisplay} />
-                <DetailField label="Harvest date" value={product.harvestDate} />
-                <DetailField label="Freshness" value={product.freshnessStatus} />
-                <DetailField label="Batch ID" value={product.batchId} />
-                <DetailField label="Storage note" value={product.storageNote} />
+                <DetailField label={t("productDetail.details.unit")} value={product.unit ?? "kg"} />
                 <DetailField
-                  label="Delivery"
-                  value={product.deliveryAvailable ? "Available" : "Pickup only"}
+                  label={t("productDetail.details.minimumOrder")}
+                  value={product.minimumOrder ?? "20 kg"}
+                />
+                <DetailField
+                  label={t("productDetail.details.availableQuantity")}
+                  value={product.quantity}
+                />
+                <DetailField
+                  label={t("productDetail.details.pricePerUnit")}
+                  value={product.priceDisplay}
+                />
+                <DetailField
+                  label={t("productDetail.details.harvestDate")}
+                  value={display.harvestDate}
+                />
+                <DetailField
+                  label={t("productDetail.details.freshness")}
+                  value={display.freshnessStatus}
+                />
+                <DetailField label={t("productDetail.details.batchId")} value={product.batchId} />
+                <DetailField
+                  label={t("productDetail.details.storageNote")}
+                  value={display.storageNote}
+                />
+                <DetailField
+                  label={t("productDetail.details.delivery")}
+                  value={
+                    product.deliveryAvailable
+                      ? t("productDetail.details.available")
+                      : t("product.pickupOnly")
+                  }
                 />
               </dl>
             </section>
 
             <section className="agrivo-dashboard-panel">
-              <h2 className="agrivo-heading text-lg font-bold text-[#102018]">Product Origin</h2>
+              <h2 className="agrivo-heading text-lg font-bold text-[#102018]">
+                {t("productDetail.sections.productOrigin")}
+              </h2>
               <p className="mt-2 flex items-center gap-2 text-sm font-semibold text-[#14532D]">
                 <MapPin className="h-4 w-4 shrink-0" />
                 {product.economicRegion} → {districtShortName(product.district)}
@@ -459,27 +512,25 @@ function ProductDetailContent({
             </section>
 
             <section className="agrivo-dashboard-panel">
-              <h2 className="agrivo-heading text-lg font-bold text-[#102018]">Delivery Information</h2>
+              <h2 className="agrivo-heading text-lg font-bold text-[#102018]">
+                {t("productDetail.sections.deliveryInformation")}
+              </h2>
               <dl className="mt-4 space-y-3 text-sm">
                 <div className="flex items-start justify-between gap-4">
-                  <dt className="text-[#5F6F64]">Delivery available</dt>
-                  <dd className="font-semibold text-[#102018]">
-                    {product.deliveryAvailable ? "Yes" : "No"}
-                  </dd>
+                  <dt className="text-[#5F6F64]">{t("productDetail.delivery.deliveryAvailable")}</dt>
+                  <dd className="font-semibold text-[#102018]">{display.deliveryYesNo}</dd>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <dt className="text-[#5F6F64]">Estimated delivery</dt>
-                  <dd className="font-semibold text-[#102018]">{product.estimatedDelivery}</dd>
+                  <dt className="text-[#5F6F64]">{t("productDetail.delivery.estimatedDelivery")}</dt>
+                  <dd className="font-semibold text-[#102018]">{display.estimatedDelivery}</dd>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <dt className="text-[#5F6F64]">Logistics support</dt>
-                  <dd className="font-semibold text-[#102018]">{product.logisticsSupport}</dd>
+                  <dt className="text-[#5F6F64]">{t("productDetail.delivery.logisticsSupport")}</dt>
+                  <dd className="font-semibold text-[#102018]">{display.logisticsSupport}</dd>
                 </div>
                 <div className="flex items-start justify-between gap-4">
-                  <dt className="text-[#5F6F64]">Pickup from farm</dt>
-                  <dd className="font-semibold text-[#102018]">
-                    {product.pickupAvailable ? "Available" : "Not available"}
-                  </dd>
+                  <dt className="text-[#5F6F64]">{t("productDetail.delivery.pickupFromFarm")}</dt>
+                  <dd className="font-semibold text-[#102018]">{display.pickupAvailableLabel}</dd>
                 </div>
               </dl>
             </section>
@@ -504,7 +555,7 @@ function ProductDetailContent({
                   {product.farmerVerified ? (
                     <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-[#166534]">
                       <BadgeCheck className="h-3.5 w-3.5" />
-                      Verified Farmer
+                      {t("productDetail.farmerCard.verifiedFarmer")}
                     </p>
                   ) : null}
                 </div>
@@ -519,12 +570,16 @@ function ProductDetailContent({
                 </p>
                 <p className="flex items-center gap-1.5">
                   <Star className="h-3.5 w-3.5 fill-[#fbbf24] text-[#fbbf24]" />
-                  Rating: {product.farmerRating}
+                  {t("productDetail.farmerCard.rating")}: {product.farmerRating}
                 </p>
-                <p>Completed orders: {product.farmerCompletedOrders}</p>
                 <p>
-                  <span className="font-medium text-[#102018]">Specializes in:</span>{" "}
-                  {product.farmerSpecialization}
+                  {t("productDetail.farmerCard.completedOrders")}: {product.farmerCompletedOrders}
+                </p>
+                <p>
+                  <span className="font-medium text-[#102018]">
+                    {t("productDetail.farmerCard.specializesIn")}:
+                  </span>{" "}
+                  {display.farmerSpecialization}
                 </p>
               </div>
 
@@ -534,7 +589,7 @@ function ProductDetailContent({
                     className="w-full rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
                     onClick={() => navigate(`farmers/${product.farmerSlug}`)}
                   >
-                    View Farmer Profile
+                    {t("productDetail.farmerCard.viewFarmerProfile")}
                   </Button>
                 ) : null}
                 <Button
@@ -543,7 +598,7 @@ function ProductDetailContent({
                   onClick={handleContactSeller}
                 >
                   <MessageCircle className="mr-2 h-4 w-4" />
-                  Contact via WhatsApp
+                  {t("productDetail.farmerCard.contactWhatsapp")}
                 </Button>
               </div>
             </section>
@@ -553,14 +608,16 @@ function ProductDetailContent({
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ecfdf5] border border-[#bbf7d0]">
                   <Truck className="h-4 w-4 text-[#14532D]" />
                 </div>
-                <h3 className="agrivo-heading text-sm font-bold text-[#14532D]">Agrivo logistics ready</h3>
+                <h3 className="agrivo-heading text-sm font-bold text-[#14532D]">
+                  {t("productDetail.logisticsCard.title")}
+                </h3>
               </div>
               <p className="mt-3 text-sm leading-6 text-[#5F6F64]">
-                Verified farm supply with route visibility and delivery coordination through Agrivo.
+                {t("productDetail.logisticsCard.description")}
               </p>
               <div className="mt-3 flex items-center gap-2 rounded-xl border border-[#edf2ea] bg-[#f8faf4] px-3 py-2 text-xs font-medium text-[#3f5247]">
                 <Navigation className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
-                {product.estimatedDelivery} estimated handoff
+                {formatLogisticsHandoff(t, display.estimatedDelivery)}
               </div>
             </section>
           </aside>
@@ -573,6 +630,7 @@ function ProductDetailContent({
 }
 
 export default function ProductDetailPage({ slug }: ProductDetailPageProps) {
+  const { t } = useLanguage();
   const [listing, setListing] = useState<HarvestListing | null>(null);
   const [similarListings, setSimilarListings] = useState<HarvestListing[] | null>(null);
   const [isLoading, setIsLoading] = useState(isApiMode);
@@ -606,7 +664,7 @@ export default function ProductDetailPage({ slug }: ProductDetailPageProps) {
         if (error instanceof Error) {
           setErrorMessage(error.message);
         } else {
-          setErrorMessage("Failed to load product.");
+          setErrorMessage(t("product.loadError"));
         }
       })
       .finally(() => {
@@ -618,7 +676,7 @@ export default function ProductDetailPage({ slug }: ProductDetailPageProps) {
     return () => {
       active = false;
     };
-  }, [slug]);
+  }, [slug, t]);
 
   if (isLoading) return <ProductLoading />;
   if (errorMessage) return <ProductLoadError message={errorMessage} />;

@@ -2,6 +2,7 @@ import React from "react";
 import { ArrowLeft, Home, ShoppingBag, Users, Package, User } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card, CardContent } from "./ui/card";
+import { navigateToHash } from "../../i18n/localizedRoutes";
 
 interface PageNavigationProps {
   currentPage: string;
@@ -34,12 +35,12 @@ export default function PageNavigation({ currentPage, showBackButton = true, tit
     // Remove current page from history
     history.pop();
     const previousPage = history[history.length - 1] || 'home';
-    window.location.hash = previousPage;
+    navigateToHash(previousPage);
   };
 
   const handleNavigate = (page: string) => {
     updateNavigationHistory(currentPage);
-    window.location.hash = page;
+    navigateToHash(page);
   };
 
   // Update current page in history when component mounts

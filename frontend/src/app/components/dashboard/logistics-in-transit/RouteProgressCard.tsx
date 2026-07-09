@@ -1,23 +1,31 @@
 import type { RouteProgressSummary } from "../../../utils/inTransitStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 
 export function RouteProgressCard({ summary }: { summary: RouteProgressSummary }) {
+  const { t } = useLanguage();
   const rows = [
-    { label: "Average completion", value: `${summary.averageCompletion}%`, width: summary.averageCompletion },
-    { label: "On-time rate", value: `${summary.onTimeRate}%`, width: summary.onTimeRate },
+    {
+      label: t("inTransitPage.sidebar.averageCompletion"),
+      value: `${summary.averageCompletion}%`,
+      width: summary.averageCompletion,
+    },
+    { label: t("inTransitPage.sidebar.onTimeRate"), value: `${summary.onTimeRate}%`, width: summary.onTimeRate },
   ];
 
   return (
     <section className="agrivo-transit-side-card agrivo-dashboard-panel">
-      <h3 className="agrivo-heading text-base font-bold text-[#102018]">Route Progress</h3>
-      <p className="mt-1 text-xs text-[#6b7a70]">Fleet-wide transit metrics</p>
+      <h3 className="agrivo-heading text-base font-bold text-[#102018]">
+        {t("inTransitPage.sidebar.routeProgressTitle")}
+      </h3>
+      <p className="mt-1 text-xs text-[#6b7a70]">{t("inTransitPage.sidebar.routeProgressSubtitle")}</p>
 
       <dl className="agrivo-transit-progress-metrics">
         <div>
-          <dt>Remaining distance</dt>
+          <dt>{t("inTransitPage.sidebar.remainingDistance")}</dt>
           <dd>{summary.totalRemainingDistance} km</dd>
         </div>
         <div>
-          <dt>Active routes</dt>
+          <dt>{t("inTransitPage.sidebar.activeRoutes")}</dt>
           <dd>{summary.activeRoutes}</dd>
         </div>
       </dl>

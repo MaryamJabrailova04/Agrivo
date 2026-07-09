@@ -1,3 +1,4 @@
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   BadgeCheck,
   CheckCircle2,
@@ -17,7 +18,6 @@ import {
   acceptBulkOffer,
   cancelBulkOrder,
   createBulkOrder,
-  formatBulkDate,
   fulfillBulkOrder,
   getBestOffer,
   getBulkOrderSummary,
@@ -51,6 +51,9 @@ import {
 } from "../ui/select";
 import { Textarea } from "../ui/textarea";
 import { cn } from "../ui/utils";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import type { Language } from "../../../i18n/translations";
+import { translateBuyerProductName } from "../../../i18n/buyerDashboardHelpers";
 
 const filterControlClass =
   "agrivo-filter-control h-11 rounded-full border-[#DEECE0] bg-[#F7FBF5] text-sm text-[#102018]";
@@ -93,25 +96,88 @@ interface FormErrors {
   neededBy?: string;
 }
 
-function validateForm(input: BulkOrderFormInput): FormErrors {
+function translateCategoryLabel(
+  t: (key: string, fallback?: string) => string,
+  category: BulkOrderCategory | string,
+): string {
+  const keyMap: Record<string, string> = {
+    Vegetables: "categories.vegetables",
+    Fruits: "categories.fruits",
+    "Dairy Products": "categories.dairyProducts",
+  };
+  const key = keyMap[category];
+  return key ? t(key, category) : category;
+}
+
+function translateBulkUnit(t: (key: string, fallback?: string) => string, unit: string): string {
+  const keyMap: Record<string, string> = {
+    kg: "common.kg",
+    liter: "buyerBulkOrders.form.units.liter",
+    box: "buyerBulkOrders.form.units.box",
+    jar: "buyerBulkOrders.form.units.jar",
+  };
+  const key = keyMap[unit];
+  return key ? t(key, unit) : unit;
+}
+
+function formatLocalizedDate(value: string, language: Language): string {
+  try {
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString(language === "az" ? "az-AZ" : "en-US", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    return value;
+  }
+}
+
+function formatLocalizedPriceUnit(
+  t: (key: string, fallback?: string) => string,
+  language: Language,
+  value: string,
+): string {
+  if (language !== "az") return value;
+  return value.replace(/\bkg\b/gi, t("common.kg", "kq"));
+}
+
+function validateForm(
+  input: BulkOrderFormInput,
+  t: (key: string, fallback?: string) => string,
+): FormErrors {
   const errors: FormErrors = {};
-  if (!input.productName.trim()) errors.productName = "Product is required";
-  if (!input.category) errors.category = "Category is required";
-  if (!input.quantity || input.quantity <= 0) errors.quantity = "Quantity must be greater than 0";
-  if (!input.unit) errors.unit = "Unit is required";
-  if (!input.deliveryLocation.trim()) errors.deliveryLocation = "Delivery location is required";
-  if (!input.neededBy) errors.neededBy = "Needed by date is required";
+  if (!input.productName.trim()) errors.productName = t("buyerBulkOrders.feedback.requiredFields");
+  if (!input.category) errors.category = t("buyerBulkOrders.feedback.chooseCategory");
+  if (!input.quantity || input.quantity <= 0) errors.quantity = t("buyerBulkOrders.feedback.invalidQuantity");
+  if (!input.unit) errors.unit = t("buyerBulkOrders.feedback.requiredFields");
+  if (!input.deliveryLocation.trim()) errors.deliveryLocation = t("buyerBulkOrders.feedback.requiredFields");
+  if (!input.neededBy) errors.neededBy = t("buyerBulkOrders.feedback.requiredFields");
   return errors;
 }
 
 function BulkSummaryCards({ orders }: { orders: BulkOrder[] }) {
+  const { t } = useLanguage();
   const summary = useMemo(() => getBulkOrderSummary(orders), [orders]);
 
   const cards = [
-    { label: "Active Requests", value: summary.activeRequests, icon: ClipboardList },
-    { label: "Offers Received", value: summary.offersReceived, icon: Handshake },
-    { label: "Accepted Deals", value: summary.acceptedDeals, icon: CheckCircle2 },
-    { label: "Completed Bulk Orders", value: summary.completedOrders, icon: Package },
+    {
+      label: t("buyerBulkOrders.stats.activeRequests"),
+      value: summary.activeRequests,
+      icon: ClipboardList,
+    },
+    {
+      label: t("buyerBulkOrders.stats.offersReceived"),
+      value: summary.offersReceived,
+      icon: Handshake,
+    },
+    { label: t("buyerBulkOrders.stats.acceptedDeals"), value: summary.acceptedDeals, icon: CheckCircle2 },
+    {
+      label: t("buyerBulkOrders.stats.completedBulkOrders"),
+      value: summary.completedOrders,
+      icon: Package,
+    },
   ];
 
   return (
@@ -143,6 +209,7 @@ function BulkOrderForm({
   onSubmit: (input: BulkOrderFormInput, editingId?: string | null) => void;
   onCancel?: () => void;
 }) {
+  const { t } = useLanguage();
   const [form, setForm] = useState<BulkOrderFormInput>(initial ?? EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
 
@@ -169,7 +236,7 @@ function BulkOrderForm({
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    const nextErrors = validateForm(form);
+    const nextErrors = validateForm(form, t);
     if (Object.keys(nextErrors).length > 0) {
       setErrors(nextErrors);
       return;
@@ -184,32 +251,32 @@ function BulkOrderForm({
   return (
     <form className="agrivo-bulk-form agrivo-dashboard-panel" onSubmit={handleSubmit} id="bulk-order-form">
       <h3 className="agrivo-bulk-form-title">
-        {editingId ? "Edit Bulk Order Request" : "Create Bulk Order Request"}
+        {editingId ? t("buyerBulkOrders.form.editTitle") : t("buyerBulkOrders.form.title")}
       </h3>
 
       <div className="agrivo-bulk-form-grid">
         <div className="agrivo-bulk-form-field">
-          <Label htmlFor="bulk-product">Product needed</Label>
+          <Label htmlFor="bulk-product">{t("buyerBulkOrders.form.productNeeded")}</Label>
           <Input
             id="bulk-product"
             value={form.productName}
             onChange={(e) => update("productName", e.target.value)}
-            placeholder="e.g. Tomatoes, Apples, Potatoes"
+            placeholder={t("buyerBulkOrders.form.productPlaceholder")}
             className="agrivo-bulk-input"
           />
           {errors.productName ? <p className="agrivo-bulk-field-error">{errors.productName}</p> : null}
         </div>
 
         <div className="agrivo-bulk-form-field">
-          <Label>Category</Label>
+          <Label>{t("buyerBulkOrders.form.category")}</Label>
           <Select value={form.category} onValueChange={(v) => update("category", v as BulkOrderCategory)}>
             <SelectTrigger className={filterControlClass}>
-              <SelectValue placeholder="Select category" />
+              <SelectValue placeholder={t("buyerBulkOrders.form.selectCategory")} />
             </SelectTrigger>
             <SelectContent>
               {BULK_CATEGORIES.map((cat) => (
                 <SelectItem key={cat} value={cat}>
-                  {cat}
+                  {translateCategoryLabel(t, cat)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -218,7 +285,7 @@ function BulkOrderForm({
         </div>
 
         <div className="agrivo-bulk-form-field">
-          <Label htmlFor="bulk-quantity">Quantity</Label>
+          <Label htmlFor="bulk-quantity">{t("buyerBulkOrders.form.quantity")}</Label>
           <Input
             id="bulk-quantity"
             type="number"
@@ -232,15 +299,15 @@ function BulkOrderForm({
         </div>
 
         <div className="agrivo-bulk-form-field">
-          <Label>Unit</Label>
+          <Label>{t("buyerBulkOrders.form.unit")}</Label>
           <Select value={form.unit} onValueChange={(v) => update("unit", v as BulkOrderUnit)}>
             <SelectTrigger className={filterControlClass}>
-              <SelectValue placeholder="Select unit" />
+              <SelectValue placeholder={t("buyerBulkOrders.form.selectUnit")} />
             </SelectTrigger>
             <SelectContent>
               {UNITS.map((unit) => (
                 <SelectItem key={unit} value={unit}>
-                  {unit}
+                  {translateBulkUnit(t, unit)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -249,13 +316,13 @@ function BulkOrderForm({
         </div>
 
         <div className="agrivo-bulk-form-field">
-          <Label>Preferred economic region</Label>
+          <Label>{t("buyerBulkOrders.form.preferredRegion")}</Label>
           <Select value={form.preferredRegion} onValueChange={(v) => update("preferredRegion", v)}>
             <SelectTrigger className={filterControlClass}>
-              <SelectValue placeholder="Select region" />
+              <SelectValue placeholder={t("buyerBulkOrders.form.selectRegion")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All regions</SelectItem>
+              <SelectItem value="all">{t("buyerBulkOrders.form.allRegions")}</SelectItem>
               {economicRegions.map((region) => (
                 <SelectItem key={region} value={region}>
                   {region}
@@ -266,16 +333,16 @@ function BulkOrderForm({
         </div>
 
         <div className="agrivo-bulk-form-field">
-          <Label>Preferred district / city</Label>
+          <Label>{t("buyerBulkOrders.form.preferredDistrict")}</Label>
           <Select
             value={form.preferredDistrict || "none"}
             onValueChange={(v) => update("preferredDistrict", v === "none" ? "" : v)}
           >
             <SelectTrigger className={filterControlClass}>
-              <SelectValue placeholder="Select district" />
+              <SelectValue placeholder={t("buyerBulkOrders.form.selectDistrict")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">Any district</SelectItem>
+              <SelectItem value="none">{t("buyerBulkOrders.form.anyDistrict")}</SelectItem>
               {districts.map((district) => (
                 <SelectItem key={district} value={district}>
                   {district}
@@ -286,12 +353,12 @@ function BulkOrderForm({
         </div>
 
         <div className="agrivo-bulk-form-field agrivo-bulk-form-field--wide">
-          <Label htmlFor="bulk-delivery">Delivery location</Label>
+          <Label htmlFor="bulk-delivery">{t("buyerBulkOrders.form.deliveryLocation")}</Label>
           <Input
             id="bulk-delivery"
             value={form.deliveryLocation}
             onChange={(e) => update("deliveryLocation", e.target.value)}
-            placeholder="e.g. Baku, Nizami district, market warehouse"
+            placeholder={t("buyerBulkOrders.form.deliveryLocationPlaceholder")}
             className="agrivo-bulk-input"
           />
           {errors.deliveryLocation ? (
@@ -300,7 +367,7 @@ function BulkOrderForm({
         </div>
 
         <div className="agrivo-bulk-form-field">
-          <Label htmlFor="bulk-needed-by">Needed by date</Label>
+          <Label htmlFor="bulk-needed-by">{t("buyerBulkOrders.form.neededByDate")}</Label>
           <Input
             id="bulk-needed-by"
             type="date"
@@ -312,19 +379,19 @@ function BulkOrderForm({
         </div>
 
         <div className="agrivo-bulk-form-field">
-          <Label htmlFor="bulk-max-price">Maximum price per unit</Label>
+          <Label htmlFor="bulk-max-price">{t("buyerBulkOrders.form.maximumPricePerUnit")}</Label>
           <Input
             id="bulk-max-price"
             value={form.maxPrice}
             onChange={(e) => update("maxPrice", e.target.value)}
-            placeholder="e.g. 1.50 AZN / kg"
+            placeholder={t("buyerBulkOrders.form.maxPricePlaceholder")}
             className="agrivo-bulk-input"
           />
-          <p className="agrivo-bulk-field-hint">Recommended for better farmer offers</p>
+          <p className="agrivo-bulk-field-hint">{t("buyerBulkOrders.form.priceHint")}</p>
         </div>
 
         <div className="agrivo-bulk-form-field">
-          <Label>Delivery required?</Label>
+          <Label>{t("buyerBulkOrders.form.deliveryRequired")}</Label>
           <RadioGroup
             value={form.deliveryRequired ? "yes" : "no"}
             onValueChange={(v) => update("deliveryRequired", v === "yes")}
@@ -332,22 +399,22 @@ function BulkOrderForm({
           >
             <label className="agrivo-bulk-radio-option">
               <RadioGroupItem value="yes" />
-              <span>Yes</span>
+              <span>{t("common.yes")}</span>
             </label>
             <label className="agrivo-bulk-radio-option">
               <RadioGroupItem value="no" />
-              <span>No</span>
+              <span>{t("common.no")}</span>
             </label>
           </RadioGroup>
         </div>
 
         <div className="agrivo-bulk-form-field agrivo-bulk-form-field--full">
-          <Label htmlFor="bulk-notes">Notes</Label>
+          <Label htmlFor="bulk-notes">{t("buyerBulkOrders.form.notes")}</Label>
           <Textarea
             id="bulk-notes"
             value={form.notes}
             onChange={(e) => update("notes", e.target.value)}
-            placeholder="e.g. Need firm tomatoes suitable for market resale. Delivery before 10 AM preferred."
+            placeholder={t("buyerBulkOrders.form.notesPlaceholder")}
             className="agrivo-bulk-textarea"
           />
         </div>
@@ -361,11 +428,11 @@ function BulkOrderForm({
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={onCancel}
           >
-            Cancel edit
+            {t("buyerBulkOrders.form.cancelEdit")}
           </Button>
         ) : null}
         <Button type="submit" className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]">
-          {editingId ? "Save Changes" : "Create Bulk Order"}
+          {editingId ? t("buyerBulkOrders.form.saveChanges") : t("buyerBulkOrders.form.submit")}
         </Button>
       </div>
     </form>
@@ -381,6 +448,7 @@ function OfferCard({
   order: BulkOrder;
   onAccept: () => void;
 }) {
+  const { t, language } = useLanguage();
   const isAccepted = offer.accepted;
 
   return (
@@ -391,33 +459,33 @@ function OfferCard({
           {offer.verified ? (
             <p className="agrivo-bulk-offer-verified">
               <BadgeCheck className="h-3.5 w-3.5" />
-              Verified Farmer
+              {t("buyerBulkOrders.modal.verifiedFarmer")}
             </p>
           ) : null}
         </div>
         {isAccepted ? (
-          <span className="agrivo-bulk-offer-accepted-badge">Accepted</span>
+          <span className="agrivo-bulk-offer-accepted-badge">{t("buyerBulkOrders.status.accepted")}</span>
         ) : null}
       </div>
 
       <dl className="agrivo-bulk-offer-details">
         <div>
-          <dt>Price</dt>
-          <dd>{offer.pricePerUnit}</dd>
+          <dt>{t("buyerBulkOrders.modal.price")}</dt>
+          <dd>{formatLocalizedPriceUnit(t, language, offer.pricePerUnit)}</dd>
         </div>
         <div>
-          <dt>Available</dt>
+          <dt>{t("buyerBulkOrders.modal.available")}</dt>
           <dd>
-            {offer.availableQuantity} {offer.unit}
+            {offer.availableQuantity} {translateBulkUnit(t, offer.unit)}
           </dd>
         </div>
         <div>
-          <dt>Delivery</dt>
-          <dd>{offer.deliveryAvailable ? "Available" : "Pickup only"}</dd>
+          <dt>{t("buyerBulkOrders.modal.delivery")}</dt>
+          <dd>{offer.deliveryAvailable ? t("buyerBulkOrders.card.deliveryAvailable") : t("products.pickupOnly")}</dd>
         </div>
         <div>
-          <dt>Est. delivery</dt>
-          <dd>{offer.estimatedDelivery}</dd>
+          <dt>{t("buyerBulkOrders.modal.estimatedDelivery")}</dt>
+          <dd>{formatLocalizedDate(offer.estimatedDelivery, language)}</dd>
         </div>
       </dl>
 
@@ -428,7 +496,7 @@ function OfferCard({
             className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
             onClick={onAccept}
           >
-            Accept Offer
+            {t("buyerBulkOrders.modal.acceptOffer")}
           </Button>
         ) : null}
         <Button
@@ -436,21 +504,21 @@ function OfferCard({
           variant="outline"
           className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
           onClick={() => {
-            window.location.hash = `farmers/${offer.farmerSlug}`;
+            navigateToHash(`farmers/${offer.farmerSlug}`);
           }}
         >
           <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
-          Contact Farmer
+          {t("buyerBulkOrders.modal.contactFarmer")}
         </Button>
         <Button
           size="sm"
           variant="outline"
           className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
           onClick={() => {
-            window.location.hash = `farmers/${offer.farmerSlug}`;
+            navigateToHash(`farmers/${offer.farmerSlug}`);
           }}
         >
-          View Farmer Profile
+          {t("buyerBulkOrders.modal.viewFarmerProfile")}
         </Button>
       </div>
     </article>
@@ -470,10 +538,11 @@ function BulkOrderCard({
   onCancel: () => void;
   onFulfill: () => void;
 }) {
+  const { t, language } = useLanguage();
   const bestOffer = getBestOffer(order);
   const regionLabel =
     order.preferredRegion === "all"
-      ? "All regions"
+      ? t("buyerBulkOrders.form.allRegions")
       : `${order.preferredRegion}${order.preferredDistrict ? ` · ${order.preferredDistrict}` : ""}`;
 
   return (
@@ -481,51 +550,58 @@ function BulkOrderCard({
       <div className="agrivo-bulk-order-card-header">
         <div>
           <h4 className="agrivo-bulk-order-card-title">
-            {order.productName} · {order.quantity} {order.unit}
+            {translateBuyerProductName(t, order.productName)} · {order.quantity} {translateBulkUnit(t, order.unit)}
           </h4>
-          <p className="agrivo-bulk-order-card-meta">Created {formatBulkDate(order.createdAt)}</p>
+          <p className="agrivo-bulk-order-card-meta">
+            {t("buyerBulkOrders.card.createdAt")}: {formatLocalizedDate(order.createdAt, language)}
+          </p>
         </div>
         <BuyerBulkOrderStatusBadge status={order.status} />
       </div>
 
       <dl className="agrivo-bulk-order-card-details">
         <div>
-          <dt>Category</dt>
-          <dd>{order.category}</dd>
+          <dt>{t("buyerBulkOrders.card.category")}</dt>
+          <dd>{translateCategoryLabel(t, order.category)}</dd>
         </div>
         <div>
-          <dt>Preferred region</dt>
+          <dt>{t("buyerBulkOrders.card.preferredRegion")}</dt>
           <dd>{regionLabel}</dd>
         </div>
         <div>
-          <dt>Delivery to</dt>
+          <dt>{t("buyerBulkOrders.card.deliveryTo")}</dt>
           <dd>{order.deliveryLocation}</dd>
         </div>
         <div>
-          <dt>Needed by</dt>
-          <dd>{formatBulkDate(order.neededBy)}</dd>
+          <dt>{t("buyerBulkOrders.card.neededBy")}</dt>
+          <dd>{formatLocalizedDate(order.neededBy, language)}</dd>
         </div>
         {order.maxPrice ? (
           <div>
-            <dt>Max price</dt>
-            <dd>{order.maxPrice}</dd>
+            <dt>{t("buyerBulkOrders.card.maxPrice")}</dt>
+            <dd>{formatLocalizedPriceUnit(t, language, order.maxPrice)}</dd>
           </div>
         ) : null}
         <div>
-          <dt>Offers</dt>
-          <dd>{order.offersCount} farmer offer{order.offersCount === 1 ? "" : "s"}</dd>
+          <dt>{t("buyerBulkOrders.card.offers")}</dt>
+          <dd>
+            {t("buyerBulkOrders.modal.offersReceivedSummary").replace("{count}", String(order.offersCount))}
+          </dd>
         </div>
       </dl>
 
       {bestOffer && order.offersCount > 0 ? (
         <div className="agrivo-bulk-order-best-offer">
-          <p className="agrivo-bulk-order-best-offer-label">Best offer</p>
+          <p className="agrivo-bulk-order-best-offer-label">{t("buyerBulkOrders.card.bestOffer")}</p>
           <p className="agrivo-bulk-order-best-offer-value">
-            {bestOffer.farmerName} · {bestOffer.pricePerUnit}
+            {bestOffer.farmerName} · {formatLocalizedPriceUnit(t, language, bestOffer.pricePerUnit)}
           </p>
           <p className="agrivo-bulk-order-best-offer-meta">
-            Available: {bestOffer.availableQuantity} {bestOffer.unit}
-            {bestOffer.deliveryAvailable ? " · Delivery available" : " · Pickup only"}
+            {t("buyerBulkOrders.card.available")}: {bestOffer.availableQuantity}{" "}
+            {translateBulkUnit(t, bestOffer.unit)}
+            {bestOffer.deliveryAvailable
+              ? ` · ${t("buyerBulkOrders.card.deliveryAvailable")}`
+              : ` · ${t("products.pickupOnly")}`}
           </p>
         </div>
       ) : null}
@@ -537,7 +613,7 @@ function BulkOrderCard({
           onClick={onViewOffers}
           disabled={order.offersCount === 0}
         >
-          View Offers
+          {t("buyerBulkOrders.card.viewOffers")}
         </Button>
         <Button
           size="sm"
@@ -547,7 +623,7 @@ function BulkOrderCard({
           disabled={order.status === "Cancelled" || order.status === "Fulfilled"}
         >
           <Pencil className="mr-1.5 h-3.5 w-3.5" />
-          Edit Request
+          {t("buyerBulkOrders.card.editRequest")}
         </Button>
         <Button
           size="sm"
@@ -557,7 +633,7 @@ function BulkOrderCard({
           disabled={order.status === "Cancelled" || order.status === "Fulfilled"}
         >
           <XCircle className="mr-1.5 h-3.5 w-3.5" />
-          Cancel
+          {t("buyerBulkOrders.card.cancel")}
         </Button>
         <Button
           size="sm"
@@ -567,7 +643,7 @@ function BulkOrderCard({
           disabled={order.status === "Cancelled" || order.status === "Fulfilled"}
         >
           <CheckCircle2 className="mr-1.5 h-3.5 w-3.5" />
-          Mark as Fulfilled
+          {t("buyerBulkOrders.card.markAsFulfilled")}
         </Button>
       </div>
     </article>
@@ -576,6 +652,7 @@ function BulkOrderCard({
 
 export function BuyerBulkOrdersPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [orders, setOrders] = useState<BulkOrder[]>([]);
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState("");
@@ -608,10 +685,10 @@ export function BuyerBulkOrdersPage() {
     if (editingId) {
       updateBulkOrder(user.id, editingId, input);
       setEditingOrder(null);
-      showToast("Bulk order request updated");
+      showToast(t("buyerBulkOrders.feedback.updated"));
     } else {
       createBulkOrder(user.id, input);
-      showToast("Bulk order request created");
+      showToast(t("buyerBulkOrders.feedback.created"));
     }
     refresh();
   };
@@ -670,9 +747,9 @@ export function BuyerBulkOrdersPage() {
       ) : null}
 
       <div className="agrivo-dashboard-page-header">
-        <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">Bulk Orders</h2>
+        <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">{t("buyerBulkOrders.title")}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-          Create large product requests and receive offers from verified farmers.
+          {t("buyerBulkOrders.subtitle")}
         </p>
       </div>
 
@@ -688,9 +765,11 @@ export function BuyerBulkOrdersPage() {
 
       <section className="agrivo-bulk-orders-section">
         <div className="agrivo-bulk-orders-section-header">
-          <h3 className="agrivo-bulk-orders-section-title">My Bulk Orders</h3>
+          <h3 className="agrivo-bulk-orders-section-title">{t("buyerBulkOrders.list.title")}</h3>
           {orders.length > 0 ? (
-            <p className="agrivo-bulk-orders-section-meta">{filteredOrders.length} request{filteredOrders.length === 1 ? "" : "s"}</p>
+            <p className="agrivo-bulk-orders-section-meta">
+              {t("buyerBulkOrders.list.requestsCount").replace("{count}", String(filteredOrders.length))}
+            </p>
           ) : null}
         </div>
 
@@ -701,42 +780,54 @@ export function BuyerBulkOrdersPage() {
               <Input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by product or location"
+                placeholder={t("buyerBulkOrders.list.searchPlaceholder")}
                 className={cn(filterControlClass, "pl-10")}
               />
             </div>
             <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as StatusFilter)}>
               <SelectTrigger className={cn(filterControlClass, "w-full sm:w-44")}>
-                <SelectValue placeholder="Status" />
+                <SelectValue placeholder={t("buyerBulkOrders.list.status")} />
               </SelectTrigger>
               <SelectContent>
                 {STATUS_FILTERS.map((status) => (
                   <SelectItem key={status} value={status}>
-                    {status === "all" ? "All statuses" : status}
+                    {status === "all"
+                      ? t("buyerBulkOrders.list.allStatuses")
+                      : status === "Open"
+                        ? t("buyerBulkOrders.status.active")
+                        : status === "Offers Received"
+                          ? t("buyerBulkOrders.status.offersReceived")
+                          : status === "Accepted"
+                            ? t("buyerBulkOrders.status.accepted")
+                            : status === "In Progress"
+                              ? t("buyerBulkOrders.status.pending")
+                              : status === "Fulfilled"
+                                ? t("buyerBulkOrders.status.fulfilled")
+                                : t("buyerBulkOrders.status.cancelled")}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className={cn(filterControlClass, "w-full sm:w-40")}>
-                <SelectValue placeholder="Category" />
+                <SelectValue placeholder={t("buyerBulkOrders.form.category")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All categories</SelectItem>
+                <SelectItem value="all">{t("buyerBulkOrders.list.allCategories")}</SelectItem>
                 {BULK_CATEGORIES.map((cat) => (
                   <SelectItem key={cat} value={cat}>
-                    {cat}
+                    {translateCategoryLabel(t, cat)}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
             <Select value={sort} onValueChange={(v) => setSort(v as SortOption)}>
               <SelectTrigger className={cn(filterControlClass, "w-full sm:w-40")}>
-                <SelectValue placeholder="Sort" />
+                <SelectValue placeholder={t("buyerBulkOrders.list.sort")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="newest">Newest first</SelectItem>
-                <SelectItem value="oldest">Oldest first</SelectItem>
+                <SelectItem value="newest">{t("buyerBulkOrders.list.newestFirst")}</SelectItem>
+                <SelectItem value="oldest">{t("buyerBulkOrders.list.oldestFirst")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -747,15 +838,15 @@ export function BuyerBulkOrdersPage() {
             <div className="agrivo-bulk-empty-icon">
               <Truck className="h-7 w-7 text-[#14532D]" />
             </div>
-            <h4 className="agrivo-bulk-empty-title">No bulk orders yet</h4>
+            <h4 className="agrivo-bulk-empty-title">{t("buyerBulkOrders.empty.title")}</h4>
             <p className="agrivo-bulk-empty-text">
-              Create your first bulk request and receive offers from verified farmers.
+              {t("buyerBulkOrders.empty.subtitle")}
             </p>
             <Button
               className="mt-5 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={scrollToForm}
             >
-              Create Bulk Order
+              {t("buyerBulkOrders.form.submit")}
             </Button>
           </div>
         ) : filteredOrders.length > 0 ? (
@@ -773,21 +864,21 @@ export function BuyerBulkOrdersPage() {
                   if (!user?.id) return;
                   cancelBulkOrder(user.id, order.id);
                   refresh();
-                  showToast("Bulk order cancelled");
+                  showToast(t("buyerBulkOrders.feedback.cancelled"));
                 }}
                 onFulfill={() => {
                   if (!user?.id) return;
                   fulfillBulkOrder(user.id, order.id);
                   refresh();
-                  showToast("Bulk order marked as fulfilled");
+                  showToast(t("buyerBulkOrders.feedback.fulfilled"));
                 }}
               />
             ))}
           </div>
         ) : (
           <div className="agrivo-bulk-empty agrivo-dashboard-panel py-10">
-            <h4 className="agrivo-bulk-empty-title">No matches found</h4>
-            <p className="agrivo-bulk-empty-text">Try adjusting your search or filters.</p>
+            <h4 className="agrivo-bulk-empty-title">{t("buyerBulkOrders.empty.noMatches")}</h4>
+            <p className="agrivo-bulk-empty-text">{t("buyerBulkOrders.empty.adjustFilters")}</p>
           </div>
         )}
       </section>
@@ -798,11 +889,13 @@ export function BuyerBulkOrdersPage() {
             <>
               <DialogHeader>
                 <DialogTitle className="agrivo-heading text-xl font-bold text-[#102018]">
-                  Farmer Offers
+                  {t("buyerBulkOrders.modal.title")}
                 </DialogTitle>
                 <DialogDescription className="text-sm text-[#5F6F64]">
-                  {offersOrder.productName} · {offersOrder.quantity} {offersOrder.unit} —{" "}
-                  {offersOrder.offersCount} offer{offersOrder.offersCount === 1 ? "" : "s"} received
+                  {translateBuyerProductName(t, offersOrder.productName)} · {offersOrder.quantity}{" "}
+                  {translateBulkUnit(t, offersOrder.unit)} —{" "}
+                  {t("buyerBulkOrders.modal.offersReceivedSummary")
+                    .replace("{count}", String(offersOrder.offersCount))}
                 </DialogDescription>
               </DialogHeader>
               <div className="agrivo-bulk-offers-list">
@@ -827,7 +920,7 @@ export function BuyerBulkOrdersPage() {
                             }
                           : null,
                       );
-                      showToast("Offer accepted");
+                      showToast(t("buyerBulkOrders.feedback.offerAccepted"));
                     }}
                   />
                 ))}
@@ -838,7 +931,7 @@ export function BuyerBulkOrdersPage() {
                   className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
                   onClick={() => setOffersOrder(null)}
                 >
-                  Close
+                  {t("buyerBulkOrders.modal.close")}
                 </Button>
               </DialogFooter>
             </>

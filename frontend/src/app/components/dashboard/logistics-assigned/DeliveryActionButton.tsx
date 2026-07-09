@@ -12,9 +12,10 @@ import {
 } from "lucide-react";
 import type { ComponentProps } from "react";
 import {
-  getActionLabel,
   type AssignedDeliveryAction,
 } from "../../../utils/assignedDeliveriesStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateAssignedAction } from "../../../../i18n/assignedDeliveriesHelpers";
 import { cn } from "../../ui/utils";
 
 export const deliveryActionButtonVariants = cva(
@@ -62,6 +63,7 @@ export function DeliveryActionButton({
   type = "button",
   ...props
 }: DeliveryActionButtonProps) {
+  const { t } = useLanguage();
   const Icon = ACTION_ICONS[action];
 
   return (
@@ -71,7 +73,7 @@ export function DeliveryActionButton({
       {...props}
     >
       <Icon aria-hidden />
-      <span>{label ?? getActionLabel(action)}</span>
+      <span>{label ?? translateAssignedAction(t, action)}</span>
     </button>
   );
 }

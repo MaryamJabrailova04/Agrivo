@@ -1,3 +1,4 @@
+import { navigateToHash } from "../../i18n/localizedRoutes";
 import type { FarmJob } from "../data/farmJobs";
 import { getFarmerBySlug, getFarmerByName, type FarmerProfile } from "../data/farmers";
 
@@ -13,5 +14,5 @@ export function getFarmerProfileUrl(slug: string): string {
 }
 
 export function navigateToFarmerProfile(slug: string): void {
-  window.location.hash = `farmers/${slug}`;
+  navigateToHash(`farmers/${slug}`);
 }

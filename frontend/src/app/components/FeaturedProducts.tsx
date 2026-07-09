@@ -1,4 +1,5 @@
 import { ShoppingCart, MessageCircle, MapPin, Star } from "lucide-react";
+import { navigateToHash } from "../../i18n/localizedRoutes";
 import { Card, CardContent } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -204,7 +205,7 @@ export default function FeaturedProducts() {
           <Button 
             variant="outline" 
             className="border-green-600 text-green-600 hover:bg-green-50"
-            onClick={() => window.location.hash = 'products'}
+            onClick={() => navigateToHash('products')}
           >
             View All Products
           </Button>

@@ -1,5 +1,6 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import type { LucideIcon } from "lucide-react";
+import { navigateToHash } from "../../i18n/localizedRoutes";
 import {
   Apple,
   ArrowRight,
@@ -21,6 +22,13 @@ import { getProductDetailHash } from "../data/harvestExplorer";
 import { getProductImage } from "../utils/productImages";
 import { AnimatedCounter } from "../components/AnimatedCounter";
 import { AgrivoNavbar, AGRIVO_HEADER_SCROLL_OFFSET, consumePendingSectionScroll } from "../components/AgrivoNavbar";
+import { useLanguage } from "../../i18n/LanguageContext";
+import {
+  formatLandingPrice,
+  translateLandingBadge,
+  translateLandingProductName,
+  translateLandingTag,
+} from "../../i18n/landingHelpers";
 import { FeaturedFarmerCard } from "../components/FeaturedFarmerCard";
 import { FeaturedProductCard } from "../components/FeaturedProductCard";
 import { HeroVideoCard } from "../components/HeroVideoCard";
@@ -31,30 +39,25 @@ import { Button } from "../components/ui/button";
 import { Card, CardContent } from "../components/ui/card";
 import { Input } from "../components/ui/input";
 
-const heroTitleLines = [
-  { text: "Fresh produce.", tone: "text-[#14532D]" },
-  { text: "Trusted farmers.", tone: "text-[#43A047]" },
-  { text: "Smarter delivery.", tone: "text-[#14532D]" },
+const heroTitleTone = ["text-[#14532D]", "text-[#43A047]", "text-[#14532D]"] as const;
+
+const categoryMeta: Array<{ key: "vegetables" | "fruits" | "dairy"; icon: LucideIcon; accent: string; iconTint: string }> = [
+  { key: "vegetables", icon: Carrot, accent: "bg-[#edf8ef]", iconTint: "text-[#1f8d4b]" },
+  { key: "fruits", icon: Apple, accent: "bg-[#fff6e8]", iconTint: "text-[#d97706]" },
+  { key: "dairy", icon: Milk, accent: "bg-[#eef6ff]", iconTint: "text-[#2563eb]" },
 ];
 
-const categories: Array<{ name: string; subtitle: string; icon: LucideIcon; accent: string; iconTint: string }> = [
-  { name: "Vegetables", subtitle: "Fresh farm vegetables", icon: Carrot, accent: "bg-[#edf8ef]", iconTint: "text-[#1f8d4b]" },
-  { name: "Fruits", subtitle: "Seasonal fresh fruits", icon: Apple, accent: "bg-[#fff6e8]", iconTint: "text-[#d97706]" },
-  { name: "Dairy Products", subtitle: "Trusted local dairy", icon: Milk, accent: "bg-[#eef6ff]", iconTint: "text-[#2563eb]" },
-];
-
-const products = [
+const landingProductMeta = [
   {
     name: "Potatoes",
     slug: "potatoes-ganja-root-fields",
     location: "Gəncə-Daşkəsən > Gəncə > Gəncə qəsəbə",
     farmer: "Ganja Root Fields",
     quantity: "240 kg",
-    harvestDate: "This week",
-    price: "0.95 AZN/kg",
+    priceAmount: "0.95",
     badge: "Open Field",
     tags: ["Delivery available"],
-    image: getProductImage("Potatoes"),
+    imageKey: "Potatoes" as const,
   },
   {
     name: "Carrots",
@@ -62,11 +65,10 @@ const products = [
     location: "Gəncə-Daşkəsən > Gəncə > Gəncə kənd",
     farmer: "Ganja Root Fields",
     quantity: "110 kg",
-    harvestDate: "This week",
-    price: "1.20 AZN/kg",
+    priceAmount: "1.20",
     badge: "Fresh",
     tags: ["Verified farmer"],
-    image: getProductImage("Carrots"),
+    imageKey: "Carrots" as const,
   },
   {
     name: "Cherries",
@@ -74,11 +76,10 @@ const products = [
     location: "Quba-Xaçmaz > Quba > Adur",
     farmer: "Safarova Orchard Hills",
     quantity: "85 kg",
-    harvestDate: "This week",
-    price: "3.40 AZN/kg",
+    priceAmount: "3.40",
     badge: "Organic",
     tags: ["Delivery available"],
-    image: getProductImage("Cherries"),
+    imageKey: "Cherries" as const,
   },
   {
     name: "Apples",
@@ -86,50 +87,29 @@ const products = [
     location: "Quba-Xaçmaz > Quba > Alpan",
     farmer: "Quba Orchard Grove",
     quantity: "175 kg",
-    harvestDate: "This week",
-    price: "1.70 AZN/kg",
+    priceAmount: "1.70",
     badge: "Fresh",
     tags: ["Verified farmer", "Delivery available"],
-    image: getProductImage("Apples"),
+    imageKey: "Apples" as const,
   },
 ];
 
-const traceabilityStages = ["Harvested", "Packed", "In Transit", "Delivered"] as const;
-
-const batchDetails = [
-  { label: "Product", value: "Tomatoes" },
-  { label: "Origin", value: "Lankaran, Siyavar village" },
-  { label: "Farmer", value: "Hasanov Green Farm" },
-  { label: "Quantity", value: "120 kg" },
-  { label: "Route", value: "Farm → City Market" },
-  { label: "Quality", value: "Fresh" },
-];
-
-const marketInsights = [
+const marketInsightMeta = [
+  { id: "demand", value: "+18%", tone: "bg-[#ecfdf5] text-[#166534]", icon: TrendingUp, indicator: "trend" as const },
   {
-    label: "Demand trend",
-    value: "+18%",
-    tone: "bg-[#ecfdf5] text-[#166534]",
-    description: "Tomatoes and cucumbers are rising in Baku markets this week.",
-    icon: TrendingUp,
-    indicator: "trend",
-  },
-  {
-    label: "Delivery reliability",
+    id: "delivery",
     value: "92%",
     tone: "bg-[#eff6ff] text-[#1d4ed8]",
-    description: "Verified growers maintain stable delivery performance across routes.",
     icon: Truck,
-    indicator: "progress",
+    indicator: "progress" as const,
     progress: 92,
   },
   {
-    label: "Freshness risk",
-    value: "Low",
+    id: "freshness",
+    valueKey: "landing.marketSignals.low",
     tone: "bg-[#f0fdf4] text-[#15803d]",
-    description: "Identify batches that may need faster delivery before waste grows.",
     icon: ShieldCheck,
-    indicator: "status",
+    indicator: "status" as const,
   },
 ];
 
@@ -165,6 +145,95 @@ function SectionIntro({ eyebrow, title, description }: { eyebrow: string; title:
 }
 
 export default function HomePage() {
+  const { t } = useLanguage();
+
+  const heroTitleLines = useMemo(
+    () => [
+      { text: t("hero.title1"), tone: heroTitleTone[0] },
+      { text: t("hero.title2"), tone: heroTitleTone[1] },
+      { text: t("hero.title3"), tone: heroTitleTone[2] },
+    ],
+    [t],
+  );
+
+  const categories = useMemo(
+    () =>
+      categoryMeta.map((item) => ({
+        name: t(`home.${item.key}`),
+        subtitle: t(`home.${item.key}Desc`),
+        icon: item.icon,
+        accent: item.accent,
+        iconTint: item.iconTint,
+      })),
+    [t],
+  );
+
+  const products = useMemo(
+    () =>
+      landingProductMeta.map((product) => ({
+        name: translateLandingProductName(t, product.name),
+        slug: product.slug,
+        location: product.location,
+        farmer: product.farmer,
+        quantity: product.quantity,
+        harvestDate: t("landing.products.thisWeek"),
+        price: formatLandingPrice(t, product.priceAmount),
+        badge: product.badge ? translateLandingBadge(t, product.badge) : undefined,
+        tags: product.tags.map((tag) => translateLandingTag(t, tag)),
+        image: getProductImage(product.imageKey),
+      })),
+    [t],
+  );
+
+  const traceabilityStages = useMemo(
+    () => [
+      t("landing.traceability.harvested"),
+      t("landing.traceability.packed"),
+      t("landing.traceability.inTransit"),
+      t("landing.traceability.delivered"),
+    ],
+    [t],
+  );
+
+  const batchDetails = useMemo(
+    () => [
+      { label: t("landing.traceability.product"), value: t("landing.traceability.sampleProduct") },
+      { label: t("landing.traceability.origin"), value: t("landing.traceability.sampleOrigin") },
+      { label: t("landing.traceability.farmer"), value: t("landing.traceability.sampleFarmer") },
+      { label: t("landing.traceability.quantity"), value: t("landing.traceability.sampleQuantity") },
+      { label: t("landing.traceability.route"), value: t("landing.traceability.sampleRoute") },
+      { label: t("landing.traceability.quality"), value: t("landing.traceability.sampleQuality") },
+    ],
+    [t],
+  );
+
+  const marketInsights = useMemo(
+    () =>
+      marketInsightMeta.map((insight) => ({
+        id: insight.id,
+        label:
+          insight.id === "demand"
+            ? t("landing.marketSignals.demandTrend")
+            : insight.id === "delivery"
+              ? t("landing.marketSignals.deliveryReliability")
+              : t("landing.marketSignals.freshnessRisk"),
+        value: insight.valueKey ? t(insight.valueKey) : insight.value ?? "",
+        tone: insight.tone,
+        description:
+          insight.id === "demand"
+            ? t("landing.marketSignals.demandDescription")
+            : insight.id === "delivery"
+              ? t("landing.marketSignals.deliveryDescription")
+              : t("landing.marketSignals.freshnessDescription"),
+        icon: insight.icon,
+        indicator: insight.indicator,
+        progress: insight.progress,
+      })),
+    [t],
+  );
+
+  const deliveredStageLabel = t("landing.traceability.delivered");
+
   useEffect(() => {
     const timer = window.setTimeout(() => {
       consumePendingSectionScroll(AGRIVO_HEADER_SCROLL_OFFSET);
@@ -174,11 +243,11 @@ export default function HomePage() {
   }, []);
 
   const goToPage = (page: string) => {
-    window.location.hash = page;
+    navigateToHash(page);
   };
 
   const goToFarmerProfile = (slug: string) => {
-    window.location.hash = `farmers/${slug}`;
+    navigateToHash(`farmers/${slug}`);
   };
 
   const goToSection = (sectionId: string) => {
@@ -223,7 +292,7 @@ export default function HomePage() {
               >
                 <motion.div variants={fadeUp} transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}>
                   <Badge className="mb-4 rounded-full border border-[#D7EEDB] bg-white px-3 py-1 text-xs text-[#14532D] shadow-sm hover:bg-white sm:mb-6 sm:px-4 sm:py-1.5 sm:text-sm">
-                    From farm to market, transparently.
+                    {t("hero.badge")}
                   </Badge>
                 </motion.div>
 
@@ -250,7 +319,7 @@ export default function HomePage() {
                   transition={{ duration: 0.72, ease: [0.22, 1, 0.36, 1] }}
                   className="mt-4 max-w-xl text-base leading-7 text-[#5F6F64] sm:mt-6 sm:text-[1.05rem] sm:leading-8"
                 >
-                  Buy directly from verified farmers, track every batch, and manage farm-to-market orders in one simple platform.
+                  {t("hero.subtitle")}
                 </motion.p>
 
                 <motion.div
@@ -260,13 +329,13 @@ export default function HomePage() {
                 >
                   <motion.div className="w-full sm:w-auto" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
                     <Button size="lg" className="agrivo-button-soft w-full rounded-full bg-[#14532D] px-6 text-white hover:bg-[#1D6A3B] hover:shadow-[0_18px_38px_rgba(20,83,45,0.22)] sm:w-auto" onClick={() => goToPage("products")}>
-                      Explore Marketplace
+                      {t("hero.exploreMarketplace")}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                   </motion.div>
                   <motion.div className="w-full sm:w-auto" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
                     <Button size="lg" variant="outline" className="w-full rounded-full border-[#14532D] bg-white px-6 text-[#14532D] hover:bg-[#EAF7EC] sm:w-auto" onClick={() => goToPage("login")}>
-                      Join as Farmer
+                      {t("hero.joinAsFarmer")}
                     </Button>
                   </motion.div>
                 </motion.div>
@@ -281,13 +350,13 @@ export default function HomePage() {
                       <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6F7F74]" />
                       <Input
                         type="search"
-                        placeholder="Search tomatoes, apples, honey..."
+                        placeholder={t("hero.searchPlaceholder")}
                         className="h-11 rounded-full border-0 bg-[#F7FBF5] pl-11 text-sm font-medium text-[#102018] shadow-none placeholder:text-[#97A59B] focus-visible:ring-1 focus-visible:ring-[#43A047] sm:h-12 sm:text-base"
                       />
                     </div>
                     <motion.div className="w-full sm:w-auto" whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
                       <Button className="h-11 w-full rounded-full bg-[#43A047] px-7 text-white hover:bg-[#4CAF50] hover:shadow-[0_14px_28px_rgba(67,160,71,0.24)] sm:h-12 sm:w-auto" onClick={() => goToPage("products")}>
-                        Search
+                        {t("hero.search")}
                       </Button>
                     </motion.div>
                   </div>
@@ -299,9 +368,9 @@ export default function HomePage() {
                   className="mt-6 grid w-full max-w-[520px] grid-cols-3 gap-2 sm:mt-8 sm:gap-4"
                 >
                   {[
-                    { end: 100, label: "Farmers" },
-                    { end: 1000, label: "Orders" },
-                    { end: 50, label: "Product Types" },
+                    { end: 100, label: t("hero.statFarmers") },
+                    { end: 1000, label: t("hero.statOrders") },
+                    { end: 50, label: t("hero.statProductTypes") },
                   ].map((stat) => (
                     <motion.div
                       key={stat.label}
@@ -332,7 +401,7 @@ export default function HomePage() {
                   className="relative w-full max-w-[780px] overflow-hidden rounded-[32px] border border-[rgba(20,83,45,0.12)] bg-white/96 p-3 shadow-[0_32px_80px_rgba(20,83,45,0.18)] sm:rounded-[36px] sm:p-4 lg:ml-auto lg:rounded-[40px] lg:p-5"
                 >
                   <div className="absolute left-5 top-5 z-20 rounded-full border border-white/80 bg-white/94 px-4 py-2 text-xs font-semibold text-[#14532D] shadow-[0_14px_30px_rgba(20,83,45,0.14)] sm:left-6 sm:top-6 sm:text-sm lg:left-8 lg:top-8">
-                    Verified supply chain
+                    {t("landing.hero.verifiedSupplyChain")}
                   </div>
 
                   <HeroVideoCard />
@@ -343,8 +412,8 @@ export default function HomePage() {
                   transition={{ duration: 4.2, repeat: Infinity, ease: "easeInOut" }}
                   className="relative mt-4 w-fit max-w-[calc(100%-1rem)] rounded-[20px] border border-white/92 bg-white/97 p-4 shadow-[0_20px_48px_rgba(20,83,45,0.16)] sm:rounded-[24px] lg:absolute lg:-bottom-2 lg:left-8 lg:mt-0"
                 >
-                  <p className="text-sm font-semibold text-[#14532D]">Fresh today</p>
-                  <p className="mt-0.5 text-xs text-[#5F6F64] sm:mt-1 sm:text-sm">Delivered from farm</p>
+                  <p className="text-sm font-semibold text-[#14532D]">{t("landing.hero.freshToday")}</p>
+                  <p className="mt-0.5 text-xs text-[#5F6F64] sm:mt-1 sm:text-sm">{t("landing.hero.deliveredFromFarm")}</p>
                 </motion.div>
               </motion.div>
             </div>
@@ -362,7 +431,7 @@ export default function HomePage() {
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#15803d] sm:mb-3 sm:text-sm sm:tracking-[0.24em]"
               >
-                Marketplace
+                {t("nav.marketplace")}
               </motion.p>
               <motion.h2
                 initial="hidden"
@@ -372,7 +441,7 @@ export default function HomePage() {
                 transition={{ duration: 0.65, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
                 className="agrivo-heading agrivo-section-title text-[#102018]"
               >
-                Shop by Category
+                {t("home.shopByCategory")}
               </motion.h2>
               <motion.p
                 initial="hidden"
@@ -382,7 +451,7 @@ export default function HomePage() {
                 transition={{ duration: 0.65, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
                 className="mt-3 text-sm leading-7 text-[#5F6F64] sm:mt-4 sm:text-base"
               >
-                Browse staple categories quickly and move from discovery to ordering without the clutter.
+                {t("home.shopByCategoryDesc")}
               </motion.p>
             </div>
 
@@ -435,7 +504,7 @@ export default function HomePage() {
                 transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                 className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#15803d] sm:mb-3 sm:text-sm sm:tracking-[0.24em]"
               >
-                Trusted growers
+                {t("home.trustedGrowers")}
               </motion.p>
               <motion.h2
                 initial="hidden"
@@ -445,7 +514,7 @@ export default function HomePage() {
                 transition={{ duration: 0.65, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
                 className="agrivo-heading agrivo-section-title text-[#102018]"
               >
-                Featured Farmers
+                {t("home.featuredFarmersTitle")}
               </motion.h2>
               <motion.p
                 initial="hidden"
@@ -455,7 +524,7 @@ export default function HomePage() {
                 transition={{ duration: 0.65, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
                 className="mt-3 text-sm leading-7 text-[#5F6F64] sm:mt-4 sm:text-base"
               >
-                Meet verified growers helping move Azerbaijan&apos;s produce with reliability, transparency, and care.
+                {t("home.featuredFarmersDesc")}
               </motion.p>
             </div>
 
@@ -492,7 +561,7 @@ export default function HomePage() {
                 className="agrivo-button-soft rounded-full border-[#14532D] bg-white px-8 text-[#14532D] hover:bg-[#EAF7EC]"
                 onClick={() => goToPage("farmers")}
               >
-                See All Farmers
+                {t("farmers.seeAll")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </motion.div>
@@ -503,9 +572,9 @@ export default function HomePage() {
           <div className="agrivo-container">
             <div className="agrivo-reveal">
               <SectionIntro
-                eyebrow="Featured supply"
-                title="Featured Products"
-                description="Fresh produce from verified Azerbaijani growers, with clear pricing and regional context."
+                eyebrow={t("home.featuredSupply")}
+                title={t("home.featuredProductsTitle")}
+                description={t("home.featuredProductsDesc")}
               />
             </div>
             <div className="agrivo-product-grid agrivo-product-grid--featured">
@@ -515,7 +584,7 @@ export default function HomePage() {
                     product={product}
                     onViewDetails={() => {
                       if (product.slug) {
-                        window.location.hash = getProductDetailHash(product.slug);
+                        navigateToHash(getProductDetailHash(product.slug));
                         return;
                       }
                       goToPage("marketplace");
@@ -532,7 +601,7 @@ export default function HomePage() {
                 className="agrivo-button-soft rounded-full border-[#14532D] bg-white px-8 text-[#14532D] hover:bg-[#EAF7EC]"
                 onClick={() => goToPage("marketplace")}
               >
-                See All Products
+                {t("home.seeAllProducts")}
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </div>
@@ -543,13 +612,13 @@ export default function HomePage() {
           <div className="agrivo-container">
             <div className="agrivo-reveal mx-auto mb-10 max-w-2xl text-center md:mb-12">
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#15803d] sm:mb-3 sm:text-sm sm:tracking-[0.24em]">
-                Traceability &amp; Market Insights
+                {t("landing.traceability.eyebrow")}
               </p>
               <h2 className="agrivo-heading agrivo-section-title text-[#102018]">
-                Visibility from harvest to delivery
+                {t("landing.traceability.title")}
               </h2>
               <p className="mt-3 text-sm leading-7 text-[#5F6F64] sm:mt-4 sm:text-base">
-                Agrivo helps professional buyers and sellers track batches, confirm origin, and read simple market signals before purchasing.
+                {t("landing.traceability.subtitle")}
               </p>
             </div>
 
@@ -557,18 +626,18 @@ export default function HomePage() {
               <Card className="agrivo-reveal overflow-hidden rounded-[24px] border border-[#dbe7d4] bg-[#14532d] text-white shadow-[0_24px_70px_rgba(20,83,45,0.18)] sm:rounded-[32px]">
                 <CardContent className="flex h-full flex-col p-5 sm:p-8">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#86efac] sm:text-sm sm:tracking-[0.24em]">
-                    Batch traceability
+                    {t("landing.traceability.cardEyebrow")}
                   </p>
                   <h3 className="agrivo-heading mt-3 text-2xl font-bold leading-tight text-white sm:mt-4 sm:text-3xl">
-                    Track every batch from farm to buyer.
+                    {t("landing.traceability.cardTitle")}
                   </h3>
                   <p className="mt-3 max-w-md text-sm leading-7 text-[#d1fae5] sm:mt-4 sm:text-base">
-                    Every product can be followed from harvest, packing, transport, and delivery.
+                    {t("landing.traceability.cardDescription")}
                   </p>
 
                   <div className="agrivo-trace-timeline mt-6 sm:mt-8">
                     {traceabilityStages.map((stage, index) => {
-                      const isActive = stage === "Delivered";
+                      const isActive = stage === deliveredStageLabel;
                       const isComplete = index < traceabilityStages.length - 1;
 
                       return (
@@ -596,12 +665,14 @@ export default function HomePage() {
                         <Package className="h-5 w-5 text-[#14532d]" />
                       </div>
                       <div>
-                        <p className="text-xs font-medium uppercase tracking-wide text-[#5F6F64]">Batch ID</p>
+                        <p className="text-xs font-medium uppercase tracking-wide text-[#5F6F64]">
+                          {t("landing.traceability.batchId")}
+                        </p>
                         <h3 className="text-xl font-bold text-[#102018] sm:text-2xl">AGR-TOM-24051</h3>
                       </div>
                     </div>
                     <Badge className="rounded-full border border-[#bbf7d0] bg-[#ecfdf5] px-3 py-1 text-xs font-semibold text-[#166534] hover:bg-[#ecfdf5]">
-                      Delivered
+                      {t("landing.traceability.delivered")}
                     </Badge>
                   </div>
 
@@ -617,7 +688,7 @@ export default function HomePage() {
                   </div>
 
                   <p className="mt-5 rounded-[18px] border border-dashed border-[#bbf7d0] bg-[#f6fbf4] px-4 py-3 text-sm leading-6 text-[#3f5247]">
-                    Agrivo keeps harvest, packing, transport, and delivery visible in one place.
+                    {t("landing.traceability.note")}
                   </p>
                 </CardContent>
               </Card>
@@ -625,13 +696,13 @@ export default function HomePage() {
 
             <div className="agrivo-reveal mx-auto mt-14 max-w-2xl text-center md:mt-16">
               <p className="mb-2 text-xs font-semibold uppercase tracking-[0.2em] text-[#15803d] sm:mb-3 sm:text-sm sm:tracking-[0.24em]">
-                Market signals
+                {t("landing.marketSignals.eyebrow")}
               </p>
               <h3 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
-                Smarter supply decisions, from farm to delivery.
+                {t("landing.marketSignals.title")}
               </h3>
               <p className="mt-3 text-sm leading-7 text-[#5F6F64] sm:mt-4 sm:text-base">
-                See demand, delivery reliability, and freshness signals before making a purchase.
+                {t("landing.marketSignals.subtitle")}
               </p>
             </div>
 
@@ -641,7 +712,7 @@ export default function HomePage() {
 
                 return (
                   <Card
-                    key={insight.label}
+                    key={insight.id}
                     className="agrivo-insight-card agrivo-card rounded-[28px] border border-[#e5efe1] bg-white shadow-[0_10px_28px_rgba(20,83,45,0.05)]"
                   >
                     <CardContent className="flex h-full flex-col p-6 sm:p-7">
@@ -678,7 +749,7 @@ export default function HomePage() {
                               style={{ width: `${insight.progress}%` }}
                             />
                           </div>
-                          <p className="mt-2 text-xs font-medium text-[#6b7a70]">On-time across verified routes</p>
+                          <p className="mt-2 text-xs font-medium text-[#6b7a70]">{t("landing.marketSignals.onTimeRoutes")}</p>
                         </div>
                       ) : null}
 
@@ -686,7 +757,7 @@ export default function HomePage() {
                         <div className="mt-5 flex items-center gap-2">
                           <span className="inline-flex items-center gap-1.5 rounded-full border border-[#bbf7d0] bg-[#ecfdf5] px-3 py-1 text-xs font-semibold text-[#166534]">
                             <ShieldCheck className="h-3.5 w-3.5" />
-                            Low spoilage risk
+                            {t("landing.marketSignals.lowSpoilageRisk")}
                           </span>
                         </div>
                       ) : null}
@@ -714,50 +785,50 @@ export default function HomePage() {
                 <img src={agrivoLogoFooter} alt="Agrivo" width={170} height={48} decoding="async" />
               </a>
               <p className="max-w-sm text-sm leading-7 text-[#d1fae5]">
-                Connecting Azerbaijan&apos;s farms to markets with trust and transparency.
+                {t("footer.tagline")}
               </p>
             </div>
 
             <div className="agrivo-reveal">
-              <h3 className="text-lg font-semibold">Platform</h3>
+              <h3 className="text-lg font-semibold">{t("footer.platform")}</h3>
               <div className="mt-4 space-y-3 text-sm text-[#d1fae5]">
-                <button className="block transition-colors hover:text-white" onClick={() => goToPage("products")}>Marketplace</button>
-                <button className="block transition-colors hover:text-white" onClick={() => goToPage("farmers")}>Farmers</button>
-                <button className="block transition-colors hover:text-white" onClick={() => goToPage("logistics")}>Logistics</button>
-                <button className="block transition-colors hover:text-white" onClick={() => goToSection("traceability")}>Traceability</button>
+                <button className="block transition-colors hover:text-white" onClick={() => goToPage("products")}>{t("nav.marketplace")}</button>
+                <button className="block transition-colors hover:text-white" onClick={() => goToPage("farmers")}>{t("nav.farmers")}</button>
+                <button className="block transition-colors hover:text-white" onClick={() => goToPage("logistics")}>{t("nav.logistics")}</button>
+                <button className="block transition-colors hover:text-white" onClick={() => goToSection("traceability")}>{t("footer.traceability")}</button>
               </div>
             </div>
 
             <div className="agrivo-reveal">
-              <h3 className="text-lg font-semibold">Company</h3>
+              <h3 className="text-lg font-semibold">{t("footer.company")}</h3>
               <div className="mt-4 space-y-3 text-sm text-[#d1fae5]">
-                <button className="block transition-colors hover:text-white" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>About</button>
-                <button className="block transition-colors hover:text-white" onClick={() => goToPage("products")}>Blog</button>
-                <button className="block transition-colors hover:text-white" onClick={() => goToPage("farmers")}>Contact</button>
+                <button className="block transition-colors hover:text-white" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>{t("footer.about")}</button>
+                <button className="block transition-colors hover:text-white" onClick={() => goToPage("products")}>{t("footer.blog")}</button>
+                <button className="block transition-colors hover:text-white" onClick={() => goToPage("farmers")}>{t("footer.contact")}</button>
               </div>
             </div>
 
             <div className="agrivo-reveal">
-              <h3 className="text-lg font-semibold">Support</h3>
+              <h3 className="text-lg font-semibold">{t("footer.support")}</h3>
               <div className="mt-4 space-y-3 text-sm text-[#d1fae5]">
-                <button className="block transition-colors hover:text-white" onClick={() => goToPage("login")}>Help Center</button>
-                <button className="block transition-colors hover:text-white" onClick={() => goToSection("how-it-works")}>FAQ</button>
-                <button className="block transition-colors hover:text-white" onClick={() => goToPage("login")}>Privacy Policy</button>
+                <button className="block transition-colors hover:text-white" onClick={() => goToPage("login")}>{t("footer.helpCenter")}</button>
+                <button className="block transition-colors hover:text-white" onClick={() => goToSection("how-it-works")}>{t("footer.faq")}</button>
+                <button className="block transition-colors hover:text-white" onClick={() => goToPage("login")}>{t("footer.privacy")}</button>
               </div>
             </div>
 
             <div className="agrivo-reveal">
-              <h3 className="text-lg font-semibold">Newsletter</h3>
-              <p className="mt-4 text-sm leading-7 text-[#d1fae5]">Get fresh updates and farming insights.</p>
+              <h3 className="text-lg font-semibold">{t("footer.newsletter")}</h3>
+              <p className="mt-4 text-sm leading-7 text-[#d1fae5]">{t("footer.newsletterDesc")}</p>
               <div className="mt-5 flex w-full max-w-sm flex-col gap-3 sm:flex-row lg:max-w-none lg:flex-col">
-                <Input type="email" placeholder="Your email" className="h-11 w-full rounded-full border-white/15 bg-white/10 text-white placeholder:text-[#bbf7d0] focus-visible:ring-1 focus-visible:ring-white sm:h-12" />
-                <Button className="agrivo-button-soft h-11 w-full rounded-full bg-[#43A047] text-white hover:bg-[#4CAF50] sm:h-12 sm:w-auto lg:w-full">Subscribe</Button>
+                <Input type="email" placeholder={t("footer.yourEmail")} className="h-11 w-full rounded-full border-white/15 bg-white/10 text-white placeholder:text-[#bbf7d0] focus-visible:ring-1 focus-visible:ring-white sm:h-12" />
+                <Button className="agrivo-button-soft h-11 w-full rounded-full bg-[#43A047] text-white hover:bg-[#4CAF50] sm:h-12 sm:w-auto lg:w-full">{t("footer.subscribe")}</Button>
               </div>
             </div>
           </div>
 
           <div className="mt-8 border-t border-white/10 pt-5 text-center text-xs text-[#bbf7d0] sm:mt-12 sm:pt-6 sm:text-left sm:text-sm">
-            <p>� 2026 Agrivo. Built for cleaner farm-to-market trade.</p>
+            <p>{t("footer.copyright")}</p>
           </div>
         </div>
       </footer>

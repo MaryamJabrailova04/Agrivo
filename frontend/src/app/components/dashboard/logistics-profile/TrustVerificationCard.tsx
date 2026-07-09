@@ -3,10 +3,13 @@ import {
   calculateProfileCompletion,
   type LogisticsDashboardProfile,
 } from "../../../utils/logisticsProfileStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateCompletionItem } from "../../../../i18n/logisticsProfileHelpers";
 import { ProfileCompletionBar } from "../farmer-profile/ProfileCompletionBar";
 import { ProfileCard, ProfileCardBody, ProfileCardHeader } from "../farmer-profile/ProfileLayout";
 
 export function TrustVerificationCard({ profile }: { profile: LogisticsDashboardProfile }) {
+  const { t } = useLanguage();
   const completion = calculateProfileCompletion(profile);
   const hasFleet = profile.driversCount > 0 && profile.vehiclesCount > 0;
   const hasRegions = profile.serviceRegions.length > 0;
@@ -14,17 +17,17 @@ export function TrustVerificationCard({ profile }: { profile: LogisticsDashboard
     profile.workingDays.length > 0 && Boolean(profile.openingTime && profile.closingTime);
 
   const checklist = [
-    { label: "Company identity verified", done: profile.identityVerified },
-    { label: "Phone verified", done: profile.phoneVerified },
-    { label: "Fleet information added", done: hasFleet },
-    { label: "Service regions added", done: hasRegions },
-    { label: "Operating hours completed", done: hasHours },
+    { key: "companyIdentityVerified", done: profile.identityVerified },
+    { key: "phoneVerified", done: profile.phoneVerified },
+    { key: "fleetInformationAdded", done: hasFleet },
+    { key: "serviceRegionsAdded", done: hasRegions },
+    { key: "operatingHoursCompleted", done: hasHours },
   ];
 
   return (
     <ProfileCard className="agrivo-logistics-trust-card">
       <div className="agrivo-logistics-trust-header agrivo-logistics-trust-header--compact">
-        <ProfileCardHeader icon={BadgeCheck} title="Trust & Verification" />
+        <ProfileCardHeader icon={BadgeCheck} title={t("logisticsProfile.sections.trustVerification")} />
         <ProfileCompletionBar
           percent={completion.percent}
           className="agrivo-logistics-trust-progress agrivo-logistics-trust-progress--compact"
@@ -35,7 +38,7 @@ export function TrustVerificationCard({ profile }: { profile: LogisticsDashboard
         <ul className="agrivo-logistics-trust-list agrivo-logistics-trust-list--compact">
           {checklist.map((item) => (
             <li
-              key={item.label}
+              key={item.key}
               className={
                 item.done ? "agrivo-logistics-trust-item--done" : "agrivo-logistics-trust-item"
               }
@@ -47,14 +50,18 @@ export function TrustVerificationCard({ profile }: { profile: LogisticsDashboard
                   <span className="agrivo-logistics-trust-icon-pending" />
                 )}
               </span>
-              <span>{item.label}</span>
+              <span>{t(`logisticsProfile.trustItems.${item.key}`)}</span>
             </li>
           ))}
         </ul>
 
         {completion.missingItems.length > 0 ? (
           <p className="agrivo-logistics-trust-hint agrivo-logistics-trust-hint--compact">
-            Complete: {completion.missingItems.join(", ").toLowerCase()}.
+            {t("logisticsProfile.trustCompleteHint", {
+              items: completion.missingItems
+                .map((item) => translateCompletionItem(t, item))
+                .join(", "),
+            })}
           </p>
         ) : null}
       </ProfileCardBody>

@@ -1,6 +1,12 @@
 import { ArrowRight, BadgeCheck, MapPin, Sprout, Star } from "lucide-react";
 import type { FarmJob } from "../../data/farmJobs";
 import type { FarmerProfile } from "../../data/farmers";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import {
+  formatFarmerExperienceLine,
+  translateFarmerAbout,
+  translateFarmerSpecialty,
+} from "../../../i18n/farmerHelpers";
 import { navigateToFarmerProfile } from "../../utils/jobFarmer";
 import { ImageWithFallback } from "../figma/ImageWithFallback";
 import { Badge } from "../ui/badge";
@@ -14,11 +20,15 @@ interface JobFarmerCardProps {
   compact?: boolean;
 }
 
-function getSpecializationLabel(farmer: FarmerProfile | null, job: FarmJob): string {
+function getSpecializationLabel(
+  t: ReturnType<typeof useLanguage>["t"],
+  farmer: FarmerProfile | null,
+  job: FarmJob,
+): string {
   if (farmer?.specialties.length) {
-    return farmer.specialties.join(", ");
+    return farmer.specialties.map((item) => translateFarmerSpecialty(t, item)).join(", ");
   }
-  return job.cropType;
+  return translateFarmerSpecialty(t, job.cropType);
 }
 
 function getLocationLine(farmer: FarmerProfile | null, job: FarmJob): string {
@@ -29,26 +39,37 @@ function getLocationLine(farmer: FarmerProfile | null, job: FarmJob): string {
   return [job.economicRegion, job.district, job.village].filter(Boolean).join(" · ");
 }
 
-function getBioLine(farmer: FarmerProfile | null): string {
-  if (!farmer) return "Verified farmer on Agrivo with traceable farm listings and seasonal work offers.";
-  const sentence = farmer.about.split(".")[0];
-  return sentence ? `${sentence}.` : farmer.about;
+function getBioLine(t: ReturnType<typeof useLanguage>["t"], farmer: FarmerProfile | null): string {
+  if (!farmer) return t("farmJobDetail.farmerCard.fallbackBio");
+  const about = translateFarmerAbout(t, farmer);
+  const sentence = about.split(".")[0];
+  return sentence ? `${sentence}.` : about;
 }
 
 export function JobFarmerCard({ job, farmer, otherJobsCount = 0, compact = false }: JobFarmerCardProps) {
+  const { t } = useLanguage();
   const farmerSlug = farmer?.slug ?? job.farmerSlug;
   const image = farmer?.image ?? "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80";
-  const experience = farmer?.experience ?? "Experienced grower";
+  const experience = farmer
+    ? formatFarmerExperienceLine(t, farmer.experience)
+    : t("farmJobDetail.farmerCard.experiencedGrower");
   const rating = farmer?.rating;
 
   const handleViewProfile = () => {
     if (farmerSlug) navigateToFarmerProfile(farmerSlug);
   };
 
+  const otherJobsLabel =
+    otherJobsCount === 1
+      ? t("farmJobDetail.sections.otherJobs").replace("{count}", String(otherJobsCount))
+      : t("farmJobDetail.sections.otherJobsPlural").replace("{count}", String(otherJobsCount));
+
   return (
     <Card className="agrivo-job-farmer-card overflow-hidden rounded-[28px] border border-[#e5efe1] bg-white shadow-[0_10px_28px_rgba(20,83,45,0.05)]">
       <CardContent className={compact ? "p-5" : "p-6 sm:p-7"}>
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#15803d]">Posted by</p>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#15803d]">
+          {t("farmJobDetail.farmerCard.postedBy")}
+        </p>
 
         <button
           type="button"
@@ -70,7 +91,7 @@ export function JobFarmerCard({ job, farmer, otherJobsCount = 0, compact = false
               {job.farmerVerified ? (
                 <Badge className="rounded-full bg-[#ecfdf5] text-[#166534] hover:bg-[#ecfdf5]">
                   <BadgeCheck className="mr-1 h-3.5 w-3.5" />
-                  Verified
+                  {t("farmJobDetail.farmerCard.verified")}
                 </Badge>
               ) : null}
             </div>
@@ -80,19 +101,19 @@ export function JobFarmerCard({ job, farmer, otherJobsCount = 0, compact = false
             </p>
             <p className="mt-2 flex items-center gap-1.5 text-sm text-[#14532D]">
               <Sprout className="h-3.5 w-3.5 text-[#43A047]" />
-              {getSpecializationLabel(farmer, job)}
+              {getSpecializationLabel(t, farmer, job)}
             </p>
           </div>
         </button>
 
         <div className="mt-4 grid grid-cols-2 gap-3">
           <div className="rounded-[18px] border border-[#edf2ea] bg-[#f8faf4] px-3 py-2.5">
-            <p className="text-xs text-[#6b7a70]">Experience</p>
+            <p className="text-xs text-[#6b7a70]">{t("farmJobDetail.farmerCard.experience")}</p>
             <p className="mt-0.5 text-sm font-semibold text-[#102018]">{experience}</p>
           </div>
           {rating ? (
             <div className="rounded-[18px] border border-[#edf2ea] bg-[#f8faf4] px-3 py-2.5">
-              <p className="text-xs text-[#6b7a70]">Rating</p>
+              <p className="text-xs text-[#6b7a70]">{t("farmJobDetail.farmerCard.rating")}</p>
               <p className="mt-0.5 flex items-center gap-1 text-sm font-semibold text-[#102018]">
                 <Star className="h-3.5 w-3.5 fill-[#facc15] text-[#facc15]" />
                 {rating}
@@ -100,13 +121,15 @@ export function JobFarmerCard({ job, farmer, otherJobsCount = 0, compact = false
             </div>
           ) : (
             <div className="rounded-[18px] border border-[#edf2ea] bg-[#f8faf4] px-3 py-2.5">
-              <p className="text-xs text-[#6b7a70]">Listing</p>
-              <p className="mt-0.5 text-sm font-semibold text-[#102018]">Agrivo verified</p>
+              <p className="text-xs text-[#6b7a70]">{t("farmJobDetail.farmerCard.listing")}</p>
+              <p className="mt-0.5 text-sm font-semibold text-[#102018]">
+                {t("farmJobDetail.farmerCard.agrivoVerified")}
+              </p>
             </div>
           )}
         </div>
 
-        <p className="mt-4 text-sm leading-6 text-[#5F6F64]">{getBioLine(farmer)}</p>
+        <p className="mt-4 text-sm leading-6 text-[#5F6F64]">{getBioLine(t, farmer)}</p>
 
         {farmerSlug ? (
           <div className="mt-5 flex flex-col gap-2">
@@ -114,7 +137,7 @@ export function JobFarmerCard({ job, farmer, otherJobsCount = 0, compact = false
               className="agrivo-button-soft w-full rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={handleViewProfile}
             >
-              View Farmer Profile
+              {t("farmJobDetail.farmerCard.viewProfile")}
               <ArrowRight className="ml-2 h-4 w-4" />
             </Button>
             {otherJobsCount > 0 ? (
@@ -123,7 +146,7 @@ export function JobFarmerCard({ job, farmer, otherJobsCount = 0, compact = false
                 className="w-full rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
                 onClick={handleViewProfile}
               >
-                See {otherJobsCount} other job{otherJobsCount !== 1 ? "s" : ""} from this farmer
+                {otherJobsLabel}
               </Button>
             ) : null}
           </div>

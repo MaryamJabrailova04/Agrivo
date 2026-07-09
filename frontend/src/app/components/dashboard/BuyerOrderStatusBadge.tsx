@@ -1,7 +1,11 @@
 import type { BuyerOrderStatus } from "../../data/buyerDashboard";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { translateStatus } from "../../../i18n/status";
 
 export function BuyerOrderStatusBadge({ status }: { status: BuyerOrderStatus | string }) {
+  const { t } = useLanguage();
   const normalized = status.toLowerCase();
+  const label = translateStatus(t, status);
 
   const tone =
     normalized === "delivered" || normalized === "completed"
@@ -20,7 +24,7 @@ export function BuyerOrderStatusBadge({ status }: { status: BuyerOrderStatus | s
 
   return (
     <span className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs font-semibold ${tone}`}>
-      {status}
+      {label}
     </span>
   );
 }

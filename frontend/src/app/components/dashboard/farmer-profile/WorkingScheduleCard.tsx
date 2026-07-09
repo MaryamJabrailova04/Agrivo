@@ -1,4 +1,5 @@
 import { Clock3 } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import type { FarmerDashboardProfile } from "../../../utils/farmerProfileStorage";
 import { ProfileCard, ProfileCardBody, ProfileCardHeader } from "./ProfileLayout";
 import { WorkingSchedulePicker } from "./WorkingSchedulePicker";
@@ -16,9 +17,11 @@ export function WorkingScheduleCard({
   errors,
   onChange,
 }: WorkingScheduleCardProps) {
+  const { t } = useLanguage();
+
   return (
     <ProfileCard>
-      <ProfileCardHeader icon={Clock3} title="Working Schedule" />
+      <ProfileCardHeader icon={Clock3} title={t("farmerDashboardProfile.sections.workingSchedule")} />
       <ProfileCardBody>
         <WorkingSchedulePicker
           workingDays={profile.workingDays}

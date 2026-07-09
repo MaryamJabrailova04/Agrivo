@@ -3,6 +3,7 @@ import { getProductBySlug, type HarvestListing } from "../../data/harvestExplore
 import { useSavedProducts } from "../../context/SavedProductsContext";
 import { useAuth } from "../../auth/AuthContext";
 import { cn } from "../ui/utils";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   savedProductFromListing,
   type SavedProduct,
@@ -42,7 +43,7 @@ export function ProductSaveButton({
     }
 
     if (!result.ok && !isAuthenticated) {
-      window.location.hash = "login";
+      navigateToHash("login");
     }
   };
 

@@ -1,3 +1,4 @@
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import { Button } from "../../ui/button";
 import { ProfileCard } from "./ProfileLayout";
 
@@ -8,6 +9,8 @@ interface ProfileActionsBarProps {
 }
 
 export function ProfileActionsBar({ isSaving, onCancel, onSave }: ProfileActionsBarProps) {
+  const { t } = useLanguage();
+
   return (
     <ProfileCard variant="actions" className="agrivo-profile-actions-bar">
       <div className="agrivo-profile-form-actions">
@@ -18,7 +21,7 @@ export function ProfileActionsBar({ isSaving, onCancel, onSave }: ProfileActions
           onClick={onCancel}
           disabled={isSaving}
         >
-          Cancel
+          {t("farmerDashboardProfile.actions.cancel")}
         </Button>
         <Button
           type="button"
@@ -26,7 +29,7 @@ export function ProfileActionsBar({ isSaving, onCancel, onSave }: ProfileActions
           onClick={onSave}
           disabled={isSaving}
         >
-          {isSaving ? "Saving..." : "Save Changes"}
+          {isSaving ? t("farmerDashboardProfile.actions.saving") : t("farmerDashboardProfile.actions.saveChanges")}
         </Button>
       </div>
     </ProfileCard>

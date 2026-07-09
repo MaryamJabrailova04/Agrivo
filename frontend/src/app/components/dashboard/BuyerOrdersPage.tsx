@@ -1,8 +1,16 @@
 import { MessageCircle, RotateCcw, Search, Truck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { translateStatus } from "../../../i18n/status";
+import {
+  formatLocalizedQuantity,
+  translateBuyerProductName,
+  translateBuyerRoute,
+} from "../../../i18n/buyerDashboardHelpers";
 import { isApiMode } from "../../../config/dataMode";
 import { getOrders, type ApiOrder } from "../../../api/ordersApi";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   getAllBuyerOrders,
   buyerOrderTimelineLabels,
@@ -30,12 +38,12 @@ type OrderTab = "all" | "active" | "in-transit" | "delivered" | "cancelled";
 const filterTriggerClass =
   "agrivo-filter-control h-11 rounded-full border-[#DEECE0] bg-[#F7FBF5] text-sm text-[#102018]";
 
-const tabs: Array<{ id: OrderTab; label: string }> = [
-  { id: "all", label: "All Orders" },
-  { id: "active", label: "Active" },
-  { id: "in-transit", label: "In Transit" },
-  { id: "delivered", label: "Delivered" },
-  { id: "cancelled", label: "Cancelled" },
+const tabs: Array<{ id: OrderTab; labelKey: string }> = [
+  { id: "all", labelKey: "orders.allOrders" },
+  { id: "active", labelKey: "orders.active" },
+  { id: "in-transit", labelKey: "status.inTransit" },
+  { id: "delivered", labelKey: "status.delivered" },
+  { id: "cancelled", labelKey: "status.cancelled" },
 ];
 
 function getTabCount(tab: OrderTab, orders: BuyerOrder[]): number {
@@ -73,6 +81,7 @@ function matchesTab(order: BuyerOrder, tab: OrderTab): boolean {
 }
 
 function OrderTimeline({ timelineIndex }: { timelineIndex: number }) {
+  const { t } = useLanguage();
   return (
     <div className="agrivo-buyer-order-timeline">
       {buyerOrderTimelineLabels.map((label, index) => {
@@ -104,7 +113,7 @@ function OrderTimeline({ timelineIndex }: { timelineIndex: number }) {
                 isCurrent ? "text-[#14532D]" : isDone ? "text-[#166534]" : "text-[#9ca3af]",
               )}
             >
-              {label}
+              {label === "Picked Up" ? t("status.pickedUp") : label === "In Transit" ? t("status.inTransit") : label === "Confirmed" ? t("status.confirmed") : label === "Packed" ? t("status.preparing") : label === "Delivered" ? t("status.delivered") : label}
             </p>
           </div>
         );
@@ -114,6 +123,7 @@ function OrderTimeline({ timelineIndex }: { timelineIndex: number }) {
 }
 
 function OrderCard({ order }: { order: BuyerOrder }) {
+  const { t, language } = useLanguage();
   const isDelivered = order.status === "Delivered";
   const isCancelled = order.status === "Cancelled";
   const isActive = showsOrderTimeline(order.status);
@@ -133,9 +143,9 @@ function OrderCard({ order }: { order: BuyerOrder }) {
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <h3 className="agrivo-heading text-lg font-bold text-[#102018]">
-                {order.product} · {order.quantity}
+                {translateBuyerProductName(t, order.product)} · {formatLocalizedQuantity(t, language, order.quantity)}
               </h3>
-              <p className="mt-1 text-sm text-[#5F6F64]">Farmer: {order.farmer}</p>
+              <p className="mt-1 text-sm text-[#5F6F64]">{t("buyerDashboard.recentOrders.farmer")}: {order.farmer}</p>
             </div>
             <BuyerOrderStatusBadge status={order.status} />
           </div>
@@ -148,30 +158,30 @@ function OrderCard({ order }: { order: BuyerOrder }) {
           <p className="mt-0.5 text-sm font-semibold text-[#102018]">{order.orderId}</p>
         </div>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Ordered on</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">{t("orders.orderedOn", "Ordered on")}</p>
           <p className="mt-0.5 text-sm font-semibold text-[#102018]">{order.orderDate}</p>
         </div>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Delivery to</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">{t("orders.deliveryTo", "Delivery to")}</p>
           <p className="mt-0.5 text-sm font-semibold text-[#102018]">{order.deliveryTo}</p>
         </div>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Route</p>
-          <p className="mt-0.5 text-sm font-semibold text-[#102018]">{order.route}</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">{t("buyerDashboard.currentDelivery.route")}</p>
+          <p className="mt-0.5 text-sm font-semibold text-[#102018]">{translateBuyerRoute(t, order.route)}</p>
         </div>
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Total</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">{t("buyerDashboard.recentOrders.total")}</p>
           <p className="mt-0.5 text-sm font-bold text-[#14532D]">{order.total}</p>
         </div>
         <div>
           <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">
-            {isDelivered ? "Delivered" : "Est. delivery"}
+            {isDelivered ? t("status.delivered") : t("orders.estimatedDelivery", "Est. delivery")}
           </p>
           <p className="mt-0.5 text-sm font-semibold text-[#102018]">
             {isDelivered
               ? order.deliveredDate
-                ? `Delivered on ${order.deliveredDate}`
-                : "Delivered"
+                ? `${t("orders.deliveredOn", "Delivered on")} ${order.deliveredDate}`
+                : t("status.delivered")
               : order.estimatedDelivery ?? "—"}
           </p>
         </div>
@@ -181,7 +191,7 @@ function OrderCard({ order }: { order: BuyerOrder }) {
 
       {isDelivered && order.deliveredDate ? (
         <p className="rounded-xl border border-[#bbf7d0] bg-[#ecfdf5] px-3 py-2 text-xs font-semibold text-[#166534]">
-          Delivered on {order.deliveredDate}
+          {t("orders.deliveredOn", "Delivered on")} {order.deliveredDate}
         </p>
       ) : null}
 
@@ -189,10 +199,10 @@ function OrderCard({ order }: { order: BuyerOrder }) {
         <Button
           className="agrivo-button-soft rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
           onClick={() => {
-            window.location.hash = getBuyerOrderDetailHash(order.orderId);
+            navigateToHash(getBuyerOrderDetailHash(order.orderId));
           }}
         >
-          View Details
+          {t("buyerDashboard.recentOrders.viewDetails")}
         </Button>
 
         {isActive && order.status === "In Transit" ? (
@@ -201,7 +211,7 @@ function OrderCard({ order }: { order: BuyerOrder }) {
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
           >
             <Truck className="mr-2 h-4 w-4" />
-            Track Order
+            {t("buyerDashboard.recentOrders.trackOrder")}
           </Button>
         ) : null}
 
@@ -211,7 +221,7 @@ function OrderCard({ order }: { order: BuyerOrder }) {
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
           >
             <MessageCircle className="mr-2 h-4 w-4" />
-            Contact Logistics
+            {t("orders.contactLogistics", "Contact Logistics")}
           </Button>
         ) : null}
 
@@ -222,14 +232,14 @@ function OrderCard({ order }: { order: BuyerOrder }) {
               className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             >
               <RotateCcw className="mr-2 h-4 w-4" />
-              Reorder
+              {t("orders.reorder", "Reorder")}
             </Button>
             <Button
               variant="outline"
               className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             >
               <MessageCircle className="mr-2 h-4 w-4" />
-              Contact Farmer
+              {t("orders.contactFarmer", "Contact Farmer")}
             </Button>
           </>
         ) : null}
@@ -240,7 +250,7 @@ function OrderCard({ order }: { order: BuyerOrder }) {
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
           >
             <MessageCircle className="mr-2 h-4 w-4" />
-            Contact Farmer
+            {t("orders.contactFarmer", "Contact Farmer")}
           </Button>
         ) : null}
       </div>
@@ -250,6 +260,7 @@ function OrderCard({ order }: { order: BuyerOrder }) {
 
 export function BuyerOrdersPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [apiOrders, setApiOrders] = useState<BuyerOrder[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
   const buyerAllOrders = useMemo(
@@ -332,10 +343,10 @@ export function BuyerOrdersPage() {
         </p>
       ) : null}
       <section className="agrivo-dashboard-panel">
-        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#15803d]">My Orders</p>
-        <h2 className="agrivo-heading mt-1 text-2xl font-bold text-[#102018] sm:text-3xl">My Orders</h2>
+        <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#15803d]">{t("orders.title")}</p>
+        <h2 className="agrivo-heading mt-1 text-2xl font-bold text-[#102018] sm:text-3xl">{t("orders.title")}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-          Track your purchases, delivery progress, and marketplace activity.
+          {t("buyerDashboard.ordersPage.subtitle")}
         </p>
 
         <div className="agrivo-buyer-order-tabs mt-6">
@@ -349,7 +360,7 @@ export function BuyerOrdersPage() {
               )}
               onClick={() => setActiveTab(tab.id)}
             >
-              {tab.label} ({getTabCount(tab.id, buyerAllOrders)})
+              {t(tab.labelKey)} ({getTabCount(tab.id, buyerAllOrders)})
             </button>
           ))}
         </div>
@@ -361,7 +372,7 @@ export function BuyerOrdersPage() {
             <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6b7a70]" />
             <Input
               className={`${filterTriggerClass} pl-11`}
-              placeholder="Search by product, farmer, or order ID..."
+              placeholder={t("orders.searchPlaceholder", "Search by product, farmer, or order ID...")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
@@ -369,10 +380,10 @@ export function BuyerOrdersPage() {
 
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className={`${filterTriggerClass} w-full sm:w-[160px]`}>
-              <SelectValue placeholder="Status" />
+              <SelectValue placeholder={t("orders.status", "Status")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All statuses</SelectItem>
+              <SelectItem value="all">{t("orders.allStatuses", "All statuses")}</SelectItem>
               {(
                 [
                   "Pending",
@@ -385,7 +396,7 @@ export function BuyerOrdersPage() {
                 ] as BuyerOrderStatus[]
               ).map((status) => (
                 <SelectItem key={status} value={status}>
-                  {status}
+                  {translateStatus(t, status)}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -393,21 +404,21 @@ export function BuyerOrdersPage() {
 
           <Select value={dateFilter} onValueChange={setDateFilter}>
             <SelectTrigger className={`${filterTriggerClass} w-full sm:w-[150px]`}>
-              <SelectValue placeholder="Date range" />
+              <SelectValue placeholder={t("orders.dateRange", "Date range")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All dates</SelectItem>
-              <SelectItem value="july">July 2026</SelectItem>
-              <SelectItem value="june">June 2026</SelectItem>
+              <SelectItem value="all">{t("orders.allDates", "All dates")}</SelectItem>
+              <SelectItem value="july">{t("orders.july2026", "July 2026")}</SelectItem>
+              <SelectItem value="june">{t("orders.june2026", "June 2026")}</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={locationFilter} onValueChange={setLocationFilter}>
             <SelectTrigger className={`${filterTriggerClass} w-full sm:w-[200px]`}>
-              <SelectValue placeholder="Location" />
+              <SelectValue placeholder={t("orders.location", "Location")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All locations</SelectItem>
+              <SelectItem value="all">{t("orders.allLocations", "All locations")}</SelectItem>
               {locations.map((loc) => (
                 <SelectItem key={loc} value={loc}>
                   {loc}
@@ -418,11 +429,11 @@ export function BuyerOrdersPage() {
 
           <Select value={sortOrder} onValueChange={(v) => setSortOrder(v as "newest" | "oldest")}>
             <SelectTrigger className={`${filterTriggerClass} w-full sm:w-[160px]`}>
-              <SelectValue placeholder="Sort" />
+              <SelectValue placeholder={t("orders.sort", "Sort")} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="newest">Newest first</SelectItem>
-              <SelectItem value="oldest">Oldest first</SelectItem>
+              <SelectItem value="newest">{t("orders.newestFirst", "Newest first")}</SelectItem>
+              <SelectItem value="oldest">{t("orders.oldestFirst", "Oldest first")}</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -438,27 +449,27 @@ export function BuyerOrdersPage() {
         <section className="agrivo-dashboard-panel">
           <div className="agrivo-dashboard-empty py-12">
             <h3 className="agrivo-heading text-xl font-bold text-[#102018]">
-              You have not placed any orders yet.
+              {t("orders.emptyTitle", "You have not placed any orders yet.")}
             </h3>
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#5F6F64]">
-              Browse the marketplace to order fresh products from verified farmers.
+              {t("orders.emptySubtitle", "Browse the marketplace to order fresh products from verified farmers.")}
             </p>
             <Button
               className="mt-6 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={() => {
-                window.location.hash = "products";
+                navigateToHash("products");
               }}
             >
-              Browse Marketplace
+              {t("buyerDashboard.hero.browseMarketplace")}
             </Button>
           </div>
         </section>
       ) : (
         <section className="agrivo-dashboard-panel">
           <div className="agrivo-dashboard-empty py-12">
-            <h3 className="agrivo-heading text-xl font-bold text-[#102018]">No orders match your filters</h3>
+            <h3 className="agrivo-heading text-xl font-bold text-[#102018]">{t("orders.noMatchTitle", "No orders match your filters")}</h3>
             <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#5F6F64]">
-              Try adjusting your search, status, or date filters to find what you are looking for.
+              {t("orders.noMatchSubtitle", "Try adjusting your search, status, or date filters to find what you are looking for.")}
             </p>
             <Button
               variant="outline"
@@ -472,7 +483,7 @@ export function BuyerOrdersPage() {
                 setSortOrder("newest");
               }}
             >
-              Clear filters
+              {t("orders.clearFilters", "Clear filters")}
             </Button>
           </div>
         </section>

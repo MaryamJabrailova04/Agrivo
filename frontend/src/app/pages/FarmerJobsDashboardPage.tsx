@@ -2,6 +2,8 @@ import { Briefcase, Plus } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { DashboardBackLink } from "../components/dashboard/DashboardBackLink";
 import { DashboardLayout } from "../components/dashboard/DashboardLayout";
+import { navigateToHash } from "../../i18n/localizedRoutes";
+import { useLanguage } from "../../i18n/LanguageContext";
 import {
   FARMER_DASHBOARD_HOME_HASH,
   FARMER_DASHBOARD_JOBS_NEW_HASH,
@@ -16,17 +18,29 @@ import {
   updateJobStatus,
 } from "../data/farmJobsStorage";
 import { Button } from "../components/ui/button";
+import { consumeJobToast } from "../utils/jobToast";
 
 export default function FarmerJobsDashboardPage() {
+  const { t } = useLanguage();
   const [refreshKey, setRefreshKey] = useState(0);
+  const [toast, setToast] = useState<string | null>(null);
   const user = getAuthUser();
   const farmer = isFarmerUser();
 
   useEffect(() => {
     if (!farmer) {
-      window.location.hash = "login";
+      navigateToHash("login");
     }
   }, [farmer]);
+
+  useEffect(() => {
+    const message = consumeJobToast();
+    if (message) {
+      setToast(message);
+      const timer = window.setTimeout(() => setToast(null), 3200);
+      return () => window.clearTimeout(timer);
+    }
+  }, []);
 
   const jobs = useMemo(() => {
     void refreshKey;
@@ -34,14 +48,14 @@ export default function FarmerJobsDashboardPage() {
   }, [refreshKey]);
 
   const handleClose = (jobId: string) => {
-    if (window.confirm("Close this job post? It will no longer appear in public listings.")) {
+    if (window.confirm(t("farmerJobsDashboard.closeConfirm"))) {
       updateJobStatus(jobId, "closed");
       setRefreshKey((k) => k + 1);
     }
   };
 
   const handleDelete = (jobId: string) => {
-    if (window.confirm("Delete this job post permanently?")) {
+    if (window.confirm(t("farmerJobsDashboard.deleteConfirm"))) {
       deleteFarmerJob(jobId);
       setRefreshKey((k) => k + 1);
     }
@@ -55,32 +69,45 @@ export default function FarmerJobsDashboardPage() {
     <ProtectedDashboard allowedRoles={["farmer"]}>
       <DashboardLayout
         config={FARMER_DASHBOARD}
-        pageTitle="My Job Posts"
-        pageSubtitle="Manage your seasonal job offers and find workers for harvest, picking, and farm tasks."
+        pageTitle={t("farmerJobsDashboard.title")}
+        pageSubtitle={t("farmerJobsDashboard.subtitle")}
         activeNavId="farm-jobs"
         hideIntro
       >
-        <DashboardBackLink label="Back to Dashboard" hash={FARMER_DASHBOARD_HOME_HASH} />
+        {toast ? (
+          <div className="agrivo-cart-toast agrivo-cart-toast--success mb-4" role="status">
+            <span>{toast}</span>
+          </div>
+        ) : null}
+
+        <DashboardBackLink
+          label={t("farmerJobsDashboard.backToDashboard")}
+          hash={FARMER_DASHBOARD_HOME_HASH}
+        />
 
         <div className="agrivo-dashboard-panel">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
-              <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">My Job Posts</h2>
+              <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
+                {t("farmerJobsDashboard.title")}
+              </h2>
               <p className="mt-2 max-w-xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-                Manage your seasonal job offers and find workers for harvest, picking, and farm tasks.
+                {t("farmerJobsDashboard.subtitle")}
               </p>
               {user ? (
-                <p className="mt-2 text-xs text-[#6b7a70]">Signed in as {user.name}</p>
+                <p className="mt-2 text-xs text-[#6b7a70]">
+                  {t("farmerJobsDashboard.signedInAs", { name: user.name })}
+                </p>
               ) : null}
             </div>
             <Button
               className="agrivo-button-soft rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={() => {
-                window.location.hash = FARMER_DASHBOARD_JOBS_NEW_HASH;
+                navigateToHash(FARMER_DASHBOARD_JOBS_NEW_HASH);
               }}
             >
               <Plus className="mr-2 h-4 w-4" />
-              Create Job Post
+              {t("farmerJobsDashboard.createJobPost")}
             </Button>
           </div>
 
@@ -94,7 +121,7 @@ export default function FarmerJobsDashboardPage() {
                   onEdit={
                     !job.isMock
                       ? () => {
-                          window.location.hash = `dashboard/jobs/edit/${job.id}`;
+                          navigateToHash(`dashboard/jobs/edit/${job.id}`);
                         }
                       : undefined
                   }
@@ -108,18 +135,20 @@ export default function FarmerJobsDashboardPage() {
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#ecfdf5]">
                 <Briefcase className="h-6 w-6 text-[#14532D]" />
               </div>
-              <h3 className="agrivo-heading text-xl font-bold text-[#102018]">You have not posted any jobs yet.</h3>
+              <h3 className="agrivo-heading text-xl font-bold text-[#102018]">
+                {t("farmerJobsDashboard.emptyTitle")}
+              </h3>
               <p className="mx-auto mt-3 max-w-md text-sm leading-6 text-[#5F6F64]">
-                Create your first job post to find seasonal workers.
+                {t("farmerJobsDashboard.emptyDescription")}
               </p>
               <Button
                 className="mt-6 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
                 onClick={() => {
-                  window.location.hash = FARMER_DASHBOARD_JOBS_NEW_HASH;
+                  navigateToHash(FARMER_DASHBOARD_JOBS_NEW_HASH);
                 }}
               >
                 <Plus className="mr-2 h-4 w-4" />
-                Create Job Post
+                {t("farmerJobsDashboard.createJobPost")}
               </Button>
             </div>
           )}

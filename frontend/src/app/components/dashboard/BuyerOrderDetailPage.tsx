@@ -1,3 +1,4 @@
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   ArrowLeft,
   BadgeCheck,
@@ -28,7 +29,7 @@ interface BuyerOrderDetailPageProps {
 }
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 function DetailRow({ label, value }: { label: string; value: string }) {

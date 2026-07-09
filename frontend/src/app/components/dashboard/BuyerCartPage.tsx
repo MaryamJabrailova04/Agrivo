@@ -1,3 +1,4 @@
+import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   Info,
   MapPin,
@@ -43,7 +44,12 @@ import {
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
-
+import { useLanguage } from "../../../i18n/LanguageContext";
+import {
+  formatLocalizedQuantity,
+  localizePriceUnit,
+  translateBuyerProductName,
+} from "../../../i18n/buyerDashboardHelpers";
 
 function CartQuantityControl({
   item,
@@ -52,6 +58,7 @@ function CartQuantityControl({
   item: CartItem;
   onUpdate: (slug: string, quantity: number) => void;
 }) {
+  const { t, language } = useLanguage();
   const [inputValue, setInputValue] = useState(String(item.selectedQuantity));
   const [validationMsg, setValidationMsg] = useState<string | null>(null);
 
@@ -70,7 +77,13 @@ function CartQuantityControl({
 
     if (rounded > item.availableQuantity) {
       const corrected = item.availableQuantity;
-      setValidationMsg(`Only ${formatQuantity(corrected, item.unit)} available`);
+      setValidationMsg(
+        `${t("buyerCart.item.available")}: ${formatLocalizedQuantity(
+          t,
+          language,
+          formatQuantity(corrected, item.unit),
+        )}`,
+      );
       onUpdate(item.slug, corrected);
       setInputValue(String(corrected));
       return;
@@ -78,7 +91,13 @@ function CartQuantityControl({
 
     if (rounded < item.minimumOrder) {
       const corrected = item.minimumOrder;
-      setValidationMsg(`Minimum order is ${formatQuantity(corrected, item.unit)}`);
+      setValidationMsg(
+        `${t("buyerCart.item.minimumOrder")}: ${formatLocalizedQuantity(
+          t,
+          language,
+          formatQuantity(corrected, item.unit),
+        )}`,
+      );
       onUpdate(item.slug, corrected);
       setInputValue(String(corrected));
       return;
@@ -91,7 +110,13 @@ function CartQuantityControl({
 
   const handleDecrement = () => {
     if (item.selectedQuantity <= item.minimumOrder) {
-      setValidationMsg(`Minimum order is ${formatQuantity(item.minimumOrder, item.unit)}`);
+      setValidationMsg(
+        `${t("buyerCart.item.minimumOrder")}: ${formatLocalizedQuantity(
+          t,
+          language,
+          formatQuantity(item.minimumOrder, item.unit),
+        )}`,
+      );
       return;
     }
     applyQuantity(item.selectedQuantity - 1);
@@ -99,7 +124,13 @@ function CartQuantityControl({
 
   const handleIncrement = () => {
     if (item.selectedQuantity >= item.availableQuantity) {
-      setValidationMsg(`Only ${formatQuantity(item.availableQuantity, item.unit)} available`);
+      setValidationMsg(
+        `${t("buyerCart.item.available")}: ${formatLocalizedQuantity(
+          t,
+          language,
+          formatQuantity(item.availableQuantity, item.unit),
+        )}`,
+      );
       return;
     }
     applyQuantity(item.selectedQuantity + 1);
@@ -127,7 +158,7 @@ function CartQuantityControl({
         <button
           type="button"
           className="agrivo-buyer-cart-stepper-btn"
-          aria-label="Decrease quantity by 1"
+          aria-label={t("buyerCart.quantity.decrease", "Decrease quantity by 1")}
           onClick={handleDecrement}
           disabled={item.selectedQuantity <= item.minimumOrder}
         >
@@ -139,7 +170,7 @@ function CartQuantityControl({
           pattern="[0-9]*"
           className="agrivo-buyer-cart-stepper-input"
           value={inputValue}
-          aria-label={`Quantity in ${item.unit}`}
+          aria-label={`${t("buyerCart.item.selected")} ${t("common.kg", item.unit)}`}
           onChange={handleInputChange}
           onBlur={commitInput}
           onKeyDown={(event) => {
@@ -148,11 +179,11 @@ function CartQuantityControl({
             }
           }}
         />
-        <span className="agrivo-buyer-cart-stepper-unit">{item.unit}</span>
+        <span className="agrivo-buyer-cart-stepper-unit">{t("common.kg", item.unit)}</span>
         <button
           type="button"
           className="agrivo-buyer-cart-stepper-btn"
-          aria-label="Increase quantity by 1"
+          aria-label={t("buyerCart.quantity.increase", "Increase quantity by 1")}
           onClick={handleIncrement}
           disabled={item.selectedQuantity >= item.availableQuantity}
         >
@@ -160,8 +191,9 @@ function CartQuantityControl({
         </button>
       </div>
       <p className="agrivo-buyer-cart-qty-hint">
-        Minimum order: {formatQuantity(item.minimumOrder, item.unit)} · Available:{" "}
-        {item.availableQuantityLabel}
+        {t("buyerCart.item.minimumOrder")}:{" "}
+        {formatLocalizedQuantity(t, language, formatQuantity(item.minimumOrder, item.unit))} ·{" "}
+        {t("buyerCart.item.available")}: {formatLocalizedQuantity(t, language, item.availableQuantityLabel)}
       </p>
       {validationMsg ? <p className="agrivo-buyer-cart-qty-error">{validationMsg}</p> : null}
     </div>
@@ -177,6 +209,7 @@ function CartItemCard({
   onUpdate: (slug: string, quantity: number) => void;
   onRemove: (slug: string) => void;
 }) {
+  const { t, language } = useLanguage();
   const subtotal = getCartItemSubtotal(item);
   const locationDisplay = item.location.replace(/>/g, " → ");
 
@@ -184,9 +217,9 @@ function CartItemCard({
     <article className="agrivo-buyer-cart-item">
       <div className="agrivo-buyer-cart-item-thumb">
         <ProductImage
-          name={item.name}
+          name={translateBuyerProductName(t, item.name)}
           src={item.image}
-          alt={item.name}
+          alt={translateBuyerProductName(t, item.name)}
           className="h-full w-full"
         />
       </div>
@@ -194,9 +227,9 @@ function CartItemCard({
       <div className="agrivo-buyer-cart-item-main">
         <div className="agrivo-buyer-cart-item-top">
           <div className="agrivo-buyer-cart-item-info">
-            <h3 className="agrivo-buyer-cart-item-name">{item.name}</h3>
+            <h3 className="agrivo-buyer-cart-item-name">{translateBuyerProductName(t, item.name)}</h3>
             <p className="agrivo-buyer-cart-item-farmer">
-              Farmer: <strong>{item.farmer}</strong>
+              {t("buyerCart.item.farmer")}: <strong>{item.farmer === "Farmer" ? t("buyerCart.item.farmer") : item.farmer}</strong>
             </p>
             <p className="agrivo-buyer-cart-item-location">
               <MapPin className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
@@ -205,37 +238,39 @@ function CartItemCard({
           </div>
 
           <div className="agrivo-buyer-cart-item-subtotal-block">
-            <p className="agrivo-buyer-cart-item-subtotal-label">Subtotal</p>
+            <p className="agrivo-buyer-cart-item-subtotal-label">{t("buyerCart.item.subtotal")}</p>
             <p className="agrivo-buyer-cart-item-subtotal-value">{subtotal.toFixed(2)} AZN</p>
           </div>
         </div>
 
         <div className="agrivo-buyer-cart-item-details">
           <div className="agrivo-buyer-cart-item-detail">
-            <span className="agrivo-buyer-cart-item-detail-label">Price</span>
+            <span className="agrivo-buyer-cart-item-detail-label">{t("buyerCart.item.price")}</span>
             <span className="agrivo-buyer-cart-item-detail-value">
-              {item.price}
-              {item.unit ? ` / ${item.unit}` : ""}
+              {localizePriceUnit(t, language, item.price)}
+              {item.unit ? ` / ${t("common.kg", item.unit)}` : ""}
             </span>
           </div>
           <div className="agrivo-buyer-cart-item-detail">
-            <span className="agrivo-buyer-cart-item-detail-label">Available</span>
-            <span className="agrivo-buyer-cart-item-detail-value">{item.availableQuantityLabel}</span>
+            <span className="agrivo-buyer-cart-item-detail-label">{t("buyerCart.item.available")}</span>
+            <span className="agrivo-buyer-cart-item-detail-value">
+              {formatLocalizedQuantity(t, language, item.availableQuantityLabel)}
+            </span>
           </div>
           <div className="agrivo-buyer-cart-item-detail">
-            <span className="agrivo-buyer-cart-item-detail-label">Selected</span>
+            <span className="agrivo-buyer-cart-item-detail-label">{t("buyerCart.item.selected")}</span>
             <span className="agrivo-buyer-cart-item-detail-value">
-              {formatQuantity(item.selectedQuantity, item.unit)}
+              {formatLocalizedQuantity(t, language, formatQuantity(item.selectedQuantity, item.unit))}
             </span>
           </div>
           <div className="agrivo-buyer-cart-item-detail">
             {item.deliveryAvailable ? (
               <span className="agrivo-buyer-cart-delivery-badge">
                 <Truck className="h-3 w-3" />
-                Delivery available
+                {t("buyerCart.item.deliveryAvailable")}
               </span>
             ) : (
-              <span className="agrivo-buyer-cart-pickup-badge">Pickup only</span>
+              <span className="agrivo-buyer-cart-pickup-badge">{t("product.pickupOnly")}</span>
             )}
           </div>
         </div>
@@ -249,10 +284,10 @@ function CartItemCard({
               size="sm"
               className="agrivo-buyer-cart-action-btn"
               onClick={() => {
-                window.location.hash = getProductDetailHash(item.slug);
+                navigateToHash(getProductDetailHash(item.slug));
               }}
             >
-              View Product
+              {t("buyerCart.item.viewProduct")}
             </Button>
             <Button
               variant="outline"
@@ -260,14 +295,14 @@ function CartItemCard({
               className="agrivo-buyer-cart-action-btn"
               onClick={() => {
                 if (item.farmerSlug) {
-                  window.location.hash = `farmers/${item.farmerSlug}`;
+                  navigateToHash(`farmers/${item.farmerSlug}`);
                 } else {
-                  window.location.hash = "login";
+                  navigateToHash("login");
                 }
               }}
             >
               <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
-              Contact Farmer
+              {t("buyerCart.item.contactFarmer")}
             </Button>
             <Button
               variant="outline"
@@ -276,7 +311,7 @@ function CartItemCard({
               onClick={() => onRemove(item.slug)}
             >
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              Remove
+              {t("buyerCart.item.remove")}
             </Button>
           </div>
         </div>
@@ -296,65 +331,68 @@ function OrderSummaryCard({
   onCheckout: () => void;
   onContinueShopping: () => void;
 }) {
+  const { t } = useLanguage();
   const summary = useMemo(() => getCartSummary(items), [items]);
 
   return (
     <aside className="agrivo-buyer-cart-summary">
-      <h3 className="agrivo-buyer-cart-summary-title">Order Summary</h3>
+      <h3 className="agrivo-buyer-cart-summary-title">{t("buyerCart.orderSummary.title")}</h3>
 
       <dl className="agrivo-buyer-cart-summary-lines">
         <div className="agrivo-buyer-cart-summary-row">
-          <dt>Items</dt>
+          <dt>{t("buyerCart.orderSummary.items")}</dt>
           <dd>{summary.itemCount}</dd>
         </div>
         <div className="agrivo-buyer-cart-summary-row">
-          <dt>Farmers</dt>
+          <dt>{t("buyerCart.orderSummary.farmers")}</dt>
           <dd>{summary.farmerCount}</dd>
         </div>
         <div className="agrivo-buyer-cart-summary-divider" />
         <div className="agrivo-buyer-cart-summary-row">
-          <dt>Products subtotal</dt>
+          <dt>{t("buyerCart.orderSummary.productsSubtotal")}</dt>
           <dd>{summary.productsSubtotal.toFixed(2)} AZN</dd>
         </div>
         <div className="agrivo-buyer-cart-summary-row">
-          <dt>Delivery fee</dt>
+          <dt>{t("buyerCart.orderSummary.deliveryFee")}</dt>
           <dd>{summary.deliveryFee.toFixed(2)} AZN</dd>
         </div>
         <div className="agrivo-buyer-cart-summary-row">
-          <dt>Service fee</dt>
+          <dt>{t("buyerCart.orderSummary.serviceFee")}</dt>
           <dd>{summary.serviceFee.toFixed(2)} AZN</dd>
         </div>
         <div className="agrivo-buyer-cart-summary-divider" />
         <div className="agrivo-buyer-cart-summary-row agrivo-buyer-cart-summary-row--total">
-          <dt>Total</dt>
+          <dt>{t("buyerCart.orderSummary.total")}</dt>
           <dd>{summary.total.toFixed(2)} AZN</dd>
         </div>
       </dl>
 
       <div className="agrivo-buyer-cart-payment">
-        <p className="agrivo-buyer-cart-payment-label">Payment method</p>
-        <p className="agrivo-buyer-cart-payment-value">Cash on delivery</p>
+        <p className="agrivo-buyer-cart-payment-label">{t("buyerCart.orderSummary.paymentMethod")}</p>
+        <p className="agrivo-buyer-cart-payment-value">{t("buyerCart.orderSummary.cashOnDelivery")}</p>
       </div>
 
       {multiFarmer ? (
         <div className="agrivo-buyer-cart-multi-note">
           <Info className="h-4 w-4 shrink-0" />
           <p>
-            This cart includes products from multiple farmers. Delivery may be coordinated
-            separately.
+            {t(
+              "buyerCart.orderSummary.multiFarmerHint",
+              "This cart includes products from multiple farmers. Delivery may be coordinated separately.",
+            )}
           </p>
         </div>
       ) : null}
 
       <Button className="agrivo-buyer-cart-checkout-btn" onClick={onCheckout}>
-        Proceed to Checkout
+        {t("buyerCart.orderSummary.proceedToCheckout")}
       </Button>
       <Button
         variant="outline"
         className="agrivo-buyer-cart-continue-btn"
         onClick={onContinueShopping}
       >
-        Continue Shopping
+        {t("buyerCart.orderSummary.continueShopping")}
       </Button>
     </aside>
   );
@@ -371,6 +409,7 @@ function CheckoutDialog({
   items: CartItem[];
   onPlaceOrder: (details: { address: string; phone: string; note: string }) => void;
 }) {
+  const { t } = useLanguage();
   const summary = useMemo(() => getCartSummary(items), [items]);
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
@@ -382,26 +421,29 @@ function CheckoutDialog({
       <DialogContent className="agrivo-buyer-checkout-dialog sm:max-w-lg">
         <DialogHeader>
           <DialogTitle className="agrivo-heading text-xl font-bold text-[#102018]">
-            Checkout
+            {t("buyerCart.orderSummary.proceedToCheckout")}
           </DialogTitle>
           <DialogDescription className="text-sm text-[#5F6F64]">
-            Confirm delivery details and place your order. Payment is collected on delivery.
+            {t(
+              "buyerCart.checkout.subtitle",
+              "Confirm delivery details and place your order. Payment is collected on delivery.",
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 py-2">
           <div className="space-y-2">
-            <Label htmlFor="checkout-address">Delivery address</Label>
+            <Label htmlFor="checkout-address">{t("buyerCart.checkout.deliveryAddress", "Delivery address")}</Label>
             <Textarea
               id="checkout-address"
               value={address}
               onChange={(event) => setAddress(event.target.value)}
-              placeholder="Street, building, city"
+              placeholder={t("buyerCart.checkout.deliveryAddressPlaceholder", "Street, building, city")}
               className="min-h-[88px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="checkout-phone">Phone number</Label>
+            <Label htmlFor="checkout-phone">{t("buyerCart.checkout.phoneNumber", "Phone number")}</Label>
             <Input
               id="checkout-phone"
               type="tel"
@@ -412,21 +454,21 @@ function CheckoutDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="checkout-note">Delivery note (optional)</Label>
+            <Label htmlFor="checkout-note">{t("buyerCart.checkout.deliveryNoteOptional", "Delivery note (optional)")}</Label>
             <Textarea
               id="checkout-note"
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder="Gate code, preferred delivery time, etc."
+              placeholder={t("buyerCart.checkout.deliveryNotePlaceholder", "Gate code, preferred delivery time, etc.")}
               className="min-h-[72px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
             />
           </div>
 
           <div className="rounded-xl border border-[#edf2ea] bg-[#f8faf4] p-4 text-sm">
-            <p className="font-semibold text-[#102018]">Payment method</p>
-            <p className="mt-1 text-[#5F6F64]">Cash on delivery</p>
+            <p className="font-semibold text-[#102018]">{t("buyerCart.orderSummary.paymentMethod")}</p>
+            <p className="mt-1 text-[#5F6F64]">{t("buyerCart.orderSummary.cashOnDelivery")}</p>
             <p className="mt-3 font-semibold text-[#102018]">
-              Order total:{" "}
+              {t("buyerCart.checkout.orderTotal", "Order total")}:{" "}
               <span className="text-[#14532D]">{summary.total.toFixed(2)} AZN</span>
             </p>
           </div>
@@ -438,7 +480,7 @@ function CheckoutDialog({
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => onOpenChange(false)}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
@@ -447,7 +489,7 @@ function CheckoutDialog({
               onPlaceOrder({ address: address.trim(), phone: phone.trim(), note: note.trim() })
             }
           >
-            Place Order
+            {t("buyerCart.checkout.placeOrder", "Place Order")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -456,26 +498,25 @@ function CheckoutDialog({
 }
 
 function CartPageStats({ itemCount, farmerCount }: { itemCount: number; farmerCount: number }) {
-  const estimatedDelivery = farmerCount > 1 ? "3–5 business days" : "2–3 business days";
-
+  const { t } = useLanguage();
   return (
     <div className="agrivo-buyer-cart-stats">
       <div className="agrivo-buyer-cart-stat">
         <Package className="h-4 w-4 text-[#43A047]" />
         <span>
-          <strong>{itemCount}</strong> {itemCount === 1 ? "item" : "items"}
+          {t("buyerCart.summary.items").replace("{count}", String(itemCount))}
         </span>
       </div>
       <div className="agrivo-buyer-cart-stat">
         <Users className="h-4 w-4 text-[#43A047]" />
         <span>
-          <strong>{farmerCount}</strong> {farmerCount === 1 ? "farmer" : "farmers"}
+          {t("buyerCart.summary.farmers").replace("{count}", String(farmerCount))}
         </span>
       </div>
       <div className="agrivo-buyer-cart-stat">
         <Truck className="h-4 w-4 text-[#43A047]" />
         <span>
-          Est. delivery: <strong>{estimatedDelivery}</strong>
+          {t("buyerCart.summary.estimatedDelivery").replace("{days}", farmerCount > 1 ? "3–5" : "2–3")}
         </span>
       </div>
     </div>
@@ -484,6 +525,7 @@ function CartPageStats({ itemCount, farmerCount }: { itemCount: number; farmerCo
 
 export function BuyerCartPage() {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { cartItems, removeFromCart, updateQuantity, clearBuyerCart } = useCart();
   const [apiCartItems, setApiCartItems] = useState<CartItem[]>([]);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -502,12 +544,12 @@ export function BuyerCartPage() {
       })
       .catch((error) => {
         if (!mounted) return;
-        setApiError(error instanceof Error ? error.message : "Failed to load cart.");
+        setApiError(error instanceof Error ? error.message : t("buyerCart.feedback.failedLoad", "Failed to load cart."));
       });
     return () => {
       mounted = false;
     };
-  }, []);
+  }, [t]);
 
   const handlePlaceOrder = async (details: { address: string; phone: string; note: string }) => {
     if (!user?.id || activeCartItems.length === 0) return;
@@ -534,10 +576,10 @@ export function BuyerCartPage() {
         await clearCartApi();
         setApiCartItems([]);
         setCheckoutOpen(false);
-        sessionStorage.setItem("agrivo_order_success", "Order placed successfully.");
-        window.location.hash = "dashboard/buyer/orders";
+        sessionStorage.setItem("agrivo_order_success", t("buyerCart.feedback.orderPlaced", "Order placed successfully."));
+        navigateToHash("dashboard/buyer/orders");
       } catch (error) {
-        setApiError(error instanceof Error ? error.message : "Failed to place order.");
+        setApiError(error instanceof Error ? error.message : t("buyerCart.feedback.failedPlaceOrder", "Failed to place order."));
       }
       return;
     }
@@ -545,34 +587,34 @@ export function BuyerCartPage() {
     placeOrdersFromCart(user.id, activeCartItems);
     clearBuyerCart();
     setCheckoutOpen(false);
-    sessionStorage.setItem("agrivo_order_success", "Order placed successfully.");
-    window.location.hash = "dashboard/buyer/orders";
+    sessionStorage.setItem("agrivo_order_success", t("buyerCart.feedback.orderPlaced", "Order placed successfully."));
+    navigateToHash("dashboard/buyer/orders");
   };
 
   if (activeCartItems.length === 0) {
     return (
       <section className="agrivo-buyer-cart">
         <div className="agrivo-dashboard-page-header">
-          <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">Cart</h2>
+          <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">{t("buyerCart.title")}</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            Review your selected products before placing your order.
+            {t("buyerCart.subtitle")}
           </p>
         </div>
         <div className="agrivo-buyer-cart-empty">
           <div className="agrivo-buyer-cart-empty-icon">
             <ShoppingBag className="h-7 w-7 text-[#14532D]" />
           </div>
-          <h3 className="agrivo-buyer-cart-empty-title">Your cart is empty</h3>
+          <h3 className="agrivo-buyer-cart-empty-title">{t("buyerCart.empty.title")}</h3>
           <p className="agrivo-buyer-cart-empty-text">
-            Add fresh products from verified farmers to start your order.
+            {t("buyerCart.empty.subtitle")}
           </p>
           <Button
             className="mt-6 rounded-full bg-[#14532D] px-6 text-white hover:bg-[#1D6A3B]"
             onClick={() => {
-              window.location.hash = "products";
+              navigateToHash("products");
             }}
           >
-            Browse Marketplace
+            {t("buyerCart.empty.browseMarketplace")}
           </Button>
         </div>
       </section>
@@ -582,9 +624,9 @@ export function BuyerCartPage() {
   return (
     <section className="agrivo-buyer-cart">
       <div className="agrivo-dashboard-page-header">
-        <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">Cart</h2>
+        <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">{t("buyerCart.title")}</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-          Review your selected products before placing your order.
+          {t("buyerCart.subtitle")}
         </p>
       </div>
 
@@ -593,7 +635,7 @@ export function BuyerCartPage() {
       <div className="agrivo-buyer-cart-layout">
         <div className="agrivo-buyer-cart-items-col">
           <p className="agrivo-buyer-cart-items-label">
-            {summary.itemCount} {summary.itemCount === 1 ? "product" : "products"} in your cart
+            {t("buyerCart.productsInCart").replace("{count}", String(summary.itemCount))}
           </p>
           <div className="agrivo-buyer-cart-items">
             {activeCartItems.map((item) => (
@@ -616,7 +658,7 @@ export function BuyerCartPage() {
                       ),
                     )
                     .catch((error) =>
-                      setApiError(error instanceof Error ? error.message : "Failed to update cart item."),
+                      setApiError(error instanceof Error ? error.message : t("buyerCart.feedback.failedUpdateItem", "Failed to update cart item.")),
                     );
                 }}
                 onRemove={(slug) => {
@@ -629,7 +671,7 @@ export function BuyerCartPage() {
                       setApiCartItems((prev) => prev.filter((item) => item.slug !== slug)),
                     )
                     .catch((error) =>
-                      setApiError(error instanceof Error ? error.message : "Failed to remove cart item."),
+                      setApiError(error instanceof Error ? error.message : t("buyerCart.feedback.failedRemoveItem", "Failed to remove cart item.")),
                     );
                 }}
               />
@@ -642,7 +684,7 @@ export function BuyerCartPage() {
           multiFarmer={multiFarmer}
           onCheckout={() => setCheckoutOpen(true)}
           onContinueShopping={() => {
-            window.location.hash = "products";
+            navigateToHash("products");
           }}
         />
       </div>

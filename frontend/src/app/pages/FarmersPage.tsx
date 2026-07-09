@@ -2,13 +2,21 @@ import { Search, X } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { AgrivoNavbar } from "../components/AgrivoNavbar";
+import { useLanguage } from "../../i18n/LanguageContext";
+import { navigateToHash } from "../../i18n/localizedRoutes";
+import {
+  formatCategoryChip,
+  formatSearchChip,
+  formatShowingFarmers,
+  translateFarmerCategory,
+} from "../../i18n/farmerHelpers";
 import {
   economicRegions,
   getDistrictsForRegion,
   getRegionForDistrict,
   type EconomicRegion,
 } from "../data/azerbaijanRegions";
-import { getVillagesForDistrict, normalizePlaceName, villages, villagesMatch } from "../data/azerbaijanVillages";
+import { getVillagesForDistrict, villagesMatch } from "../data/azerbaijanVillages";
 import { allFarmers, farmerCategories } from "../data/farmers";
 import { AzerbaijanMap } from "../components/AzerbaijanMap";
 import { FeaturedFarmerCard } from "../components/FeaturedFarmerCard";
@@ -42,6 +50,7 @@ function FilterField({ label, children }: { label: string; children: ReactNode }
 }
 
 export default function FarmersPage() {
+  const { t } = useLanguage();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState<EconomicRegion | "all">("all");
@@ -62,18 +71,10 @@ export default function FarmersPage() {
 
   const villagePlaceholder =
     districtFilter === "all"
-      ? "Select district/city first"
+      ? t("farmersPage.filters.selectDistrictFirst")
       : villageOptions.length === 0
-        ? "No villages found"
-        : "All villages";
-
-  useEffect(() => {
-    console.log("villagesData length:", villages.length);
-    console.log("villagesData sample:", villages.slice(0, 10));
-    console.log("selectedDistrictCity:", districtFilter);
-    console.log("normalized selectedDistrictCity:", normalizePlaceName(districtFilter));
-    console.log("matched village options:", villageOptions);
-  }, [districtFilter, villageOptions]);
+        ? t("farmersPage.filters.noVillages")
+        : t("farmersPage.filters.allVillages");
 
   // Reset child filters when parent options no longer include current selection
   useEffect(() => {
@@ -151,7 +152,7 @@ export default function FarmersPage() {
     if (categoryFilter !== "all") {
       chips.push({
         key: "category",
-        label: categoryFilter,
+        label: formatCategoryChip(t, categoryFilter),
         onRemove: () => setCategoryFilter("all"),
       });
     }
@@ -159,13 +160,13 @@ export default function FarmersPage() {
     if (searchTerm.trim()) {
       chips.push({
         key: "search",
-        label: `Search: ${searchTerm.trim()}`,
+        label: formatSearchChip(t, searchTerm.trim()),
         onRemove: () => setSearchTerm(""),
       });
     }
 
     return chips;
-  }, [categoryFilter, districtFilter, regionFilter, searchTerm, villageFilter]);
+  }, [categoryFilter, districtFilter, regionFilter, searchTerm, t, villageFilter]);
 
   const clearFilters = useCallback(() => {
     setSearchTerm("");
@@ -193,7 +194,7 @@ export default function FarmersPage() {
   };
 
   const goToFarmerProfile = (slug: string) => {
-    window.location.hash = `farmers/${slug}`;
+    navigateToHash(`farmers/${slug}`);
   };
 
   const hasActiveFilters =
@@ -218,10 +219,14 @@ export default function FarmersPage() {
                 variants={reveal}
                 transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
               >
-                <p className="agrivo-farmers-eyebrow mb-3 uppercase text-[#15803d]">Marketplace</p>
-                <h1 className="agrivo-heading agrivo-farmers-title text-[#102018]">All Farmers</h1>
+                <p className="agrivo-farmers-eyebrow mb-3 uppercase text-[#15803d]">
+                  {t("farmersPage.eyebrow")}
+                </p>
+                <h1 className="agrivo-heading agrivo-farmers-title text-[#102018]">
+                  {t("farmersPage.title")}
+                </h1>
                 <p className="agrivo-farmers-subtitle mt-4 max-w-2xl text-[#5F6F64]">
-                  Browse verified growers across Azerbaijan and connect directly with trusted farms.
+                  {t("farmersPage.subtitle")}
                 </p>
               </motion.div>
 
@@ -239,23 +244,23 @@ export default function FarmersPage() {
                       type="search"
                       value={searchTerm}
                       onChange={(event) => setSearchTerm(event.target.value)}
-                      placeholder="Search by farmer name, location, product, or village..."
-                      aria-label="Search farmers"
+                      placeholder={t("farmersPage.searchPlaceholder")}
+                      aria-label={t("farmersPage.searchPlaceholder")}
                       className="agrivo-filter-control h-14 rounded-full border-0 bg-[#F7FBF5] pl-12 text-[#102018] placeholder:text-[#97A59B] focus-visible:ring-1 focus-visible:ring-[#43A047]"
                     />
                   </div>
 
-                  <FilterField label="Economic Region">
+                  <FilterField label={t("farmersPage.filters.economicRegion")}>
                     <Select
                       value={regionFilter}
                       onValueChange={(value) => handleRegionChange(value as EconomicRegion | "all")}
                     >
                       <SelectTrigger className={filterTriggerClass}>
-                        <SelectValue placeholder="All economic regions" />
+                        <SelectValue placeholder={t("farmersPage.filters.allEconomicRegions")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all" className="text-base">
-                          All economic regions
+                          {t("farmersPage.filters.allEconomicRegions")}
                         </SelectItem>
                         {economicRegions.map((region) => (
                           <SelectItem key={region} value={region} className="text-base">
@@ -266,7 +271,7 @@ export default function FarmersPage() {
                     </Select>
                   </FilterField>
 
-                  <FilterField label="District / City">
+                  <FilterField label={t("farmersPage.filters.districtCity")}>
                     <Select
                       value={districtFilter}
                       onValueChange={handleDistrictChange}
@@ -275,13 +280,15 @@ export default function FarmersPage() {
                       <SelectTrigger className={filterTriggerClass} disabled={regionFilter === "all"}>
                         <SelectValue
                           placeholder={
-                            regionFilter === "all" ? "Select economic region first" : "All districts / cities"
+                            regionFilter === "all"
+                              ? t("farmersPage.filters.selectRegionFirst")
+                              : t("farmersPage.filters.allDistrictsCities")
                           }
                         />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all" className="text-base">
-                          All districts / cities
+                          {t("farmersPage.filters.allDistrictsCities")}
                         </SelectItem>
                         {districtOptions.map((district) => (
                           <SelectItem key={district} value={district} className="text-base">
@@ -292,7 +299,7 @@ export default function FarmersPage() {
                     </Select>
                   </FilterField>
 
-                  <FilterField label="Village / Kənd">
+                  <FilterField label={t("farmersPage.filters.village")}>
                     <Select
                       value={villageDisabled ? undefined : villageFilter}
                       onValueChange={setVillageFilter}
@@ -303,7 +310,7 @@ export default function FarmersPage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all" className="text-base">
-                          All villages
+                          {t("farmersPage.filters.allVillages")}
                         </SelectItem>
                         {villageOptions.map((village) => (
                           <SelectItem key={village} value={village} className="text-base">
@@ -314,18 +321,18 @@ export default function FarmersPage() {
                     </Select>
                   </FilterField>
 
-                  <FilterField label="Category">
+                  <FilterField label={t("farmersPage.filters.category")}>
                     <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                       <SelectTrigger className={filterTriggerClass}>
-                        <SelectValue placeholder="All categories" />
+                        <SelectValue placeholder={t("farmersPage.filters.allCategories")} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="all" className="text-base">
-                          All categories
+                          {t("farmersPage.filters.allCategories")}
                         </SelectItem>
                         {farmerCategories.map((category) => (
                           <SelectItem key={category} value={category} className="text-base">
-                            {category}
+                            {translateFarmerCategory(t, category)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -355,7 +362,7 @@ export default function FarmersPage() {
                       onClick={clearFilters}
                       className="agrivo-farmers-clear font-medium text-[#14532D] underline-offset-4 transition hover:underline"
                     >
-                      Clear filters
+                      {t("farmersPage.clearFilters")}
                     </button>
                   )}
                 </div>
@@ -378,7 +385,7 @@ export default function FarmersPage() {
             transition={{ duration: 0.4 }}
             className="agrivo-farmers-results text-[#5F6F64]"
           >
-            Showing {filteredFarmers.length} of {allFarmers.length} farmers
+            {formatShowingFarmers(t, filteredFarmers.length, allFarmers.length)}
           </motion.p>
 
           <AnimatePresence mode="popLayout">
@@ -415,16 +422,16 @@ export default function FarmersPage() {
                 className="mt-10 rounded-[28px] border border-[#e5efe1] bg-white px-6 py-14 text-center"
               >
                 <h2 className="text-2xl font-semibold text-[#102018] sm:text-[1.75rem]">
-                  No farmers found for this selection
+                  {t("farmersPage.results.emptyTitle")}
                 </h2>
                 <p className="agrivo-farmers-subtitle mt-3 text-[#5F6F64]">
-                  Try changing the filters or selecting another region on the map.
+                  {t("farmersPage.results.emptyDesc")}
                 </p>
                 <Button
                   className="mt-6 rounded-full bg-[#14532D] px-6 py-6 text-base text-white hover:bg-[#1D6A3B]"
                   onClick={clearFilters}
                 >
-                  Clear filters
+                  {t("farmersPage.clearFilters")}
                 </Button>
               </motion.div>
             )}

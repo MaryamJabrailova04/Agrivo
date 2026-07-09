@@ -1,6 +1,8 @@
 import { Crosshair, MapPin, Navigation, Truck } from "lucide-react";
 import { useState } from "react";
 import { todayRouteData } from "../../../data/logisticsRoutes";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { formatEtaLabel, translateInTransitLocation } from "../../../../i18n/inTransitHelpers";
 import { RouteMap } from "../../logistics/RouteMap";
 import type { InTransitDelivery } from "../../../utils/inTransitStorage";
 import { Button } from "../../ui/button";
@@ -22,6 +24,7 @@ export function TransitRouteModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const { t, language } = useLanguage();
   const [centerTrigger, setCenterTrigger] = useState(0);
 
   if (!delivery) return null;
@@ -31,24 +34,42 @@ export function TransitRouteModal({
       <DialogContent className="agrivo-assigned-route-dialog sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-            Live route · {delivery.taskId}
+            {t("inTransitPage.routeModal.liveRoute")} · {delivery.taskId}
           </DialogTitle>
           <DialogDescription className="text-sm text-[#5F6F64]">
-            {delivery.pickupLocation} → {delivery.dropoffLocation}
+            {translateInTransitLocation(
+              t,
+              delivery.pickupLocation,
+              language,
+              delivery.pickupLocationLocalized,
+            )}{" "}
+            →{" "}
+            {translateInTransitLocation(
+              t,
+              delivery.dropoffLocation,
+              language,
+              delivery.dropoffLocationLocalized,
+            )}
           </DialogDescription>
         </DialogHeader>
 
         <div className="agrivo-transit-route-meta">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">ETA</p>
-            <p className="text-sm font-bold text-[#14532D]">{delivery.eta}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+              {t("inTransitPage.columns.eta")}
+            </p>
+            <p className="text-sm font-bold text-[#14532D]">{formatEtaLabel(t, delivery.eta)}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">Remaining</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+              {t("inTransitPage.columns.distanceRemaining")}
+            </p>
             <p className="text-sm font-bold text-[#102018]">{delivery.distanceRemaining}</p>
           </div>
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">Vehicle</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+              {t("inTransitPage.columns.vehicle")}
+            </p>
             <p className="text-sm font-bold text-[#102018]">{delivery.vehicle}</p>
           </div>
         </div>
@@ -57,22 +78,49 @@ export function TransitRouteModal({
           <div className="agrivo-assigned-route-point">
             <MapPin className="h-4 w-4 text-[#43A047]" />
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">Pickup</p>
-              <p className="text-sm font-semibold text-[#102018]">{delivery.pickupLocation}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+                {t("inTransitPage.routeModal.pickup")}
+              </p>
+              <p className="text-sm font-semibold text-[#102018]">
+                {translateInTransitLocation(
+                  t,
+                  delivery.pickupLocation,
+                  language,
+                  delivery.pickupLocationLocalized,
+                )}
+              </p>
             </div>
           </div>
           <div className="agrivo-assigned-route-point">
             <Truck className="h-4 w-4 text-[#14532D]" />
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">Current</p>
-              <p className="text-sm font-semibold text-[#102018]">{delivery.currentLocation}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+                {t("inTransitPage.routeModal.current")}
+              </p>
+              <p className="text-sm font-semibold text-[#102018]">
+                {translateInTransitLocation(
+                  t,
+                  delivery.currentLocation,
+                  language,
+                  delivery.currentLocationLocalized,
+                )}
+              </p>
             </div>
           </div>
           <div className="agrivo-assigned-route-point">
             <Navigation className="h-4 w-4 text-[#14532D]" />
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">Destination</p>
-              <p className="text-sm font-semibold text-[#102018]">{delivery.dropoffLocation}</p>
+              <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+                {t("inTransitPage.routeModal.destination")}
+              </p>
+              <p className="text-sm font-semibold text-[#102018]">
+                {translateInTransitLocation(
+                  t,
+                  delivery.dropoffLocation,
+                  language,
+                  delivery.dropoffLocationLocalized,
+                )}
+              </p>
             </div>
           </div>
         </div>
@@ -90,14 +138,14 @@ export function TransitRouteModal({
             onClick={() => setCenterTrigger((v) => v + 1)}
           >
             <Crosshair className="mr-2 h-4 w-4" />
-            Center vehicle
+            {t("inTransitPage.routeModal.centerVehicle")}
           </Button>
           <Button
             variant="outline"
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => onOpenChange(false)}
           >
-            Close
+            {t("inTransitPage.actions.close")}
           </Button>
         </DialogFooter>
       </DialogContent>

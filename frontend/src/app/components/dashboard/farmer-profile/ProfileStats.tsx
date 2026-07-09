@@ -1,38 +1,41 @@
 import type { LucideIcon } from "lucide-react";
 import { CheckCircle2, Coins, Package, Star } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import type { FarmerProfileStats } from "../../../utils/farmerProfileStorage";
 
 interface StatCard {
-  label: string;
+  labelKey: string;
   value: string;
-  hint: string;
+  hintKey: string;
   icon: LucideIcon;
 }
 
 export function ProfileStats({ stats }: { stats: FarmerProfileStats }) {
+  const { t } = useLanguage();
+
   const cards: StatCard[] = [
     {
-      label: "Active Products",
+      labelKey: "farmerDashboardProfile.stats.activeProducts",
       value: String(stats.activeProducts),
-      hint: "Listed in marketplace",
+      hintKey: "farmerDashboardProfile.stats.listedInMarketplace",
       icon: Package,
     },
     {
-      label: "Completed Orders",
+      labelKey: "farmerDashboardProfile.stats.completedOrders",
       value: String(stats.completedOrders),
-      hint: "Delivered to buyers",
+      hintKey: "farmerDashboardProfile.stats.deliveredToBuyers",
       icon: CheckCircle2,
     },
     {
-      label: "Total Revenue",
+      labelKey: "farmerDashboardProfile.stats.totalRevenue",
       value: `${stats.totalRevenue.toLocaleString("en-US")} AZN`,
-      hint: "Gross marketplace sales",
+      hintKey: "farmerDashboardProfile.stats.grossMarketplaceSales",
       icon: Coins,
     },
     {
-      label: "Rating",
+      labelKey: "farmerDashboardProfile.stats.rating",
       value: stats.rating.toFixed(1),
-      hint: "Buyer satisfaction",
+      hintKey: "farmerDashboardProfile.stats.buyerSatisfaction",
       icon: Star,
     },
   ];
@@ -42,7 +45,7 @@ export function ProfileStats({ stats }: { stats: FarmerProfileStats }) {
       {cards.map((card) => {
         const Icon = card.icon;
         return (
-          <div key={card.label} className="agrivo-farmer-dash-profile-stat-card agrivo-card">
+          <div key={card.labelKey} className="agrivo-farmer-dash-profile-stat-card agrivo-card">
             <div className="flex items-start justify-between gap-3">
               <div className="agrivo-farmer-dash-profile-stat-icon">
                 <Icon className="h-5 w-5 text-[#14532D]" strokeWidth={1.75} />
@@ -51,8 +54,8 @@ export function ProfileStats({ stats }: { stats: FarmerProfileStats }) {
                 {card.value}
               </span>
             </div>
-            <p className="mt-3 text-sm font-semibold text-[#102018]">{card.label}</p>
-            <p className="mt-0.5 text-xs text-[#6b7a70]">{card.hint}</p>
+            <p className="mt-3 text-sm font-semibold text-[#102018]">{t(card.labelKey)}</p>
+            <p className="mt-0.5 text-xs text-[#6b7a70]">{t(card.hintKey)}</p>
           </div>
         );
       })}

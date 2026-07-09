@@ -1,4 +1,5 @@
 import { Download, FileSpreadsheet, FileText } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import { Button } from "../../ui/button";
 
 export function ReportsCard({
@@ -10,10 +11,14 @@ export function ReportsCard({
   onDownloadMonthly: () => void;
   onDownloadDriver: () => void;
 }) {
+  const { t } = useLanguage();
+
   return (
     <section className="agrivo-completed-side-card agrivo-dashboard-panel">
-      <h3 className="agrivo-heading text-base font-bold text-[#102018]">Reports</h3>
-      <p className="mt-1 text-xs text-[#6b7a70]">Export delivery records</p>
+      <h3 className="agrivo-heading text-base font-bold text-[#102018]">
+        {t("completedDeliveries.sidebar.reportsTitle")}
+      </h3>
+      <p className="mt-1 text-xs text-[#6b7a70]">{t("completedDeliveries.sidebar.reportsSubtitle")}</p>
       <div className="agrivo-completed-reports-actions">
         <Button
           type="button"
@@ -22,7 +27,7 @@ export function ReportsCard({
           onClick={onExport}
         >
           <FileSpreadsheet className="mr-2 h-4 w-4" />
-          Export completed deliveries
+          {t("completedDeliveries.sidebar.exportCompletedDeliveries")}
         </Button>
         <Button
           type="button"
@@ -31,7 +36,7 @@ export function ReportsCard({
           onClick={onDownloadMonthly}
         >
           <FileText className="mr-2 h-4 w-4" />
-          Download monthly report
+          {t("completedDeliveries.sidebar.downloadMonthlyReport")}
         </Button>
         <Button
           type="button"
@@ -40,7 +45,7 @@ export function ReportsCard({
           onClick={onDownloadDriver}
         >
           <Download className="mr-2 h-4 w-4" />
-          Download driver performance
+          {t("completedDeliveries.sidebar.downloadDriverPerformance")}
         </Button>
       </div>
     </section>

@@ -1,4 +1,5 @@
 import type { BulkOrderStatus } from "../../utils/bulkOrdersStorage";
+import { useLanguage } from "../../../i18n/LanguageContext";
 import { cn } from "../ui/utils";
 
 const STATUS_STYLES: Record<BulkOrderStatus, string> = {
@@ -11,6 +12,16 @@ const STATUS_STYLES: Record<BulkOrderStatus, string> = {
 };
 
 export function BuyerBulkOrderStatusBadge({ status }: { status: BulkOrderStatus }) {
+  const { t } = useLanguage();
+  const labelMap: Record<BulkOrderStatus, string> = {
+    Open: t("buyerBulkOrders.status.active"),
+    "Offers Received": t("buyerBulkOrders.status.offersReceived"),
+    Accepted: t("buyerBulkOrders.status.accepted"),
+    "In Progress": t("buyerBulkOrders.status.pending"),
+    Fulfilled: t("buyerBulkOrders.status.fulfilled"),
+    Cancelled: t("buyerBulkOrders.status.cancelled"),
+  };
+
   return (
     <span
       className={cn(
@@ -18,7 +29,7 @@ export function BuyerBulkOrderStatusBadge({ status }: { status: BulkOrderStatus 
         STATUS_STYLES[status],
       )}
     >
-      {status}
+      {labelMap[status]}
     </span>
   );
 }

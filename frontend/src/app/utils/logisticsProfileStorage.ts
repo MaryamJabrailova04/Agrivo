@@ -1,4 +1,9 @@
 import type { AuthUser } from "../auth/authStorage";
+import {
+  normalizeDeliveryTypeKey,
+  normalizeRouteKey,
+  normalizeVehicleTypeKey,
+} from "../../i18n/logisticsProfileHelpers";
 import { LOGISTICS_PROFILE_SEED } from "../data/logisticsProfile";
 import { migrateWorkingDays, type WeekDay } from "./workingSchedule";
 
@@ -27,6 +32,8 @@ export interface LogisticsDashboardProfile {
   emergencyContact: string;
   preferredContactMethod: LogisticsPreferredContact;
   description: string;
+  descriptionAz?: string;
+  addressAz?: string;
   driversCount: number;
   vehiclesCount: number;
   vehicleTypes: string[];
@@ -69,19 +76,19 @@ export interface LogisticsProfileCompletion {
 const STORAGE_KEY_PREFIX = "agrivo_logistics_profile_";
 
 export const LOGISTICS_VEHICLE_TYPES = [
-  "Vans",
-  "Mini Trucks",
-  "Refrigerated Trucks",
-  "Flatbed Trucks",
-  "Pickup Trucks",
+  "vans",
+  "miniTrucks",
+  "refrigeratedTrucks",
+  "flatbedTrucks",
+  "pickupTrucks",
 ] as const;
 
 export const LOGISTICS_DELIVERY_TYPES = [
-  "Farm pickup",
-  "Buyer delivery",
-  "Intercity transfer",
-  "Cold chain delivery",
-  "Same-day delivery",
+  "farmPickup",
+  "buyerDelivery",
+  "intercityTransfer",
+  "coldChainDelivery",
+  "sameDayDelivery",
 ] as const;
 
 export const LOGISTICS_SERVICE_REGIONS = [
@@ -96,11 +103,11 @@ export const LOGISTICS_SERVICE_REGIONS = [
 ] as const;
 
 export const LOGISTICS_ROUTE_SUGGESTIONS = [
-  "Lənkəran → Baku",
-  "Quba → Sumqayıt",
-  "Gəncə → Baku",
-  "Göyçay → Baku",
-  "Şəki → Baku",
+  "lankaranBaku",
+  "qubaSumgayit",
+  "ganjaBaku",
+  "goychayBaku",
+  "shekiBaku",
 ] as const;
 
 export const LOGISTICS_PREFERRED_CONTACT_OPTIONS: LogisticsPreferredContact[] = [
@@ -157,14 +164,18 @@ export function getLogisticsDashboardProfile(user: AuthUser): LogisticsDashboard
       ...defaults,
       ...parsed,
       workingDays: migrateWorkingDays(parsed.workingDays ?? defaults.workingDays),
-      vehicleTypes: Array.isArray(parsed.vehicleTypes) ? parsed.vehicleTypes : defaults.vehicleTypes,
+      vehicleTypes: Array.isArray(parsed.vehicleTypes)
+        ? parsed.vehicleTypes.map(normalizeVehicleTypeKey)
+        : defaults.vehicleTypes,
       supportedDeliveryTypes: Array.isArray(parsed.supportedDeliveryTypes)
-        ? parsed.supportedDeliveryTypes
+        ? parsed.supportedDeliveryTypes.map(normalizeDeliveryTypeKey)
         : defaults.supportedDeliveryTypes,
       serviceRegions: Array.isArray(parsed.serviceRegions)
         ? parsed.serviceRegions
         : defaults.serviceRegions,
-      mainRoutes: Array.isArray(parsed.mainRoutes) ? parsed.mainRoutes : defaults.mainRoutes,
+      mainRoutes: Array.isArray(parsed.mainRoutes)
+        ? parsed.mainRoutes.map(normalizeRouteKey)
+        : defaults.mainRoutes,
       documents: parsed.documents ? { ...defaults.documents, ...parsed.documents } : defaults.documents,
     };
   } catch {
@@ -216,14 +227,14 @@ export function validateLogisticsProfile(
   profile: Pick<LogisticsDashboardProfile, "companyName" | "contactPerson" | "email" | "phone">,
 ): Record<string, string> {
   const errors: Record<string, string> = {};
-  if (!profile.companyName.trim()) errors.companyName = "Company name is required.";
-  if (!profile.contactPerson.trim()) errors.contactPerson = "Contact person is required.";
+  if (!profile.companyName.trim()) errors.companyName = "companyNameRequired";
+  if (!profile.contactPerson.trim()) errors.contactPerson = "contactPersonRequired";
   if (!profile.email.trim()) {
-    errors.email = "Email is required.";
+    errors.email = "emailRequired";
   } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
-    errors.email = "Enter a valid email address.";
+    errors.email = "emailInvalid";
   }
-  if (!profile.phone.trim()) errors.phone = "Phone number is required.";
+  if (!profile.phone.trim()) errors.phone = "phoneRequired";
   return errors;
 }
 
@@ -231,13 +242,13 @@ export function calculateProfileCompletion(
   profile: LogisticsDashboardProfile,
 ): LogisticsProfileCompletion {
   const checks = [
-    { key: "Company name", done: Boolean(profile.companyName.trim()) },
-    { key: "Phone number", done: Boolean(profile.phone.trim()) },
-    { key: "Service regions", done: profile.serviceRegions.length > 0 },
-    { key: "Drivers and vehicles", done: profile.driversCount > 0 && profile.vehiclesCount > 0 },
-    { key: "Company description", done: Boolean(profile.description.trim()) },
+    { key: "companyName", done: Boolean(profile.companyName.trim()) },
+    { key: "phoneNumber", done: Boolean(profile.phone.trim()) },
+    { key: "serviceRegions", done: profile.serviceRegions.length > 0 },
+    { key: "driversAndVehicles", done: profile.driversCount > 0 && profile.vehiclesCount > 0 },
+    { key: "companyDescription", done: Boolean(profile.description.trim()) },
     {
-      key: "Working hours",
+      key: "workingHours",
       done: profile.workingDays.length > 0 && Boolean(profile.openingTime && profile.closingTime),
     },
   ];

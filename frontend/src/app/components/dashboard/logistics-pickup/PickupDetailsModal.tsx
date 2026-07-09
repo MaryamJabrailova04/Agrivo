@@ -1,4 +1,13 @@
 import { ProductVarietyBadge } from "../../products/ProductVarietyBadge";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  translatePickupAddress,
+  translatePickupLocation,
+  translatePickupNotes,
+  translatePickupProduct,
+  translatePickupRegion,
+  translatePickupVariety,
+} from "../../../../i18n/pickupTasksHelpers";
 import {
   formatPickupQuantity,
   type PickupTask,
@@ -23,6 +32,7 @@ interface PickupDetailsModalProps {
 }
 
 export function PickupDetailsModal({ task, open, onOpenChange }: PickupDetailsModalProps) {
+  const { t, language } = useLanguage();
   if (!task) return null;
 
   return (
@@ -37,70 +47,79 @@ export function PickupDetailsModal({ task, open, onOpenChange }: PickupDetailsMo
             <PickupPriorityBadge priority={task.priority} />
           </div>
           <DialogDescription className="text-sm text-[#5F6F64]">
-            {task.pickupLocation} → {task.destination}
+            {translatePickupLocation(t, task.pickupLocation, language, task.pickupLocationLocalized)} →{" "}
+            {translatePickupLocation(t, task.destination, language, task.destinationLocalized)}
           </DialogDescription>
         </DialogHeader>
 
         <div className="agrivo-assigned-details-grid">
           <section>
-            <h4 className="agrivo-assigned-details-section-title">Farm &amp; contact</h4>
+            <h4 className="agrivo-assigned-details-section-title">
+              {t("pickupTasks.modal.farmAndContact")}
+            </h4>
             <dl className="agrivo-assigned-details-list">
               <div>
-                <dt>Farmer / farm</dt>
+                <dt>{t("pickupTasks.modal.farmerFarm")}</dt>
                 <dd>{task.farmerName}</dd>
               </div>
               <div>
-                <dt>Phone</dt>
+                <dt>{t("pickupTasks.columns.phone")}</dt>
                 <dd>{task.farmerPhone}</dd>
               </div>
               <div>
-                <dt>Pickup address</dt>
-                <dd>{task.pickupAddress}</dd>
+                <dt>{t("pickupTasks.modal.pickupAddress")}</dt>
+                <dd>{translatePickupAddress(t, task.pickupAddress, language, task.pickupAddressLocalized)}</dd>
               </div>
               <div>
-                <dt>Destination</dt>
-                <dd>{task.destination}</dd>
+                <dt>{t("pickupTasks.modal.destination")}</dt>
+                <dd>{translatePickupLocation(t, task.destination, language, task.destinationLocalized)}</dd>
               </div>
               <div>
-                <dt>Region</dt>
+                <dt>{t("pickupTasks.columns.region")}</dt>
                 <dd>
-                  {task.region} · {task.district}
+                  {translatePickupRegion(t, task.region)} · {task.district}
                 </dd>
               </div>
             </dl>
           </section>
 
           <section>
-            <h4 className="agrivo-assigned-details-section-title">Collection details</h4>
+            <h4 className="agrivo-assigned-details-section-title">
+              {t("pickupTasks.modal.collectionDetails")}
+            </h4>
             <dl className="agrivo-assigned-details-list">
               <div>
-                <dt>Product</dt>
-                <dd>{task.productName}</dd>
+                <dt>{t("pickupTasks.columns.product")}</dt>
+                <dd>{translatePickupProduct(t, language, task)}</dd>
               </div>
               <div>
-                <dt>Sort</dt>
+                <dt>{t("pickupTasks.columns.sort")}</dt>
                 <dd>
-                  <ProductVarietyBadge variety={task.variety} size="sm" />
+                  <ProductVarietyBadge
+                    variety={translatePickupVariety(t, language, task.variety, task.sortKey)}
+                    size="sm"
+                    label={t("pickupTasks.columns.sort")}
+                  />
                 </dd>
               </div>
               <div>
-                <dt>Quantity</dt>
+                <dt>{t("pickupTasks.columns.quantity")}</dt>
                 <dd>{formatPickupQuantity(task)}</dd>
               </div>
               <div>
-                <dt>Pickup time</dt>
+                <dt>{t("pickupTasks.modal.pickupTime")}</dt>
                 <dd>{task.pickupTime}</dd>
               </div>
               <div>
-                <dt>Pickup window</dt>
+                <dt>{t("pickupTasks.columns.pickupWindow")}</dt>
                 <dd>{task.pickupWindow}</dd>
               </div>
               <div>
-                <dt>Driver</dt>
-                <dd>{task.driverName || "Not assigned"}</dd>
+                <dt>{t("pickupTasks.columns.driver")}</dt>
+                <dd>{task.driverName || t("pickupTasks.status.notAssigned")}</dd>
               </div>
               <div>
-                <dt>Vehicle</dt>
+                <dt>{t("pickupTasks.columns.vehicle")}</dt>
                 <dd>{task.vehicle || "—"}</dd>
               </div>
             </dl>
@@ -109,13 +128,19 @@ export function PickupDetailsModal({ task, open, onOpenChange }: PickupDetailsMo
 
         {task.notes ? (
           <div className="agrivo-assigned-details-notes">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">Notes</p>
-            <p className="mt-1 text-sm leading-6 text-[#33443a]">{task.notes}</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#6b7a70]">
+              {t("pickupTasks.modal.notes")}
+            </p>
+            <p className="mt-1 text-sm leading-6 text-[#33443a]">
+              {translatePickupNotes(t, task.notes, language, task.notesLocalized)}
+            </p>
           </div>
         ) : null}
 
         <section>
-          <h4 className="agrivo-assigned-details-section-title">Pickup checklist / timeline</h4>
+          <h4 className="agrivo-assigned-details-section-title">
+            {t("pickupTasks.modal.pickupChecklistTimeline")}
+          </h4>
           <PickupTimeline status={task.status} />
         </section>
 
@@ -125,7 +150,7 @@ export function PickupDetailsModal({ task, open, onOpenChange }: PickupDetailsMo
             className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
             onClick={() => onOpenChange(false)}
           >
-            Close
+            {t("pickupTasks.actions.close")}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,5 +1,6 @@
 import { motion } from "motion/react";
 import { useCallback, useEffect, useId, useMemo, useState } from "react";
+import { useLanguage } from "../../i18n/LanguageContext";
 import azerbaijanDistricts from "../data/azerbaijanDistricts.json";
 import {
   MAP_SIZE,
@@ -70,7 +71,7 @@ function RegionLabels({
             fill={isActive ? LABEL_FILL_ACTIVE : LABEL_FILL}
             fontSize={fontSize}
             fontWeight={isSelected ? 800 : isHovered ? 750 : 700}
-            fontFamily="Sora, system-ui, sans-serif"
+            fontFamily="Manrope, Inter, Arial, sans-serif"
             stroke={LABEL_STROKE}
             strokeWidth={isActive ? 0.55 : 0.4}
             paintOrder="stroke fill"
@@ -95,6 +96,8 @@ function RegionJobCountBadges({
   regionJobCounts: Partial<Record<EconomicRegion, number>>;
   labelScale?: MapLabelScale;
 }) {
+  const { t } = useLanguage();
+
   return (
     <g pointerEvents="none" className="select-none">
       {(Object.entries(regionJobCounts) as Array<[EconomicRegion, number]>).map(([region, count]) => {
@@ -104,6 +107,8 @@ function RegionJobCountBadges({
         const fontSize = getRegionLabelFontSize(region, labelScale);
         const offsetY = getRegionLabelCountOffset(lines.length, fontSize);
         const badgeFontSize = Math.max(9, Math.round(fontSize * 0.72));
+        const countKey = count === 1 ? "jobs.page.map.jobCountSingular" : "jobs.page.map.jobCount";
+        const countLabel = t(countKey).replace("{count}", String(count));
 
         return (
           <g key={`count-${region}`}>
@@ -123,9 +128,9 @@ function RegionJobCountBadges({
               fill="#ffffff"
               fontSize={badgeFontSize}
               fontWeight={700}
-              fontFamily="Sora, system-ui, sans-serif"
+              fontFamily="Manrope, Inter, Arial, sans-serif"
             >
-              {count} {count === 1 ? "job" : "jobs"}
+              {countLabel}
             </text>
           </g>
         );
@@ -142,6 +147,7 @@ export function AzerbaijanMap({
   compact = false,
   prominent = false,
 }: AzerbaijanMapProps) {
+  const { t } = useLanguage();
   const [hoveredRegion, setHoveredRegion] = useState<EconomicRegion | null>(null);
   const [focusedRegion, setFocusedRegion] = useState<EconomicRegion | null>(null);
   const [isNarrowViewport, setIsNarrowViewport] = useState(false);
@@ -210,14 +216,14 @@ export function AzerbaijanMap({
     >
       <div className={`flex items-start justify-between gap-3 ${prominent ? "mb-3" : "mb-4"}`}>
         <div>
-          <p className="agrivo-map-eyebrow uppercase text-[#15803d]">Explore by region</p>
+          <p className="agrivo-map-eyebrow uppercase text-[#15803d]">
+            {variant === "jobs" ? t("jobs.page.map.eyebrow") : t("farmersPage.map.eyebrow")}
+          </p>
           <p className="agrivo-map-helper mt-1.5 text-[#5F6F64] sm:mt-2">
-            {variant === "jobs"
-              ? "Click or tap a region to filter farm jobs"
-              : "Click or tap a region to filter farmers"}
+            {variant === "jobs" ? t("jobs.page.map.subtitle") : t("farmersPage.map.subtitle")}
           </p>
           {variant === "jobs" && prominent ? (
-            <p className="mt-1 text-xs text-[#6b7a70]">Filter jobs by economic region</p>
+            <p className="mt-1 text-xs text-[#6b7a70]">{t("jobs.page.map.filterHint")}</p>
           ) : null}
         </div>
         {selectedRegion !== "all" && (
@@ -226,7 +232,7 @@ export function AzerbaijanMap({
             onClick={() => onRegionSelect("all")}
             className="shrink-0 rounded-full bg-white px-3 py-1.5 text-xs font-medium text-[#14532D] shadow-sm ring-1 ring-[#DEECE0] transition hover:bg-[#EAF7EC]"
           >
-            Reset map
+            {variant === "jobs" ? t("jobs.page.map.resetMap") : t("farmersPage.map.resetMap")}
           </button>
         )}
       </div>
@@ -246,7 +252,7 @@ export function AzerbaijanMap({
                 : "max-h-[440px]"
           }`}
           role="img"
-          aria-label="Interactive choropleth map of Azerbaijan economic regions"
+          aria-label={variant === "jobs" ? t("jobs.page.map.ariaLabel") : t("farmersPage.map.ariaLabel")}
           preserveAspectRatio="xMidYMid meet"
         >
           <defs>
@@ -286,7 +292,11 @@ export function AzerbaijanMap({
                   transition={{ duration: 0.22, ease: EASE }}
                   role="button"
                   tabIndex={0}
-                  aria-label={`Select ${district.region} economic region`}
+                  aria-label={
+                    variant === "jobs"
+                      ? t("jobs.page.map.selectRegionAria").replace("{region}", district.region)
+                      : t("farmersPage.map.selectRegionAria").replace("{region}", district.region)
+                  }
                   aria-pressed={isSelected}
                   onMouseEnter={() => setHoveredRegion(district.region)}
                   onMouseLeave={() => setHoveredRegion(null)}
@@ -344,10 +354,14 @@ export function AzerbaijanMap({
             transition={{ duration: 0.22, ease: EASE }}
             className="agrivo-map-status inline-flex items-center rounded-full bg-[#EAF7EC] px-4 py-2 text-sm font-medium text-[#14532D] ring-1 ring-[#D5EED8]"
           >
-            {variant === "jobs" ? `Selected: ${selectedRegion}` : `Selected region: ${selectedRegion}`}
+            {variant === "jobs"
+              ? t("jobs.page.map.selectedRegion").replace("{region}", selectedRegion)
+              : t("farmersPage.map.selectedRegion").replace("{region}", selectedRegion)}
           </motion.span>
         ) : (
-          <p className="agrivo-map-status text-sm text-[#6F7F74]">Select a region on the map</p>
+          <p className="agrivo-map-status text-sm text-[#6F7F74]">
+            {variant === "jobs" ? t("jobs.page.map.selectRegion") : t("farmersPage.map.selectRegion")}
+          </p>
         )}
       </div>
     </motion.div>

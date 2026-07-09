@@ -3,16 +3,25 @@ import {
   getProfileInitials,
   type LogisticsDashboardProfile,
 } from "../../../utils/logisticsProfileStorage";
-import { formatPublicScheduleLines } from "../../../utils/workingSchedule";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import {
+  formatLogisticsScheduleSummary,
+  getLocalizedDescription,
+  translateDeliveryType,
+  translateServiceRegion,
+} from "../../../../i18n/logisticsProfileHelpers";
 import { Button } from "../../ui/button";
 import { ProfileCard, ProfileCardBody, ProfileCardHeader } from "../farmer-profile/ProfileLayout";
 
 export function PublicCompanyPreview({ profile }: { profile: LogisticsDashboardProfile }) {
+  const { t, language } = useLanguage();
   const initials = getProfileInitials(profile.companyName || profile.contactPerson);
   const description =
-    profile.description.trim() ||
-    "Add company description to help farmers and buyers understand your logistics service.";
-  const schedule = formatPublicScheduleLines(
+    getLocalizedDescription(profile, language) ||
+    t("logisticsProfile.placeholders.publicDescription");
+  const schedule = formatLogisticsScheduleSummary(
+    t,
+    language,
     profile.workingDays,
     profile.openingTime,
     profile.closingTime,
@@ -20,7 +29,7 @@ export function PublicCompanyPreview({ profile }: { profile: LogisticsDashboardP
 
   return (
     <ProfileCard variant="preview">
-      <ProfileCardHeader icon={Eye} title="Public Profile Preview" />
+      <ProfileCardHeader icon={Eye} title={t("logisticsProfile.sections.publicProfilePreview")} />
       <ProfileCardBody className="agrivo-logistics-preview-body agrivo-logistics-preview-body--compact">
         <div className="agrivo-logistics-preview-header agrivo-logistics-preview-header--compact">
           {profile.avatar ? (
@@ -38,22 +47,22 @@ export function PublicCompanyPreview({ profile }: { profile: LogisticsDashboardP
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <h4 className="agrivo-heading truncate text-sm font-bold text-[#102018] sm:text-base">
-                {profile.companyName || "Company name"}
+                {profile.companyName || t("logisticsProfile.placeholders.companyName")}
               </h4>
               {profile.verified ? (
                 <span className="agrivo-logistics-preview-verified">
                   <BadgeCheck className="h-3 w-3" />
-                  Verified
+                  {t("logisticsProfile.documentStatus.verified")}
                 </span>
               ) : null}
             </div>
             <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-[#5F6F64]">
               <MapPin className="h-3 w-3 shrink-0 text-[#43A047]" />
-              {profile.location || "Add location"}
+              {profile.location || t("logisticsProfile.placeholders.location")}
             </p>
             <p className="mt-0.5 flex items-center gap-1 text-xs font-medium text-[#14532D]">
               <Star className="h-3 w-3 fill-[#facc15] text-[#facc15]" />
-              {profile.rating.toFixed(1)} rating
+              {t("logisticsProfile.ratingValue", { rating: profile.rating.toFixed(1) })}
             </p>
           </div>
         </div>
@@ -66,11 +75,13 @@ export function PublicCompanyPreview({ profile }: { profile: LogisticsDashboardP
           {profile.supportedDeliveryTypes.length > 0 ? (
             profile.supportedDeliveryTypes.map((type) => (
               <span key={type} className="agrivo-logistics-preview-chip agrivo-logistics-preview-chip--compact">
-                {type}
+                {translateDeliveryType(t, type)}
               </span>
             ))
           ) : (
-            <span className="text-xs text-[#6b7a70]">Add delivery types</span>
+            <span className="text-xs text-[#6b7a70]">
+              {t("logisticsProfile.placeholders.deliveryTypes")}
+            </span>
           )}
         </div>
 
@@ -81,20 +92,17 @@ export function PublicCompanyPreview({ profile }: { profile: LogisticsDashboardP
                 key={region}
                 className="agrivo-logistics-preview-chip agrivo-logistics-preview-chip--region agrivo-logistics-preview-chip--compact"
               >
-                {region}
+                {translateServiceRegion(t, region)}
               </span>
             ))
           ) : (
-            <span className="text-xs text-[#6b7a70]">Select service regions</span>
+            <span className="text-xs text-[#6b7a70]">
+              {t("logisticsProfile.placeholders.serviceRegions")}
+            </span>
           )}
         </div>
 
-        {schedule ? (
-          <p className="agrivo-logistics-preview-schedule">
-            {schedule.daysLine}
-            {schedule.hoursLine ? ` · ${schedule.hoursLine}` : ""}
-          </p>
-        ) : null}
+        {schedule ? <p className="agrivo-logistics-preview-schedule">{schedule}</p> : null}
 
         <Button
           type="button"
@@ -104,7 +112,7 @@ export function PublicCompanyPreview({ profile }: { profile: LogisticsDashboardP
           disabled
         >
           <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
-          Contact Logistics Partner
+          {t("logisticsProfile.actions.contactPartner")}
         </Button>
       </ProfileCardBody>
     </ProfileCard>

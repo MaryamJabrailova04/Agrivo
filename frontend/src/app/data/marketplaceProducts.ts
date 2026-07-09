@@ -54,18 +54,18 @@ export function buildMarketplaceProductDetail(listing: HarvestListing): Marketpl
     badge,
     priceDisplay,
     batchId: `AGR-PROD-${batchSuffix || "2048"}`,
-    freshnessStatus: listing.harvestDate === "Today" ? "Harvested today" : "Recently harvested",
+    freshnessStatus: listing.harvestDate === "Today" ? "harvestedToday" : "recentlyHarvested",
     storageNote:
       listing.productType === "Tomato" || listing.productType === "Cucumber"
-        ? "Keep cool and dry"
+        ? "keepCoolDry"
         : listing.category === "Fruits"
-          ? "Store in a cool place"
-          : "Keep cool and dry",
-    estimatedDelivery: listing.deliveryAvailable ? "1–2 days" : "Pickup only",
+          ? "storeCoolPlace"
+          : "keepCoolDry",
+    estimatedDelivery: listing.deliveryAvailable ? "oneTwoDays" : "pickupOnly",
     pickupAvailable: true,
     logisticsSupport: listing.deliveryAvailable
-      ? "Available through Agrivo"
-      : "Pickup coordination only",
+      ? "availableThroughAgrivo"
+      : "pickupCoordinationOnly",
     farmerProfile,
     farmerRating: farmerProfile?.rating ?? 4.7,
     farmerCompletedOrders: farmerProfile?.completedOrders ?? 18,

@@ -1,42 +1,45 @@
 import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, ClipboardList, LoaderCircle, Truck } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import type { AssignedDeliverySummary } from "../../../utils/assignedDeliveriesStorage";
 
 interface StatCard {
-  label: string;
+  labelKey: string;
   value: number;
-  hint: string;
+  hintKey: string;
   icon: LucideIcon;
   accent: "total" | "pending" | "progress" | "priority";
 }
 
 export function AssignedDeliveryStats({ summary }: { summary: AssignedDeliverySummary }) {
+  const { t } = useLanguage();
+
   const cards: StatCard[] = [
     {
-      label: "Total Assigned",
+      labelKey: "assignedDeliveries.stats.totalAssigned",
       value: summary.totalAssigned,
-      hint: "Active delivery tasks",
+      hintKey: "assignedDeliveries.stats.activeDeliveryTasks",
       icon: ClipboardList,
       accent: "total",
     },
     {
-      label: "Pending Pickup",
+      labelKey: "assignedDeliveries.stats.pendingPickup",
       value: summary.pendingPickup,
-      hint: "Awaiting farm pickup",
+      hintKey: "assignedDeliveries.stats.awaitingFarmPickup",
       icon: Truck,
       accent: "pending",
     },
     {
-      label: "In Progress",
+      labelKey: "assignedDeliveries.stats.inProgress",
       value: summary.inProgress,
-      hint: "On the road now",
+      hintKey: "assignedDeliveries.stats.onTheRoadNow",
       icon: LoaderCircle,
       accent: "progress",
     },
     {
-      label: "High Priority",
+      labelKey: "assignedDeliveries.stats.highPriority",
       value: summary.highPriority,
-      hint: "Needs attention first",
+      hintKey: "assignedDeliveries.stats.needsAttentionFirst",
       icon: AlertTriangle,
       accent: "priority",
     },
@@ -48,7 +51,7 @@ export function AssignedDeliveryStats({ summary }: { summary: AssignedDeliverySu
         const Icon = card.icon;
         return (
           <div
-            key={card.label}
+            key={card.labelKey}
             className={`agrivo-assigned-stat-card agrivo-card agrivo-assigned-stat-card--${card.accent}`}
           >
             <div className="flex items-start justify-between gap-3">
@@ -57,8 +60,8 @@ export function AssignedDeliveryStats({ summary }: { summary: AssignedDeliverySu
               </div>
               <span className="agrivo-heading text-2xl font-bold text-[#102018]">{card.value}</span>
             </div>
-            <p className="mt-3 text-sm font-semibold text-[#102018]">{card.label}</p>
-            <p className="mt-0.5 text-xs text-[#6b7a70]">{card.hint}</p>
+            <p className="mt-3 text-sm font-semibold text-[#102018]">{t(card.labelKey)}</p>
+            <p className="mt-0.5 text-xs text-[#6b7a70]">{t(card.hintKey)}</p>
           </div>
         );
       })}

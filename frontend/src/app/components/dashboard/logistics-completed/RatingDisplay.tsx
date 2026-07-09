@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import { getRatingDisplay } from "../../../utils/completedDeliveriesStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import { cn } from "../../ui/utils";
 
 export function RatingDisplay({
@@ -11,13 +12,14 @@ export function RatingDisplay({
   className?: string;
   showEmpty?: boolean;
 }) {
+  const { t } = useLanguage();
   const { hasRating, value } = getRatingDisplay(rating);
 
   if (!hasRating) {
     if (!showEmpty) return null;
     return (
       <span className={cn("agrivo-completed-rating agrivo-completed-rating--empty", className)}>
-        No rating yet
+        {t("completedDeliveries.rating.noRatingYet")}
       </span>
     );
   }

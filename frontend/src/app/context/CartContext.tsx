@@ -32,6 +32,7 @@ import {
   type CartItem,
 } from "../utils/cartStorage";
 import type { SavedProduct } from "../utils/savedProductsStorage";
+import { useLanguage } from "../../i18n/LanguageContext";
 
 export type CartAddOutcome = "added" | "quantity_updated" | "already_at_max";
 
@@ -60,15 +61,19 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-const OUTCOME_MESSAGES: Record<CartAddOutcome, string> = {
-  added: "Product added to cart",
-  quantity_updated: "Quantity updated in cart",
-  already_at_max: "This product is already in your cart",
-};
-
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useAuth();
+  const { t } = useLanguage();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const outcomeMessages = useMemo<Record<CartAddOutcome, string>>(
+    () => ({
+      added: t("marketplace.card.addedToCart", "Product added to cart"),
+      quantity_updated: t("buyerCart.feedback.quantityUpdated", "Quantity updated"),
+      already_at_max: t("marketplace.card.inCart", "This product is already in your cart"),
+    }),
+    [t],
+  );
+
   const [toast, setToast] = useState<CartToast | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
@@ -113,13 +118,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const guardBuyer = useCallback((): CartActionResult | null => {
     if (!isAuthenticated || !user) {
-      return { ok: false, message: "Please log in as a buyer to add items to cart." };
+      return { ok: false, message: t("auth.loginAsBuyerToAddToCart", "Please log in as a buyer to add items to cart.") };
     }
     if (user.role !== "buyer") {
-      return { ok: false, message: "Only buyers can add products to cart." };
+      return { ok: false, message: t("auth.onlyBuyersCanAddToCart", "Only buyers can add products to cart.") };
     }
     return null;
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, t, user]);
 
   const runGuarded = useCallback(
     (action: () => CartActionResult): CartActionResult => {
@@ -133,13 +138,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } catch {
         const failure: CartActionResult = {
           ok: false,
-          message: "Could not add product to cart. Please try again.",
+          message: t("marketplace.card.failedAdd", "Could not add product to cart. Please try again."),
         };
         showCartToast(failure.message, "error");
         return failure;
       }
     },
-    [guardBuyer, showCartToast],
+    [guardBuyer, showCartToast, t],
   );
 
   const processAdd = useCallback(
@@ -156,18 +161,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
               return [mapped, ...prev];
             }),
           )
-          .catch(() => showCartToast("Could not add product to cart. Please try again.", "error"));
-        const message = OUTCOME_MESSAGES.added;
+          .catch(() => showCartToast(t("marketplace.card.failedAdd", "Could not add product to cart. Please try again."), "error"));
+        const message = outcomeMessages.added;
         showCartToast(message, "success");
         return { ok: true, message, count: cartItems.length + 1, outcome: "added" };
       }
       const { items, outcome } = addOrUpdateCartItem(user!.id, base);
       setCartItems(items);
-      const message = OUTCOME_MESSAGES[outcome];
+      const message = outcomeMessages[outcome];
       showCartToast(message, outcome === "already_at_max" ? "error" : "success");
       return { ok: true, message, count: items.length, outcome };
     },
-    [showCartToast, user],
+    [cartItems.length, outcomeMessages, showCartToast, t, user],
   );
 
   const addListingToCart = useCallback(
@@ -188,14 +193,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (!listing) {
         const failure: CartActionResult = {
           ok: false,
-          message: "Could not add product to cart. Please try again.",
+          message: t("marketplace.card.failedAdd", "Could not add product to cart. Please try again."),
         };
         showCartToast(failure.message, "error");
         return failure;
       }
       return addListingToCart(listing);
     },
-    [addListingToCart, showCartToast],
+    [addListingToCart, showCartToast, t],
   );
 
   const removeFromCart = useCallback(
@@ -205,16 +210,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
         removeCartItemApi(slug)
           .then(() => {
             setCartItems((prev) => prev.filter((item) => item.slug !== slug));
-            showCartToast("Item removed from cart");
+            showCartToast(t("buyerCart.feedback.productRemoved", "Product removed from cart"));
           })
-          .catch(() => showCartToast("Could not remove item from cart.", "error"));
+          .catch(() => showCartToast(t("buyerCart.feedback.failedRemoveItem", "Could not remove item from cart."), "error"));
         return;
       }
       const next = removeCartItem(user.id, slug);
       setCartItems(next);
-      showCartToast("Item removed from cart");
+      showCartToast(t("buyerCart.feedback.productRemoved", "Product removed from cart"));
     },
-    [showCartToast, user?.id],
+    [showCartToast, t, user?.id],
   );
 
   const updateQuantity = useCallback(
@@ -227,13 +232,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
               prev.map((entry) => (entry.slug === slug ? mapApiCartItemToCartItem(item) : entry)),
             ),
           )
-          .catch(() => showCartToast("Could not update cart item.", "error"));
+          .then(() => showCartToast(t("buyerCart.feedback.quantityUpdated", "Quantity updated")))
+          .catch(() => showCartToast(t("buyerCart.feedback.failedUpdateItem", "Could not update cart item."), "error"));
         return;
       }
       const next = updateCartItemQuantity(user.id, slug, quantity);
       setCartItems(next);
+      showCartToast(t("buyerCart.feedback.quantityUpdated", "Quantity updated"));
     },
-    [user?.id, showCartToast],
+    [user?.id, showCartToast, t],
   );
 
   const clearBuyerCart = useCallback(() => {
@@ -241,12 +248,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     if (isApiMode) {
       clearCartApi()
         .then(() => setCartItems([]))
-        .catch(() => showCartToast("Could not clear cart.", "error"));
+        .catch(() => showCartToast(t("buyerCart.feedback.failedClear", "Could not clear cart."), "error"));
       return;
     }
     clearCart(user.id);
     setCartItems([]);
-  }, [user?.id, showCartToast]);
+  }, [user?.id, showCartToast, t]);
 
   const isInCart = useCallback(
     (slug: string) => cartItems.some((item) => item.slug === slug),

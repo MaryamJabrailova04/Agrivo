@@ -1,5 +1,7 @@
 import { ExternalLink, MapPin, Navigation } from "lucide-react";
 import type { FarmJob } from "../../data/farmJobs";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { translateJobLocation } from "../../../i18n/jobHelpers";
 import {
   buildGoogleMapsDirectionsUrl,
   buildGoogleMapsEmbedUrl,
@@ -14,7 +16,9 @@ interface JobLocationMapProps {
 }
 
 export function JobLocationMap({ job }: JobLocationMapProps) {
+  const { t } = useLanguage();
   const mapLocation = getJobMapLocation(job);
+  const localizedLabel = translateJobLocation(t, job.location);
   const embedUrl = buildGoogleMapsEmbedUrl(mapLocation);
   const openUrl = buildGoogleMapsOpenUrl(mapLocation);
   const directionsUrl = buildGoogleMapsDirectionsUrl(mapLocation);
@@ -23,17 +27,21 @@ export function JobLocationMap({ job }: JobLocationMapProps) {
     <Card className="agrivo-job-location-map overflow-hidden rounded-[28px] border border-[#e5efe1] bg-white shadow-[0_10px_28px_rgba(20,83,45,0.05)]">
       <CardContent className="p-0">
         <div className="border-b border-[#edf2ea] p-5 sm:p-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#15803d]">Job location</p>
-          <h2 className="agrivo-heading mt-2 text-lg font-bold text-[#102018] sm:text-xl">Where you&apos;ll work</h2>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#15803d]">
+            {t("farmJobDetail.location.title")}
+          </p>
+          <h2 className="agrivo-heading mt-2 text-lg font-bold text-[#102018] sm:text-xl">
+            {t("farmJobDetail.location.whereYouWork")}
+          </h2>
           <p className="mt-2 flex items-start gap-2 text-sm leading-6 text-[#5F6F64]">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#43A047]" />
-            {mapLocation.label}
+            {localizedLabel}
           </p>
         </div>
 
         <div className="relative aspect-[4/3] w-full overflow-hidden bg-[#eef4ea] sm:aspect-[16/10]">
           <iframe
-            title={`Map showing ${mapLocation.label}`}
+            title={t("farmJobDetail.location.mapTitle").replace("{location}", localizedLabel)}
             src={embedUrl}
             className="absolute inset-0 h-full w-full border-0"
             loading="lazy"
@@ -50,7 +58,7 @@ export function JobLocationMap({ job }: JobLocationMapProps) {
           >
             <a href={openUrl} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="mr-2 h-4 w-4" />
-              Open in Google Maps
+              {t("farmJobDetail.location.openGoogleMaps")}
             </a>
           </Button>
           <Button
@@ -59,7 +67,7 @@ export function JobLocationMap({ job }: JobLocationMapProps) {
           >
             <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
               <Navigation className="mr-2 h-4 w-4" />
-              Get Directions
+              {t("farmJobDetail.location.getDirections")}
             </a>
           </Button>
         </div>

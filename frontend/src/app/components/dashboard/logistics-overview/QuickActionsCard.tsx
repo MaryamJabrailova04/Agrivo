@@ -5,6 +5,7 @@ import {
   Phone,
   Truck,
 } from "lucide-react";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 import { Button } from "../../ui/button";
 
 interface QuickActionsCardProps {
@@ -24,24 +25,53 @@ export function QuickActionsCard({
   onContactFarmer,
   onContactBuyer,
 }: QuickActionsCardProps) {
+  const { t } = useLanguage();
+
   const actions = [
-    { label: "Assign new pickup", icon: MapPinPlus, onClick: onAssignPickup, primary: true },
-    { label: "Mark as picked up", icon: Truck, onClick: onMarkPickedUp },
-    { label: "Mark as in transit", icon: Truck, onClick: onMarkInTransit },
-    { label: "Mark as delivered", icon: CheckCircle2, onClick: onMarkDelivered },
-    { label: "Contact farmer", icon: Phone, onClick: onContactFarmer },
-    { label: "Contact buyer", icon: MessageCircle, onClick: onContactBuyer },
+    {
+      labelKey: "logisticsDashboard.quickActions.assignNewPickup",
+      icon: MapPinPlus,
+      onClick: onAssignPickup,
+      primary: true,
+    },
+    {
+      labelKey: "logisticsDashboard.quickActions.markPickedUp",
+      icon: Truck,
+      onClick: onMarkPickedUp,
+    },
+    {
+      labelKey: "logisticsDashboard.quickActions.markInTransit",
+      icon: Truck,
+      onClick: onMarkInTransit,
+    },
+    {
+      labelKey: "logisticsDashboard.quickActions.markDelivered",
+      icon: CheckCircle2,
+      onClick: onMarkDelivered,
+    },
+    {
+      labelKey: "logisticsDashboard.quickActions.contactFarmer",
+      icon: Phone,
+      onClick: onContactFarmer,
+    },
+    {
+      labelKey: "logisticsDashboard.quickActions.contactBuyer",
+      icon: MessageCircle,
+      onClick: onContactBuyer,
+    },
   ];
 
   return (
     <section className="agrivo-logistics-side-card agrivo-dashboard-panel">
-      <h3 className="agrivo-heading text-base font-bold text-[#102018]">Quick Actions</h3>
+      <h3 className="agrivo-heading text-base font-bold text-[#102018]">
+        {t("logisticsDashboard.quickActions.title")}
+      </h3>
       <div className="agrivo-logistics-quick-actions mt-3">
         {actions.map((action) => {
           const Icon = action.icon;
           return (
             <Button
-              key={action.label}
+              key={action.labelKey}
               type="button"
               variant={action.primary ? "default" : "outline"}
               className={
@@ -52,7 +82,7 @@ export function QuickActionsCard({
               onClick={action.onClick}
             >
               <Icon className="mr-2 h-4 w-4 shrink-0" />
-              {action.label}
+              {t(action.labelKey)}
             </Button>
           );
         })}

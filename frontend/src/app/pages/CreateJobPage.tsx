@@ -1,19 +1,30 @@
 import { useEffect, useMemo, useState } from "react";
 import { DashboardBackLink } from "../components/dashboard/DashboardBackLink";
 import { DashboardLayout } from "../components/dashboard/DashboardLayout";
+import { navigateToHash } from "../../i18n/localizedRoutes";
+import { useLanguage } from "../../i18n/LanguageContext";
+import {
+  CROP_TYPE_KEYS,
+  JOB_TYPE_KEYS,
+  getLocalizedCrop,
+  getLocalizedJobType,
+  normalizeCropTypeKey,
+  normalizeJobTypeKey,
+  translateJobPostStatus,
+} from "../../i18n/farmerJobFormHelpers";
 import {
   FARMER_DASHBOARD,
   FARMER_DASHBOARD_JOBS_HASH,
 } from "../components/dashboard/dashboardConfig";
 import { ProtectedDashboard } from "../components/dashboard/ProtectedDashboard";
 import { isFarmerUser } from "../auth/authStorage";
-import { CROP_TYPES, JOB_TYPES } from "../data/farmJobs";
 import { createFarmerJob, getFarmerJobById, updateFarmerJob } from "../data/farmJobsStorage";
 import {
   economicRegions,
   getDistrictsForRegion,
   type EconomicRegion,
 } from "../data/azerbaijanRegions";
+import { setJobToast } from "../utils/jobToast";
 import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
 import { Input } from "../components/ui/input";
@@ -56,6 +67,7 @@ const defaultForm = {
 };
 
 export default function CreateJobPage({ editJobId }: { editJobId?: string | null }) {
+  const { t, language } = useLanguage();
   const [form, setForm] = useState(defaultForm);
   const [error, setError] = useState("");
   const farmer = isFarmerUser();
@@ -63,7 +75,7 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
 
   useEffect(() => {
     if (!farmer) {
-      window.location.hash = "login";
+      navigateToHash("login");
     }
   }, [farmer]);
 
@@ -71,8 +83,8 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
     if (!editingJob) return;
     setForm({
       title: editingJob.title,
-      jobType: editingJob.jobType,
-      cropType: editingJob.cropType,
+      jobType: normalizeJobTypeKey(editingJob.jobType) ?? editingJob.jobType,
+      cropType: normalizeCropTypeKey(editingJob.cropType) ?? editingJob.cropType,
       description: editingJob.description,
       economicRegion: editingJob.economicRegion ?? "",
       district: editingJob.district,
@@ -121,14 +133,17 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
       !form.workingHours ||
       !form.phone
     ) {
-      setError("Please fill in all required fields.");
+      setError(t("createJob.feedback.validationRequired"));
       return;
     }
 
+    const jobTypeKey = normalizeJobTypeKey(form.jobType) ?? form.jobType;
+    const cropTypeKey = normalizeCropTypeKey(form.cropType) ?? form.cropType;
+
     const payload = {
       title: form.title,
-      jobType: form.jobType as (typeof JOB_TYPES)[number],
-      cropType: form.cropType as (typeof CROP_TYPES)[number],
+      jobType: jobTypeKey,
+      cropType: cropTypeKey,
       description: form.description,
       economicRegion: form.economicRegion as EconomicRegion,
       district: form.district,
@@ -151,12 +166,18 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
 
     if (editingJob) {
       updateFarmerJob(editingJob.id, payload);
-      window.location.hash = FARMER_DASHBOARD_JOBS_HASH;
+      setJobToast(t("createJob.feedback.updated"));
+      navigateToHash(FARMER_DASHBOARD_JOBS_HASH);
       return;
     }
 
     createFarmerJob(payload);
-    window.location.hash = FARMER_DASHBOARD_JOBS_HASH;
+    setJobToast(
+      form.status === "active"
+        ? t("createJob.feedback.published")
+        : t("createJob.feedback.draftSaved"),
+    );
+    navigateToHash(FARMER_DASHBOARD_JOBS_HASH);
   };
 
   if (!farmer) {
@@ -164,77 +185,72 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
   }
 
   const isEditing = Boolean(editingJob);
+  const required = t("createJob.fields.required");
 
   return (
     <ProtectedDashboard allowedRoles={["farmer"]}>
       <DashboardLayout
         config={FARMER_DASHBOARD}
-        pageTitle={isEditing ? "Edit Job Post" : "Create Job Post"}
-        pageSubtitle={
-          isEditing
-            ? "Update your farm job details and keep workers informed."
-            : "Share harvest, picking, or farm helper opportunities with workers across Azerbaijan."
-        }
+        pageTitle={isEditing ? t("createJob.editPageTitle") : t("farmerJobsDashboard.createJobPost")}
+        pageSubtitle={isEditing ? t("createJob.editSubtitle") : t("createJob.subtitle")}
         activeNavId={isEditing ? "farm-jobs" : "create-job"}
         hideIntro
       >
-        <DashboardBackLink label="Back to My Job Posts" hash={FARMER_DASHBOARD_JOBS_HASH} />
+        <DashboardBackLink label={t("createJob.backToJobs")} hash={FARMER_DASHBOARD_JOBS_HASH} />
 
         <div className="agrivo-dashboard-panel mx-auto max-w-3xl">
           <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
-            {isEditing ? "Update your farm job" : "Post a seasonal farm job"}
+            {isEditing ? t("createJob.editTitle") : t("createJob.title")}
           </h2>
           <p className="mt-2 text-sm leading-6 text-[#5F6F64] sm:text-base">
-            {isEditing
-              ? "Update your farm job details and keep workers informed."
-              : "Share harvest, picking, or farm helper opportunities with workers across Azerbaijan."}
+            {isEditing ? t("createJob.editSubtitle") : t("createJob.subtitle")}
           </p>
 
           <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-            <FormSection title="1. Basic Information">
+            <FormSection title={t("createJob.sections.basic")}>
               <div className="space-y-4">
-                <Field label="Job title *">
+                <Field label={`${t("createJob.fields.jobTitle")} ${required}`}>
                   <Input
                     className={inputClass}
-                    placeholder="e.g. Cherry Harvest Workers Needed"
+                    placeholder={t("createJob.fields.jobTitlePlaceholder")}
                     value={form.title}
                     onChange={(e) => updateField("title", e.target.value)}
                   />
                 </Field>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field label="Job type *">
+                  <Field label={`${t("createJob.fields.jobType")} ${required}`}>
                     <Select value={form.jobType} onValueChange={(v) => updateField("jobType", v)}>
                       <SelectTrigger className={inputClass}>
-                        <SelectValue placeholder="Select job type" />
+                        <SelectValue placeholder={t("createJob.fields.selectJobType")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {JOB_TYPES.map((t) => (
-                          <SelectItem key={t} value={t}>
-                            {t}
+                        {JOB_TYPE_KEYS.map((typeKey) => (
+                          <SelectItem key={typeKey} value={typeKey}>
+                            {getLocalizedJobType(typeKey, language, t)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </Field>
-                  <Field label="Crop type *">
+                  <Field label={`${t("createJob.fields.cropType")} ${required}`}>
                     <Select value={form.cropType} onValueChange={(v) => updateField("cropType", v)}>
                       <SelectTrigger className={inputClass}>
-                        <SelectValue placeholder="Select crop" />
+                        <SelectValue placeholder={t("createJob.fields.selectCrop")} />
                       </SelectTrigger>
                       <SelectContent>
-                        {CROP_TYPES.map((c) => (
-                          <SelectItem key={c} value={c}>
-                            {c}
+                        {CROP_TYPE_KEYS.map((cropKey) => (
+                          <SelectItem key={cropKey} value={cropKey}>
+                            {getLocalizedCrop(cropKey, language, t)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </Field>
                 </div>
-                <Field label="Description *">
+                <Field label={`${t("createJob.fields.description")} ${required}`}>
                   <Textarea
                     className="min-h-28 rounded-2xl border-[#DEECE0] bg-[#F7FBF5] text-sm text-[#102018]"
-                    placeholder="Describe the work, schedule, and what workers should expect..."
+                    placeholder={t("createJob.fields.descriptionPlaceholder")}
                     value={form.description}
                     onChange={(e) => updateField("description", e.target.value)}
                   />
@@ -242,9 +258,9 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
               </div>
             </FormSection>
 
-            <FormSection title="2. Location">
+            <FormSection title={t("createJob.sections.location")}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Economic region *">
+                <Field label={`${t("createJob.fields.economicRegion")} ${required}`}>
                   <Select
                     value={form.economicRegion}
                     onValueChange={(v) => {
@@ -253,7 +269,7 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
                     }}
                   >
                     <SelectTrigger className={inputClass}>
-                      <SelectValue placeholder="Select region" />
+                      <SelectValue placeholder={t("createJob.fields.selectRegion")} />
                     </SelectTrigger>
                     <SelectContent>
                       {economicRegions.map((r) => (
@@ -264,14 +280,14 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="District / City *">
+                <Field label={`${t("createJob.fields.districtCity")} ${required}`}>
                   <Select
                     value={form.district}
                     onValueChange={(v) => updateField("district", v)}
                     disabled={!form.economicRegion}
                   >
                     <SelectTrigger className={inputClass}>
-                      <SelectValue placeholder="Select district" />
+                      <SelectValue placeholder={t("createJob.fields.selectDistrict")} />
                     </SelectTrigger>
                     <SelectContent>
                       {districtOptions.map((d) => (
@@ -282,18 +298,18 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
                     </SelectContent>
                   </Select>
                 </Field>
-                <Field label="Village / Kənd">
+                <Field label={t("createJob.fields.village")}>
                   <Input
                     className={inputClass}
-                    placeholder="Village name"
+                    placeholder={t("createJob.fields.villagePlaceholder")}
                     value={form.village}
                     onChange={(e) => updateField("village", e.target.value)}
                   />
                 </Field>
-                <Field label="Exact location">
+                <Field label={t("createJob.fields.exactLocation")}>
                   <Input
                     className={inputClass}
-                    placeholder="Farm name or directions"
+                    placeholder={t("createJob.fields.exactLocationPlaceholder")}
                     value={form.exactLocation}
                     onChange={(e) => updateField("exactLocation", e.target.value)}
                   />
@@ -301,9 +317,9 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
               </div>
             </FormSection>
 
-            <FormSection title="3. Date & Work Details">
+            <FormSection title={t("createJob.sections.dateWork")}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Start date *">
+                <Field label={`${t("createJob.fields.startDate")} ${required}`}>
                   <Input
                     type="date"
                     className={inputClass}
@@ -311,7 +327,7 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
                     onChange={(e) => updateField("startDate", e.target.value)}
                   />
                 </Field>
-                <Field label="End date *">
+                <Field label={`${t("createJob.fields.endDate")} ${required}`}>
                   <Input
                     type="date"
                     className={inputClass}
@@ -319,7 +335,7 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
                     onChange={(e) => updateField("endDate", e.target.value)}
                   />
                 </Field>
-                <Field label="Workers needed *">
+                <Field label={`${t("createJob.fields.workersNeeded")} ${required}`}>
                   <Input
                     type="number"
                     min={1}
@@ -329,10 +345,10 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
                     onChange={(e) => updateField("workersNeeded", e.target.value)}
                   />
                 </Field>
-                <Field label="Working hours *">
+                <Field label={`${t("createJob.fields.workingHours")} ${required}`}>
                   <Input
                     className={inputClass}
-                    placeholder="08:00 – 17:00"
+                    placeholder={t("createJob.fields.workingHoursPlaceholder")}
                     value={form.workingHours}
                     onChange={(e) => updateField("workingHours", e.target.value)}
                   />
@@ -340,9 +356,9 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
               </div>
             </FormSection>
 
-            <FormSection title="4. Pay & Benefits">
+            <FormSection title={t("createJob.sections.payBenefits")}>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <Field label="Daily pay (AZN) *">
+                <Field label={`${t("createJob.fields.dailyPay")} ${required}`}>
                   <Input
                     type="number"
                     min={0}
@@ -359,45 +375,45 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
                     checked={form.experienceRequired}
                     onCheckedChange={(c) => updateField("experienceRequired", c === true)}
                   />
-                  Experience required
+                  {t("createJob.benefits.experienceRequired")}
                 </label>
                 <label className="flex items-center gap-2 text-sm text-[#3f5247]">
                   <Checkbox
                     checked={form.mealsIncluded}
                     onCheckedChange={(c) => updateField("mealsIncluded", c === true)}
                   />
-                  Meals included
+                  {t("createJob.benefits.mealsIncluded")}
                 </label>
                 <label className="flex items-center gap-2 text-sm text-[#3f5247]">
                   <Checkbox
                     checked={form.transportIncluded}
                     onCheckedChange={(c) => updateField("transportIncluded", c === true)}
                   />
-                  Transport included
+                  {t("createJob.benefits.transportIncluded")}
                 </label>
                 <label className="flex items-center gap-2 text-sm text-[#3f5247]">
                   <Checkbox
                     checked={form.housingIncluded}
                     onCheckedChange={(c) => updateField("housingIncluded", c === true)}
                   />
-                  Housing included
+                  {t("createJob.benefits.housingIncluded")}
                 </label>
                 <label className="flex items-center gap-2 text-sm text-[#3f5247]">
                   <Checkbox
                     checked={form.equipmentProvided}
                     onCheckedChange={(c) => updateField("equipmentProvided", c === true)}
                   />
-                  Equipment provided
+                  {t("createJob.benefits.equipmentProvided")}
                 </label>
                 <label className="flex items-center gap-2 text-sm text-[#3f5247]">
                   <Checkbox checked={form.urgent} onCheckedChange={(c) => updateField("urgent", c === true)} />
-                  Urgent job
+                  {t("createJob.benefits.urgentJob")}
                 </label>
               </div>
             </FormSection>
 
-            <FormSection title="5. Contact">
-              <Field label="Contact phone / WhatsApp *">
+            <FormSection title={t("createJob.sections.contact")}>
+              <Field label={`${t("createJob.fields.contactPhone")} ${required}`}>
                 <Input
                   className={inputClass}
                   placeholder="+994501234567"
@@ -407,8 +423,8 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
               </Field>
             </FormSection>
 
-            <FormSection title="6. Publish">
-              <Field label="Status">
+            <FormSection title={t("createJob.sections.publish")}>
+              <Field label={t("createJob.fields.status")}>
                 <Select
                   value={form.status}
                   onValueChange={(v) => updateField("status", v as "active" | "closed")}
@@ -417,8 +433,8 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="active">Active</SelectItem>
-                    <SelectItem value="closed">Closed</SelectItem>
+                    <SelectItem value="active">{t("createJob.status.active")}</SelectItem>
+                    <SelectItem value="closed">{t("createJob.status.closed")}</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
@@ -430,17 +446,17 @@ export default function CreateJobPage({ editJobId }: { editJobId?: string | null
                   type="submit"
                   className="agrivo-button-soft flex-1 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
                 >
-                  {editingJob ? "Save Changes" : "Publish Job Post"}
+                  {editingJob ? t("createJob.actions.saveChanges") : t("createJob.actions.publish")}
                 </Button>
                 <Button
                   type="button"
                   variant="outline"
                   className="flex-1 rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
                   onClick={() => {
-                    window.location.hash = FARMER_DASHBOARD_JOBS_HASH;
+                    navigateToHash(FARMER_DASHBOARD_JOBS_HASH);
                   }}
                 >
-                  Cancel
+                  {t("createJob.actions.cancel")}
                 </Button>
               </div>
             </FormSection>

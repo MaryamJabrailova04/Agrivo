@@ -1,5 +1,9 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "../../auth/AuthContext";
+import { localizeDashboardConfig } from "../../../i18n/localizeDashboard";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { getRoutePathFromHash, navigateToHash } from "../../../i18n/localizedRoutes";
+import { LanguageSwitcher } from "../LanguageSwitcher";
 import { cn } from "../ui/utils";
 import {
   DashboardMobileMenuButton,
@@ -28,14 +32,19 @@ export function DashboardLayout({
   activeNavId: activeNavIdProp,
 }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
+  const { t, language } = useLanguage();
+  const localizedConfig = useMemo(
+    () => localizeDashboardConfig(config, t),
+    [config, t, language],
+  );
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [currentHash, setCurrentHash] = useState(
-    () => window.location.hash.replace("#", "") || config.baseHash,
+    () => getRoutePathFromHash() || config.baseHash,
   );
 
   useEffect(() => {
     const handleHashChange = () => {
-      setCurrentHash(window.location.hash.replace("#", "") || config.baseHash);
+      setCurrentHash(getRoutePathFromHash() || config.baseHash);
       setIsSidebarOpen(false);
     };
 
@@ -72,25 +81,28 @@ export function DashboardLayout({
   const activeNavId = activeNavIdProp ?? resolveDashboardNavId(config, currentHash);
 
   const handleNavigate = (hash: string) => {
-    window.location.hash = hash;
+    navigateToHash(hash, language);
   };
 
   const handleBackHome = () => {
     setIsSidebarOpen(false);
-    window.location.hash = "home";
+    navigateToHash("home", language);
   };
 
   const handleLogout = () => {
     setIsSidebarOpen(false);
     logout();
-    window.location.hash = "login";
+    navigateToHash("login", language);
   };
 
   const closeSidebar = () => setIsSidebarOpen(false);
   const openSidebar = () => setIsSidebarOpen(true);
 
   const mainContent = children ?? (
-    <DashboardSectionContent config={config} sectionId={parseDashboardSection(config.baseHash, currentHash)} />
+    <DashboardSectionContent
+      config={localizedConfig}
+      sectionId={parseDashboardSection(config.baseHash, currentHash)}
+    />
   );
 
   return (
@@ -106,7 +118,7 @@ export function DashboardLayout({
         inert={!isSidebarOpen ? true : undefined}
       >
         <DashboardSidebarPanel
-          config={config}
+          config={localizedConfig}
           activeNavId={activeNavId}
           user={user}
           onNavigate={handleNavigate}
@@ -119,6 +131,7 @@ export function DashboardLayout({
       <div className="agrivo-dashboard-main">
         <div className="agrivo-dashboard-menu-bar">
           <DashboardMobileMenuButton onOpen={openSidebar} isOpen={isSidebarOpen} />
+          <LanguageSwitcher variant="compact" className="agrivo-dashboard-lang-switcher" />
         </div>
 
         <main className="agrivo-dashboard-content">{mainContent}</main>

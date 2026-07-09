@@ -4,6 +4,8 @@ import { useAuth } from "../../auth/AuthContext";
 import { setAuthUser } from "../../auth/authStorage";
 import { isApiMode } from "../../../config/dataMode";
 import { getFarmerProfileApi, updateFarmerProfileApi } from "../../../api/profileApi";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { translateProfileError } from "../../../i18n/farmerDashboardProfileHelpers";
 import {
   cloneFarmerProfile,
   computeFarmerProfileStats,
@@ -39,7 +41,19 @@ import { PublicProfilePreview } from "./farmer-profile/PublicProfilePreview";
 import { TrustVerificationCard } from "./farmer-profile/TrustVerificationCard";
 import { WorkingScheduleCard } from "./farmer-profile/WorkingScheduleCard";
 
+function mapScheduleErrors(errors: Record<string, string>): Record<string, string> {
+  const mapped: Record<string, string> = {};
+  if (errors.workingDays) {
+    mapped.workingDays = "farmerDashboardProfile.errors.workingDaysRequired";
+  }
+  if (errors.closingTime) {
+    mapped.closingTime = "farmerDashboardProfile.errors.closingTimeInvalid";
+  }
+  return mapped;
+}
+
 export function FarmerDashboardProfilePage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const userId = resolveFarmerProfileUserId(user);
 
@@ -66,15 +80,13 @@ export function FarmerDashboardProfilePage() {
           setProfile(loaded);
           setDraft(loaded);
         })
-        .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to load farmer profile."),
-        );
+        .catch(() => setApiError(t("farmerDashboardProfile.errors.failedLoad")));
     } else {
       const loaded = getFarmerDashboardProfile(user);
       setProfile(loaded);
       setDraft(loaded);
     }
-  }, [user]);
+  }, [user, t]);
 
   useEffect(() => {
     refresh();
@@ -132,16 +144,14 @@ export function FarmerDashboardProfilePage() {
     if (!draft || !userId) return;
 
     const errors = validateFarmerProfile(draft);
-    const scheduleErrors = validateSchedule(
-      draft.workingDays,
-      draft.openingTime,
-      draft.closingTime,
+    const scheduleErrors = mapScheduleErrors(
+      validateSchedule(draft.workingDays, draft.openingTime, draft.closingTime),
     );
     const allErrors = { ...errors, ...scheduleErrors };
 
     if (Object.keys(allErrors).length > 0) {
       setFormErrors(allErrors);
-      showToast("Please fix the highlighted fields.");
+      showToast(t("farmerDashboardProfile.errors.fixHighlighted"));
       return;
     }
 
@@ -157,7 +167,7 @@ export function FarmerDashboardProfilePage() {
           district: draft.district,
           village: draft.village,
           address: draft.address,
-          description: draft.about,
+          description: draft.description,
           mainProducts: draft.mainProducts.join(", "),
           mainCategories: draft.mainCategories.join(", "),
           farmSize: draft.farmSize,
@@ -168,8 +178,8 @@ export function FarmerDashboardProfilePage() {
           openingTime: draft.openingTime,
           closingTime: draft.closingTime,
         });
-      } catch (error) {
-        setApiError(error instanceof Error ? error.message : "Failed to save farmer profile.");
+      } catch {
+        setApiError(t("farmerDashboardProfile.errors.failedSave"));
       }
     }
 
@@ -180,10 +190,14 @@ export function FarmerDashboardProfilePage() {
     setSavedSnapshot(null);
     setFormErrors({});
     setIsSaving(false);
-    showToast("Profile updated successfully.");
+    showToast(t("farmerDashboardProfile.feedback.updated"));
   };
 
   if (!userId || !displayProfile) return null;
+
+  const localizedErrors = Object.fromEntries(
+    Object.entries(formErrors).map(([key, value]) => [key, translateProfileError(t, value)]),
+  );
 
   return (
     <div className="agrivo-farmer-dash-profile">
@@ -200,25 +214,21 @@ export function FarmerDashboardProfilePage() {
       ) : null}
 
       {isEditing ? (
-        <div className="agrivo-profile-editing-banner">
-          You are editing your farmer profile. Save or cancel your changes when finished.
-        </div>
+        <div className="agrivo-profile-editing-banner">{t("farmerDashboardProfile.editingBanner")}</div>
       ) : null}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
-            Farmer Profile
+            {t("farmerDashboardProfile.title")}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            Manage your farm information, contact details, and public seller profile.
+            {t("farmerDashboardProfile.subtitle")}
           </p>
         </div>
         <div className="agrivo-farmer-order-info-card">
           <Info className="h-4 w-4 shrink-0 text-[#15803d]" />
-          <p className="text-sm font-medium text-[#14532D]">
-            Complete profiles help buyers trust your farm.
-          </p>
+          <p className="text-sm font-medium text-[#14532D]">{t("farmerDashboardProfile.infoBox")}</p>
         </div>
       </div>
 
@@ -236,30 +246,26 @@ export function FarmerDashboardProfilePage() {
           <FarmInfoForm
             profile={displayProfile}
             isEditing={isEditing}
-            errors={formErrors}
+            errors={localizedErrors}
             onChange={handleDraftChange}
           />
           <ContactInfoForm
             profile={displayProfile}
             isEditing={isEditing}
-            errors={formErrors}
+            errors={localizedErrors}
             onChange={handleDraftChange}
           />
           <WorkingScheduleCard
             profile={displayProfile}
             isEditing={isEditing}
             errors={{
-              workingDays: formErrors.workingDays,
-              closingTime: formErrors.closingTime,
+              workingDays: localizedErrors.workingDays,
+              closingTime: localizedErrors.closingTime,
             }}
             onChange={handleDraftChange}
           />
           {isEditing ? (
-            <ProfileActionsBar
-              isSaving={isSaving}
-              onCancel={cancelEdit}
-              onSave={handleSave}
-            />
+            <ProfileActionsBar isSaving={isSaving} onCancel={cancelEdit} onSave={handleSave} />
           ) : null}
         </ProfileLeftColumn>
 
@@ -279,11 +285,10 @@ export function FarmerDashboardProfilePage() {
         <DialogContent className="agrivo-profile-dialog sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-              Change Farm Logo
+              {t("farmerDashboardProfile.logoDialog.title")}
             </DialogTitle>
             <DialogDescription className="text-sm text-[#5F6F64]">
-              Logo upload will be available in a future update. Your current farm image or initials
-              will continue to be used.
+              {t("farmerDashboardProfile.logoDialog.description")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -291,7 +296,7 @@ export function FarmerDashboardProfilePage() {
               className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={() => setPhotoDialogOpen(false)}
             >
-              Got it
+              {t("farmerDashboardProfile.actions.gotIt")}
             </Button>
           </DialogFooter>
         </DialogContent>

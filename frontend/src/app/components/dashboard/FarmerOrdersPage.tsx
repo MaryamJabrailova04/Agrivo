@@ -4,9 +4,14 @@ import { useAuth } from "../../auth/AuthContext";
 import { isApiMode } from "../../../config/dataMode";
 import { getOrders, updateOrderStatus, type ApiOrder } from "../../../api/ordersApi";
 import { getFarmerSectionHash } from "../../data/farmerDashboard";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import {
+  formatFarmerOrderCount,
+  translateFarmerOrderStatus,
+} from "../../../i18n/farmerOrderHelpers";
 import {
   computeFarmerOrdersSummary,
-  FARMER_ORDER_STATUS_LABELS,
   filterAndSortFarmerOrders,
   getFarmerOrders,
   resolveFarmerOrdersUserId,
@@ -31,10 +36,11 @@ import { OrdersFilterBar } from "./farmer-orders/OrdersFilterBar";
 import { OrderStats } from "./farmer-orders/OrderStats";
 
 function navigate(hash: string) {
-  window.location.hash = hash;
+  navigateToHash(hash);
 }
 
 export function FarmerOrdersPage() {
+  const { t } = useLanguage();
   const { user } = useAuth();
   const userId = resolveFarmerOrdersUserId(user);
 
@@ -53,13 +59,11 @@ export function FarmerOrdersPage() {
     if (isApiMode) {
       getOrders()
         .then((orders) => setOrders(orders.map(mapApiOrderToFarmerOrder)))
-        .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to load farmer orders."),
-        );
+        .catch(() => setApiError(t("farmerOrders.feedback.failedLoad")));
       return;
     }
     setOrders(getFarmerOrders(userId));
-  }, [userId]);
+  }, [userId, t]);
 
   useEffect(() => {
     refresh();
@@ -82,9 +86,7 @@ export function FarmerOrdersPage() {
     if (isApiMode) {
       updateOrderStatus(orderId, mapFarmerStatusToApiStatus(nextStatus))
         .then(() => refresh())
-        .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to update order status."),
-        );
+        .catch(() => setApiError(t("farmerOrders.feedback.failedUpdate")));
       return;
     }
     const next = updateFarmerOrderStatus(userId, orderId, nextStatus);
@@ -92,8 +94,11 @@ export function FarmerOrdersPage() {
     const order = next.find((item) => item.id === orderId);
     showToast(
       order
-        ? `Order ${order.orderId} updated to ${FARMER_ORDER_STATUS_LABELS[nextStatus]}.`
-        : "Order status updated.",
+        ? t("farmerOrders.feedback.statusUpdated", {
+            orderId: order.orderId,
+            status: translateFarmerOrderStatus(t, nextStatus),
+          })
+        : t("farmerOrders.feedback.statusUpdatedGeneric"),
     );
     if (detailOrder?.id === orderId) {
       setDetailOrder(order ?? null);
@@ -106,17 +111,15 @@ export function FarmerOrdersPage() {
       updateOrderStatus(rejectOrder.id, "cancelled")
         .then(() => {
           refresh();
-          showToast(`Order ${rejectOrder.orderId} has been rejected.`);
+          showToast(t("farmerOrders.feedback.rejected", { orderId: rejectOrder.orderId }));
           setRejectOrder(null);
         })
-        .catch((error) =>
-          setApiError(error instanceof Error ? error.message : "Failed to reject order."),
-        );
+        .catch(() => setApiError(t("farmerOrders.feedback.failedReject")));
       return;
     }
     const next = updateFarmerOrderStatus(userId, rejectOrder.id, "cancelled");
     setOrders(next);
-    showToast(`Order ${rejectOrder.orderId} has been rejected.`);
+    showToast(t("farmerOrders.feedback.rejected", { orderId: rejectOrder.orderId }));
     setRejectOrder(null);
     if (detailOrder?.id === rejectOrder.id) {
       setDetailOrder({ ...rejectOrder, status: "cancelled" });
@@ -141,16 +144,16 @@ export function FarmerOrdersPage() {
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">Orders</h2>
+          <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">
+            {t("farmerOrders.title")}
+          </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            Manage buyer orders, track delivery progress, and update order statuses.
+            {t("farmerOrders.subtitle")}
           </p>
         </div>
         <div className="agrivo-farmer-order-info-card">
           <Info className="h-4 w-4 shrink-0 text-[#15803d]" />
-          <p className="text-sm font-medium text-[#14532D]">
-            New orders need confirmation before delivery.
-          </p>
+          <p className="text-sm font-medium text-[#14532D]">{t("farmerOrders.infoBox")}</p>
         </div>
       </div>
 
@@ -173,9 +176,11 @@ export function FarmerOrdersPage() {
 
           <section className="agrivo-farmer-orders-section">
             <div className="agrivo-farmer-orders-section-header">
-              <h3 className="agrivo-heading text-lg font-bold text-[#102018]">Buyer Orders</h3>
+              <h3 className="agrivo-heading text-lg font-bold text-[#102018]">
+                {t("farmerOrders.section.buyerOrders")}
+              </h3>
               <p className="text-sm text-[#6b7a70]">
-                {filteredOrders.length} order{filteredOrders.length === 1 ? "" : "s"}
+                {formatFarmerOrderCount(t, filteredOrders.length)}
               </p>
             </div>
 
@@ -195,10 +200,10 @@ export function FarmerOrdersPage() {
               <div className="agrivo-dashboard-empty agrivo-farmer-orders-empty-filter">
                 <ClipboardList className="h-10 w-10 text-[#86efac]" strokeWidth={1.5} />
                 <h4 className="agrivo-heading mt-4 text-lg font-bold text-[#102018]">
-                  No orders match your filters
+                  {t("farmerOrders.empty.noMatchTitle")}
                 </h4>
                 <p className="mt-2 max-w-md text-sm leading-6 text-[#5F6F64]">
-                  Try adjusting the search, status, or date filters to find the order you need.
+                  {t("farmerOrders.empty.noMatchSubtitle")}
                 </p>
               </div>
             )}
@@ -208,16 +213,18 @@ export function FarmerOrdersPage() {
         <div className="agrivo-dashboard-panel">
           <div className="agrivo-dashboard-empty">
             <ClipboardList className="h-12 w-12 text-[#86efac]" strokeWidth={1.5} />
-            <h3 className="agrivo-heading mt-4 text-xl font-bold text-[#102018]">No orders yet</h3>
+            <h3 className="agrivo-heading mt-4 text-xl font-bold text-[#102018]">
+              {t("farmerOrders.empty.noOrdersTitle")}
+            </h3>
             <p className="mx-auto mt-3 max-w-lg text-sm leading-6 text-[#5F6F64]">
-              When buyers place orders for your products, they will appear here.
+              {t("farmerOrders.empty.noOrdersSubtitle")}
             </p>
             <Button
               className="agrivo-button-soft mt-6 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
               onClick={() => navigate(getFarmerSectionHash("add-product"))}
             >
               <PackagePlus className="mr-2 h-4 w-4" />
-              Add Product
+              {t("farmerOrders.empty.addProduct")}
             </Button>
           </div>
         </div>
@@ -235,11 +242,14 @@ export function FarmerOrdersPage() {
         <DialogContent className="agrivo-profile-dialog sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="agrivo-heading text-lg font-bold text-[#102018]">
-              Reject order?
+              {t("farmerOrders.reject.title")}
             </DialogTitle>
             <DialogDescription className="text-sm text-[#5F6F64]">
               {rejectOrder
-                ? `This will cancel order ${rejectOrder.orderId} from ${rejectOrder.buyerName}.`
+                ? t("farmerOrders.reject.description", {
+                    orderId: rejectOrder.orderId,
+                    buyerName: rejectOrder.buyerName,
+                  })
                 : null}
             </DialogDescription>
           </DialogHeader>
@@ -250,14 +260,14 @@ export function FarmerOrdersPage() {
               className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
               onClick={() => setRejectOrder(null)}
             >
-              Keep order
+              {t("farmerOrders.reject.keepOrder")}
             </Button>
             <Button
               type="button"
               className="rounded-full bg-[#b91c1c] text-white hover:bg-[#991b1b]"
               onClick={handleReject}
             >
-              Reject order
+              {t("farmerOrders.reject.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -302,7 +312,11 @@ function mapApiOrderToFarmerOrder(order: ApiOrder): FarmerManagementOrder {
     buyerName: "Buyer",
     buyerType: "Buyer",
     productName: item?.productName ?? "Products",
+    nameKey: item?.nameKey,
+    nameLocalized: item?.nameLocalized,
     variety: item?.variety ?? undefined,
+    varietyKey: item?.varietyKey,
+    varietyLocalized: item?.varietyLocalized,
     quantity: item?.quantity ?? 0,
     unit: item?.unit ?? "kg",
     pricePerUnit: item?.pricePerUnit ?? 0,

@@ -1,23 +1,37 @@
 import type { PerformanceSummary } from "../../../utils/completedDeliveriesStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
 
 export function PerformanceSummaryCard({ summary }: { summary: PerformanceSummary }) {
+  const { t } = useLanguage();
   const rows = [
-    { label: "On-time rate", value: `${summary.onTimeRate}%`, width: summary.onTimeRate },
-    { label: "Issue rate", value: `${summary.issueRate}%`, width: summary.issueRate },
+    {
+      label: t("completedDeliveries.sidebar.onTimeRate"),
+      value: `${summary.onTimeRate}%`,
+      width: summary.onTimeRate,
+    },
+    {
+      label: t("completedDeliveries.sidebar.issueRate"),
+      value: `${summary.issueRate}%`,
+      width: summary.issueRate,
+    },
   ];
 
   return (
     <section className="agrivo-completed-side-card agrivo-dashboard-panel">
-      <h3 className="agrivo-heading text-base font-bold text-[#102018]">Performance Summary</h3>
-      <p className="mt-1 text-xs text-[#6b7a70]">Delivery performance metrics</p>
+      <h3 className="agrivo-heading text-base font-bold text-[#102018]">
+        {t("completedDeliveries.sidebar.performanceSummaryTitle")}
+      </h3>
+      <p className="mt-1 text-xs text-[#6b7a70]">
+        {t("completedDeliveries.sidebar.performanceSummarySubtitle")}
+      </p>
 
       <dl className="agrivo-completed-metrics">
         <div>
-          <dt>Average duration</dt>
+          <dt>{t("completedDeliveries.sidebar.averageDuration")}</dt>
           <dd>{summary.averageDuration}</dd>
         </div>
         <div>
-          <dt>Completed deliveries</dt>
+          <dt>{t("completedDeliveries.sidebar.completedDeliveries")}</dt>
           <dd>{summary.totalCompleted}</dd>
         </div>
       </dl>

@@ -11,9 +11,10 @@ import {
 } from "lucide-react";
 import type { ComponentProps } from "react";
 import {
-  getTransitActionLabel,
   type InTransitAction,
 } from "../../../utils/inTransitStorage";
+import { useLanguage } from "../../../../i18n/LanguageContext";
+import { translateInTransitAction } from "../../../../i18n/inTransitHelpers";
 import { cn } from "../../ui/utils";
 
 export const transitActionButtonVariants = cva(
@@ -56,6 +57,7 @@ export function TransitActionButton({
     action: InTransitAction;
     label?: string;
   }) {
+  const { t } = useLanguage();
   const Icon = ACTION_ICONS[action];
   return (
     <button
@@ -64,7 +66,7 @@ export function TransitActionButton({
       {...props}
     >
       <Icon aria-hidden />
-      <span>{label ?? getTransitActionLabel(action)}</span>
+      <span>{label ?? translateInTransitAction(t, action)}</span>
     </button>
   );
 }

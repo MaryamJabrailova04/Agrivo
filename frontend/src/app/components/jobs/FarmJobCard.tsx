@@ -1,5 +1,18 @@
 import { Calendar, MapPin, Users } from "lucide-react";
-import { formatJobDateRange, getJobBenefitTags, type FarmJob } from "../../data/farmJobs";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { navigateToHash } from "../../../i18n/localizedRoutes";
+import {
+  formatJobPay,
+  formatLocalizedJobDateRange,
+  formatWorkersNeeded,
+  getLocalizedBenefitTags,
+  translateCropType,
+  translateJobLocation,
+  translateJobTitle,
+  translateJobType,
+} from "../../../i18n/jobHelpers";
+import { translateJobPostStatus } from "../../../i18n/farmerJobFormHelpers";
+import { getJobBenefitTags, type FarmJob } from "../../data/farmJobs";
 import { buildJobWhatsAppUrl } from "../../utils/jobWhatsApp";
 import { WhatsAppIcon } from "../WhatsAppIcon";
 import { Badge } from "../ui/badge";
@@ -23,15 +36,19 @@ export function FarmJobCard({
   onClose,
   onDelete,
 }: FarmJobCardProps) {
-  const benefitTags = getJobBenefitTags(job);
+  const { t, language } = useLanguage();
+  const benefitTags = getLocalizedBenefitTags(t, getJobBenefitTags(job));
   const whatsappUrl = buildJobWhatsAppUrl(job.whatsapp, job.title);
+  const localizedTitle = translateJobTitle(t, job);
+  const localizedLocation = translateJobLocation(t, job.location);
+  const localizedDateRange = formatLocalizedJobDateRange(language, job.startDate, job.endDate);
 
   const handleViewDetails = () => {
     if (onViewDetails) {
       onViewDetails();
       return;
     }
-    window.location.hash = `jobs/${job.slug}`;
+    navigateToHash(`jobs/${job.slug}`);
   };
 
   return (
@@ -40,7 +57,7 @@ export function FarmJobCard({
         <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
             <h3 className="agrivo-heading text-lg font-bold leading-snug text-[#102018] sm:text-xl">
-              {job.title}
+              {localizedTitle}
             </h3>
             <p className="mt-1 text-sm font-medium text-[#14532D]">{job.farmerName}</p>
           </div>
@@ -52,7 +69,7 @@ export function FarmJobCard({
                   : "border border-[#e5e7eb] bg-[#f3f4f6] text-[#6b7280] hover:bg-[#f3f4f6]"
               }`}
             >
-              {job.status === "active" ? "Active" : "Closed"}
+              {translateJobPostStatus(t, job.status)}
             </Badge>
           ) : null}
         </div>
@@ -60,31 +77,31 @@ export function FarmJobCard({
         <div className="space-y-2 text-sm text-[#5F6F64]">
           <p className="flex items-center gap-2">
             <MapPin className="h-4 w-4 shrink-0 text-[#43A047]" />
-            {job.location}
+            {localizedLocation}
           </p>
           <p className="flex items-center gap-2">
             <Calendar className="h-4 w-4 shrink-0 text-[#43A047]" />
-            {formatJobDateRange(job.startDate, job.endDate)}
+            {localizedDateRange}
           </p>
           <p className="flex items-center gap-2">
             <Users className="h-4 w-4 shrink-0 text-[#43A047]" />
-            {job.workersNeeded} {job.workersNeeded === 1 ? "worker" : "workers"} needed
+            {formatWorkersNeeded(t, job.workersNeeded)}
           </p>
         </div>
 
         <div className="mt-4 rounded-[18px] border border-[#dbe7d4] bg-[#f6fbf4] px-4 py-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">Daily pay</p>
-          <p className="mt-0.5 text-2xl font-bold text-[#14532D]">
-            {job.dailyPay} <span className="text-base font-semibold">AZN / day</span>
+          <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">
+            {t("jobs.page.card.dailyPay")}
           </p>
+          <p className="mt-0.5 text-2xl font-bold text-[#14532D]">{formatJobPay(t, job.dailyPay)}</p>
         </div>
 
         <div className="mt-4 flex min-h-[4.75rem] flex-1 flex-wrap content-start gap-2">
           <Badge className="rounded-full border-0 bg-[#EAF7EC] px-3 py-1 text-xs font-medium text-[#14532D] hover:bg-[#EAF7EC]">
-            {job.jobType}
+            {translateJobType(t, job.jobType)}
           </Badge>
           <Badge className="rounded-full border-0 bg-[#f0f7ee] px-3 py-1 text-xs font-medium text-[#166534] hover:bg-[#f0f7ee]">
-            {job.cropType}
+            {translateCropType(t, job.cropType)}
           </Badge>
           {benefitTags.slice(0, variant === "dashboard" ? 4 : 3).map((tag) => (
             <Badge
@@ -99,7 +116,9 @@ export function FarmJobCard({
 
         {variant === "dashboard" && job.applicantsCount > 0 ? (
           <p className="mt-3 text-xs font-medium text-[#6b7a70]">
-            {job.applicantsCount} interested applicant{job.applicantsCount !== 1 ? "s" : ""}
+            {job.applicantsCount === 1
+              ? t("farmerJobsDashboard.applicantsOne", { count: job.applicantsCount })
+              : t("farmerJobsDashboard.applicantsMany", { count: job.applicantsCount })}
           </p>
         ) : null}
 
@@ -111,7 +130,7 @@ export function FarmJobCard({
                 className="flex-1 rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
                 onClick={handleViewDetails}
               >
-                View Details
+                {t("jobs.viewDetails")}
               </Button>
               {onEdit ? (
                 <Button
@@ -119,7 +138,7 @@ export function FarmJobCard({
                   className="flex-1 rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
                   onClick={onEdit}
                 >
-                  Edit
+                  {t("farmerJobsDashboard.edit")}
                 </Button>
               ) : null}
               {job.status === "active" && onClose ? (
@@ -128,7 +147,7 @@ export function FarmJobCard({
                   className="flex-1 rounded-full border-[#dbe7d4] text-[#5F6F64] hover:bg-[#f3f4f6]"
                   onClick={onClose}
                 >
-                  Close Job
+                  {t("farmerJobsDashboard.closeJob")}
                 </Button>
               ) : null}
               {onDelete ? (
@@ -137,7 +156,7 @@ export function FarmJobCard({
                   className="flex-1 rounded-full border-[#fecaca] text-[#b91c1c] hover:bg-[#fef2f2]"
                   onClick={onDelete}
                 >
-                  Delete
+                  {t("farmerJobsDashboard.delete")}
                 </Button>
               ) : null}
             </>
@@ -147,7 +166,7 @@ export function FarmJobCard({
                 className="agrivo-button-soft flex-1 rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
                 onClick={handleViewDetails}
               >
-                View Details
+                {t("jobs.page.card.viewDetails")}
               </Button>
               <Button
                 variant="outline"
@@ -155,7 +174,7 @@ export function FarmJobCard({
                 onClick={() => window.open(whatsappUrl, "_blank", "noopener,noreferrer")}
               >
                 <WhatsAppIcon className="mr-2 h-4 w-4" />
-                Apply via WhatsApp
+                {t("jobs.page.card.applyWhatsapp")}
               </Button>
             </>
           )}
