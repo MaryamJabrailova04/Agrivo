@@ -1,0 +1,17 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: agrivo-backend
+  labels:
+{{ toYaml .Values.monitoring.labels | indent 4 }}
+spec:
+  selector:
+    matchLabels:
+      app: agrivo-backend
+  endpoints:
+    - port: http
+      path: /api/metrics
+      interval: {{ .Values.monitoring.interval }}
+      scrapeTimeout: {{ .Values.monitoring.scrapeTimeout }}
+{{- end }}

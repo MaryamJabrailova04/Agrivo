@@ -1,0 +1,38 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.alerts.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: agrivo-backend-alerts
+  labels:
+{{ toYaml .Values.monitoring.labels | indent 4 }}
+spec:
+  groups:
+    - name: agrivo-backend.rules
+      rules:
+        - alert: AgrivoBackendDown
+          expr: up{job="agrivo-backend"} == 0
+          for: 2m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Agrivo backend is down"
+            description: "Prometheus cannot scrape the Agrivo backend for more than 2 minutes."
+
+        - alert: AgrivoBackendHighMemoryUsage
+          expr: agrivo_backend_process_resident_memory_bytes > 400000000
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Agrivo backend memory usage is high"
+            description: "Agrivo backend process resident memory is above 400 MB for more than 5 minutes."
+
+        - alert: AgrivoBackendEventLoopLag
+          expr: agrivo_backend_nodejs_eventloop_lag_seconds > 0.5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Agrivo backend event loop lag is high"
+            description: "Node.js event loop lag is above 0.5 seconds for more than 5 minutes."
+{{- end }}

@@ -1,0 +1,13 @@
+grafana:
+  adminPasswordSecretName: grafana-admin-secret
+  ingress:
+    enabled: true
+    host: grafana.agrivo.example.com
+    tlsSecretName: grafana-agrivo-tls
+
+prometheus:
+  retention: 15d
+  storageSize: 20Gi
+
+alertmanager:
+  enabled: true

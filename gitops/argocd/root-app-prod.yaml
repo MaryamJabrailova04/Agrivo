@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: agrivo-root-prod
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/MaryamJabrailova04/Agrivo.git
+    targetRevision: main
+    path: gitops/apps/prod
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

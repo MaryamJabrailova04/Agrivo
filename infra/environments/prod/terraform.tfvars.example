@@ -1,0 +1,32 @@
+environment  = "prod"
+location     = "westeurope"
+project_name = "agrivo"
+
+address_space = ["10.20.0.0/16"]
+
+aks_subnet_address_prefixes = ["10.20.1.0/24"]
+
+private_endpoint_subnet_address_prefixes = ["10.20.2.0/24"]
+
+tags = {
+  project     = "agrivo"
+  environment = "prod"
+  managed_by  = "terraform"
+}
+
+kubernetes_version = "1.29.7"
+node_vm_size       = "Standard_D4s_v5"
+node_count         = 3
+min_node_count     = 3
+max_node_count     = 10
+
+tenant_id       = "00000000-0000-0000-0000-000000000000"
+admin_object_id = "00000000-0000-0000-0000-000000000000"
+
+postgres_admin_username = "agrivoadmin"
+postgres_admin_password = "REPLACE_WITH_SECURE_PASSWORD"
+postgres_sku_name       = "GP_Standard_D2s_v3"
+postgres_storage_mb     = 131072
+
+database_url = "postgresql://agrivoadmin:REPLACE_WITH_SECURE_PASSWORD@psql-agrivo-prod.postgres.database.azure.com:5432/agrivo_db?schema=public&sslmode=require"
+jwt_secret   = "REPLACE_WITH_LONG_RANDOM_PROD_JWT_SECRET"

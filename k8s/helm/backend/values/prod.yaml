@@ -1,0 +1,52 @@
+replicaCount: 3
+
+image:
+  repository: harbor.example.com/agrivo/backend
+  tag: CHANGE_ME_IMMUTABLE_GIT_SHA
+  pullPolicy: IfNotPresent
+
+config:
+  nodeEnv: production
+  port: "5000"
+  jwtExpiresIn: 7d
+  frontendUrl: https://agrivo.example.com
+
+secret:
+  databaseUrl: replace-with-key-vault-csi
+  jwtSecret: replace-with-key-vault-csi
+
+resources:
+  requests:
+    cpu: 250m
+    memory: 512Mi
+  limits:
+    cpu: 1000m
+    memory: 1Gi
+
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 65
+keyVault:
+  enabled: true
+  name: kv-agrivo-prod
+  tenantId: "00000000-0000-0000-0000-000000000000"
+  clientId: "00000000-0000-0000-0000-000000000000"
+  usePodIdentity: "false"
+  useVMManagedIdentity: "true"
+  secrets:
+    - objectName: DATABASE_URL
+      objectType: secret
+      envName: DATABASE_URL
+    - objectName: JWT_SECRET
+      objectType: secret
+      envName: JWT_SECRETxy
+monitoring:
+  enabled: true
+  interval: 15s
+  scrapeTimeout: 10s
+  labels:
+    release: kube-prometheus-stack
+  alerts:
+    enabled: true

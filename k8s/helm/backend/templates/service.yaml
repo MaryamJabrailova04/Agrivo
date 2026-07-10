@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: agrivo-backend
+  labels:
+    app: agrivo-backend
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: agrivo-backend
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: 5000

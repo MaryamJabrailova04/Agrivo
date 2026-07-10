@@ -1,0 +1,87 @@
+replicaCount: 2
+
+image:
+  repository: harbor.example.com/agrivo/backend
+  tag: dev
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 5000
+
+config:
+  nodeEnv: production
+  port: "5000"
+  jwtExpiresIn: 7d
+  frontendUrl: https://agrivo.example.com
+
+secret:
+  databaseUrl: postgresql://postgres:password@postgres:5432/agrivo_db?schema=public
+  jwtSecret: change-me-in-key-vault
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 70
+keyVault:
+  enabled: false
+  name: ""
+  tenantId: ""
+  clientId: ""
+  usePodIdentity: "false"
+  useVMManagedIdentity: "true"
+  secrets:
+    - objectName: DATABASE_URL
+      objectType: secret
+      envName: DATABASE_URL
+    - objectName: JWT_SECRET
+      objectType: secret
+      envName: JWT_SECRET
+
+monitoring:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s
+  labels:
+    release: kube-prometheus-stack
+  alerts:
+    enabled: false
+serviceAccount:
+  create: true
+  name: agrivo-backend
+  automountServiceAccountToken: false
+
+rbac:
+  create: true
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 10001
+  runAsGroup: 10001
+  fsGroup: 10001
+  seccompProfile:
+    type: RuntimeDefault
+
+containerSecurityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: false
+  capabilities:
+    drop:
+      - ALL
+
+networkPolicy:
+  enabled: true
+  ingress:
+    frontendAppLabel: agrivo-frontend
+  egress:
+    allowDns: true
+    allowDatabase: true

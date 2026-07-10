@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agrivo-monitoring-platform-notes
+data:
+  README.md: |
+    Agrivo monitoring is designed around kube-prometheus-stack.
+
+    Install kube-prometheus-stack with Helm, then apply this chart for
+    project-specific monitoring configuration.
+
+    Required components:
+    - Prometheus
+    - Alertmanager
+    - Grafana
+    - kube-state-metrics
+    - node-exporter
+
+    Application monitoring:
+    - backend exposes /api/metrics
+    - backend Helm chart creates ServiceMonitor
+    - backend Helm chart creates PrometheusRule

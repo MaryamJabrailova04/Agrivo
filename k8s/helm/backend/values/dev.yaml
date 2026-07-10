@@ -1,0 +1,54 @@
+replicaCount: 1
+
+image:
+  repository: harbor.example.com/agrivo/backend
+  tag: dev
+  pullPolicy: IfNotPresent
+
+config:
+  nodeEnv: production
+  port: "5000"
+  jwtExpiresIn: 7d
+  frontendUrl: https://dev.agrivo.example.com
+
+secret:
+  databaseUrl: postgresql://postgres:password@postgres:5432/agrivo_db?schema=public
+  jwtSecret: dev-placeholder-replace-with-key-vault
+
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 300m
+    memory: 512Mi
+
+autoscaling:
+  enabled: true
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 70
+
+keyVault:
+  enabled: true
+  name: kv-agrivo-dev
+  tenantId: "00000000-0000-0000-0000-000000000000"
+  clientId: "00000000-0000-0000-0000-000000000000"
+  usePodIdentity: "false"
+  useVMManagedIdentity: "true"
+  secrets:
+    - objectName: DATABASE_URL
+      objectType: secret
+      envName: DATABASE_URL
+    - objectName: JWT_SECRET
+      objectType: secret
+      envName: JWT_SECRET
+
+monitoring:
+  enabled: true
+  interval: 30s
+  scrapeTimeout: 10s
+  labels:
+    release: kube-prometheus-stack
+  alerts:
+    enabled: true

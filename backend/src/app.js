@@ -12,7 +12,7 @@ import healthRoutes from "./routes/healthRoutes.js";
 import logisticsRoutes from "./routes/logisticsRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
-
+import metricsRoutes from "./routes/metricsRoutes.js";
 const app = express();
 
 app.use(
@@ -43,6 +43,7 @@ app.use("/api/deliveries", deliveryRoutes);
 app.use("/api/farmer", farmerProfileRoutes);
 app.use("/api/logistics", logisticsRoutes);
 app.use("/api/buyer", buyerProfileRoutes);
+app.use("/api", metricsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
