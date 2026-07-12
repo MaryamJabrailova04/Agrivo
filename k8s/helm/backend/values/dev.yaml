@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: 20.255.57.122/agrivo/backend
-  tag: dev
+  tag: "e87426e833c342e8aaebceec4a9229efe291c6cc"
   pullPolicy: IfNotPresent
 
 config:
