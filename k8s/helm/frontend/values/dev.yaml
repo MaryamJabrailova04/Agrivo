@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: harbor.example.com/agrivo/frontend
-  tag: dev
+  tag: "5dea01290b0789d257b593eef697c92f569db1b2"
   pullPolicy: IfNotPresent
 
 ingress:
