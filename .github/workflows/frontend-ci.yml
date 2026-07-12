@@ -21,6 +21,7 @@ permissions:
 
 env:
   IMAGE_NAME: frontend
+  LOCAL_IMAGE: agrivo-frontend:${{ github.sha }}
 
 jobs:
   build:
@@ -63,13 +64,13 @@ jobs:
             -f frontend/Dockerfile \
             --build-arg VITE_API_URL=/api \
             --build-arg VITE_DATA_MODE=api \
-            -t "agrivo-frontend:${GITHUB_SHA}" \
+            -t "$LOCAL_IMAGE" \
             .
 
       - name: Scan Docker image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ steps.image.outputs.image }}
+          image-ref: ${{ env.LOCAL_IMAGE }}
           format: table
           exit-code: "0"
           severity: CRITICAL,HIGH
@@ -82,6 +83,10 @@ jobs:
           username: ${{ secrets.HARBOR_USERNAME }}
           password: ${{ secrets.HARBOR_PASSWORD }}
 
+      - name: Tag Docker image for Harbor
+        if: github.event_name != 'pull_request'
+        run: docker tag "$LOCAL_IMAGE" "${{ steps.image.outputs.image }}" 
+     
       - name: Push Docker image to Harbor
         if: github.event_name != 'pull_request'
         run: docker push "${{ steps.image.outputs.image }}"
