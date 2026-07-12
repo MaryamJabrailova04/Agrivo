@@ -76,18 +76,17 @@ jobs:
           severity: CRITICAL,HIGH
 
       - name: Configure insecure Harbor registry
-        if: github.event_name != 'pull_request' && vars.HARBOR_INSECURE == 'true'
+        if: github.event_name != 'pull_request'
         run: |
-         echo '{ "insecure-registries": ["${{ secrets.HARBOR_REGISTRY }}"] }' | sudo tee /etc/docker/daemon.json
-         sudo systemctl restart docker
+          echo '{ "insecure-registries": ["${{ secrets.HARBOR_REGISTRY }}"] }' | sudo tee /etc/docker/daemon.json
+          sudo systemctl restart docker
 
       - name: Login to Harbor
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ secrets.HARBOR_REGISTRY }}
-          username: ${{ secrets.HARBOR_USERNAME }}
-          password: ${{ secrets.HARBOR_PASSWORD }}
+        run: |
+          echo "${{ secrets.HARBOR_PASSWORD }}" | docker login "http://${{ secrets.HARBOR_REGISTRY }}" \
+            --username "${{ secrets.HARBOR_USERNAME }}" \
+            --password-stdin
 
       - name: Tag Docker image for Harbor
         if: github.event_name != 'pull_request'
