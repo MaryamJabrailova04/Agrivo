@@ -1,7 +1,7 @@
 replicaCount: 3
 
 image:
-  repository: harbor.example.com/agrivo/backend
+  repository: ghcr.io/maryamjabrailova04/agrivo-backend
   tag: CHANGE_ME_IMMUTABLE_GIT_SHA
   pullPolicy: IfNotPresent
 
@@ -41,7 +41,7 @@ keyVault:
       envName: DATABASE_URL
     - objectName: JWT_SECRET
       objectType: secret
-      envName: JWT_SECRETxy
+      envName: JWT_SECRET
 monitoring:
   enabled: true
   interval: 15s

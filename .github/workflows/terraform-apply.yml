@@ -13,7 +13,7 @@ on:
           - prod
 
 permissions:
-  contents: read
+  contents: write
   id-token: write
 
 jobs:
@@ -23,6 +23,14 @@ jobs:
 
     environment: ${{ github.event.inputs.environment }}
 
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+      TF_VAR_admin_object_id: ${{ vars.AZURE_ADMIN_OBJECT_ID }}
+      TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+      TF_VAR_database_url: ${{ secrets.DATABASE_URL }}
+      TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+
     defaults:
       run:
         working-directory: infra/environments/${{ github.event.inputs.environment }}
@@ -30,6 +38,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Load non-secret environment defaults
+        run: cp terraform.tfvars.example terraform.tfvars
 
       - name: Azure login with OIDC
         uses: azure/login@v2
@@ -52,3 +63,20 @@ jobs:
 
       - name: Terraform apply
         run: terraform apply -auto-approve -input=false
+
+      - name: Export infrastructure identity into Helm values
+        env:
+          ENVIRONMENT: ${{ github.event.inputs.environment }}
+        run: |
+          CLIENT_ID=$(terraform output -raw key_vault_csi_client_id)
+          KEY_VAULT=$(terraform output -raw key_vault_name)
+          FILE="../../../k8s/helm/backend/values/${ENVIRONMENT}.yaml"
+          sed -i -E "s|^  name: .*|  name: ${KEY_VAULT}|" "$FILE"
+          sed -i -E "s|^  tenantId: .*|  tenantId: \"${TF_VAR_tenant_id}\"|" "$FILE"
+          sed -i -E "s|^  clientId: .*|  clientId: \"${CLIENT_ID}\"|" "$FILE"
+
+      - name: Commit generated GitOps identity configuration
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(gitops): sync ${{ github.event.inputs.environment }} infrastructure outputs [skip ci]"
+          file_pattern: k8s/helm/backend/values/${{ github.event.inputs.environment }}.yaml

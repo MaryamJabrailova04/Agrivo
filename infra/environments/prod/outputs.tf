@@ -28,6 +28,10 @@ output "aks_node_resource_group" {
   value       = module.aks.node_resource_group
 }
 
+output "key_vault_csi_client_id" {
+  value = module.aks.key_vault_secrets_provider_client_id
+}
+
 output "key_vault_name" {
   description = "Name of the prod Key Vault."
   value       = module.keyvault.key_vault_name

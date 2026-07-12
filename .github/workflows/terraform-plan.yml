@@ -30,6 +30,14 @@ jobs:
 
     environment: ${{ github.event.inputs.environment || 'dev' }}
 
+    env:
+      TF_IN_AUTOMATION: "true"
+      TF_VAR_tenant_id: ${{ secrets.AZURE_TENANT_ID }}
+      TF_VAR_admin_object_id: ${{ vars.AZURE_ADMIN_OBJECT_ID }}
+      TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
+      TF_VAR_database_url: ${{ secrets.DATABASE_URL }}
+      TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+
     defaults:
       run:
         working-directory: infra/environments/${{ github.event.inputs.environment || 'dev' }}
@@ -37,6 +45,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Load non-secret environment defaults
+        run: cp terraform.tfvars.example terraform.tfvars
 
       - name: Azure login with OIDC
         uses: azure/login@v2
