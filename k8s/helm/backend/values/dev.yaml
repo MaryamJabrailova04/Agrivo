@@ -30,7 +30,7 @@ autoscaling:
   targetCPUUtilizationPercentage: 70
 
 keyVault:
-  enabled: true
+  enabled: false
   name: kv-agrivo-dev
   tenantId: "00000000-0000-0000-0000-000000000000"
   clientId: "00000000-0000-0000-0000-000000000000"
@@ -45,7 +45,7 @@ keyVault:
       envName: JWT_SECRET
 
 monitoring:
-  enabled: true
+  enabled: false
   interval: 30s
   scrapeTimeout: 10s
   labels:
