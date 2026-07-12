@@ -36,6 +36,7 @@ module "keyvault" {
   resource_group_name = module.network.resource_group_name
   tenant_id           = var.tenant_id
   admin_object_id     = var.admin_object_id
+  reader_object_id    = module.aks.key_vault_secrets_provider_object_id
 
   secrets = {
     DATABASE_URL = var.database_url

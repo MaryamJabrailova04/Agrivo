@@ -1,0 +1,219 @@
+name: CI, Images and Dev GitOps
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: '23 3 * * 1'
+
+concurrency:
+  group: ci-images-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+  packages: write
+  security-events: write
+  id-token: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/agrivo
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend: ${{ steps.filter.outputs.frontend }}
+      backend: ${{ steps.filter.outputs.backend }}
+      platform: ${{ steps.filter.outputs.platform }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/ci-images-gitops.yml'
+            backend:
+              - 'backend/**'
+              - '.github/workflows/ci-images-gitops.yml'
+            platform:
+              - 'k8s/**'
+              - 'gitops/**'
+              - 'infra/**'
+              - '.github/workflows/**'
+
+  validate-platform:
+    needs: changes
+    if: needs.changes.outputs.platform == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - uses: hashicorp/setup-terraform@v3
+      - name: Validate Helm charts
+        run: |
+          helm lint k8s/helm/frontend -f k8s/helm/frontend/values/dev.yaml
+          helm lint k8s/helm/frontend -f k8s/helm/frontend/values/prod.yaml
+          helm lint k8s/helm/backend -f k8s/helm/backend/values/dev.yaml
+          helm lint k8s/helm/backend -f k8s/helm/backend/values/prod.yaml
+          helm template agrivo-frontend k8s/helm/frontend -f k8s/helm/frontend/values/dev.yaml >/dev/null
+          helm template agrivo-backend k8s/helm/backend -f k8s/helm/backend/values/dev.yaml >/dev/null
+      - name: Validate Terraform
+        run: |
+          terraform fmt -check -recursive infra
+          for env in dev prod; do
+            terraform -chdir="infra/environments/$env" init -backend=false
+            terraform -chdir="infra/environments/$env" validate
+          done
+
+  build:
+    needs: changes
+    if: |
+      github.event_name == 'schedule' ||
+      (matrix.component == 'frontend' && needs.changes.outputs.frontend == 'true') ||
+      (matrix.component == 'backend' && needs.changes.outputs.backend == 'true')
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [frontend, backend]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: agrivo_db
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres -d agrivo_db"
+          --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:password@localhost:5432/agrivo_db?schema=public
+      JWT_SECRET: ci-only-secret-at-least-32-characters
+      FRONTEND_URL: http://localhost:5173
+      PORT: 5000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: ${{ matrix.component }}/package-lock.json
+      - name: Install and validate
+        working-directory: ${{ matrix.component }}
+        run: |
+          npm ci
+          npm audit --audit-level=high
+      - name: Build frontend
+        if: matrix.component == 'frontend'
+        working-directory: frontend
+        run: npm run build
+      - name: Validate backend and smoke test
+        if: matrix.component == 'backend'
+        working-directory: backend
+        run: |
+          npx prisma generate
+          npx prisma migrate deploy
+          npm start &
+          for i in {1..30}; do curl -fsS http://localhost:5000/api/health/ready && break || sleep 2; done
+          curl -fsS http://localhost:5000/api/health/ready
+      - uses: docker/setup-buildx-action@v3
+      - name: Login to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build image
+        id: image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.component }}/Dockerfile
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: |
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
+            ${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:dev
+          build-args: |
+            VITE_API_URL=/api
+            VITE_DATA_MODE=api
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.component }}
+          load: ${{ github.event_name == 'pull_request' }}
+          provenance: mode=max
+          sbom: true
+      - uses: sigstore/cosign-installer@v3.8.1
+        if: github.event_name != 'pull_request'
+      - name: Keyless-sign immutable image
+        if: github.event_name != 'pull_request'
+        env:
+          DIGEST: ${{ steps.image.outputs.digest }}
+        run: cosign sign --yes "${IMAGE_PREFIX}-${{ matrix.component }}@${DIGEST}"
+      - name: Scan pushed image
+        if: github.event_name != 'pull_request'
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_PREFIX }}-${{ matrix.component }}:${{ github.sha }}
+          format: sarif
+          output: trivy-${{ matrix.component }}.sarif
+          severity: CRITICAL,HIGH
+          exit-code: '1'
+      - name: Upload scan result
+        if: always() && github.event_name != 'pull_request'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-${{ matrix.component }}.sarif
+
+  update-dev-gitops:
+    needs: [changes, build]
+    if: github.event_name != 'pull_request' && always() && needs.build.result == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Update immutable dev tags
+        env:
+          FRONTEND_CHANGED: ${{ needs.changes.outputs.frontend }}
+          BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
+        run: |
+          if [ "$FRONTEND_CHANGED" = true ]; then
+            sed -i -E 's|tag: ".*"|tag: "${{ github.sha }}"|' k8s/helm/frontend/values/dev.yaml
+          fi
+          if [ "$BACKEND_CHANGED" = true ]; then
+            sed -i -E 's|tag: ".*"|tag: "${{ github.sha }}"|' k8s/helm/backend/values/dev.yaml
+          fi
+      - name: Commit GitOps state safely
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(gitops): deploy dev ${{ github.sha }} [skip ci]"
+          file_pattern: k8s/helm/*/values/dev.yaml
+
+  verify-dev:
+    needs: update-dev-gitops
+    if: vars.AKS_RESOURCE_GROUP != '' && vars.AKS_CLUSTER_NAME != ''
+    runs-on: ubuntu-latest
+    environment: dev
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/use-kubelogin@v1
+        with:
+          kubelogin-version: latest
+      - name: Verify Argo CD rollout
+        run: |
+          az aks get-credentials -g "${{ vars.AKS_RESOURCE_GROUP }}" -n "${{ vars.AKS_CLUSTER_NAME }}" --overwrite-existing
+          kubectl -n agrivo-dev rollout status deployment/agrivo-backend --timeout=10m
+          kubectl -n agrivo-dev rollout status deployment/agrivo-frontend --timeout=10m
+          kubectl -n agrivo-dev get pods

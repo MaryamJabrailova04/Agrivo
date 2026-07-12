@@ -28,6 +28,11 @@ variable "admin_object_id" {
   type        = string
 }
 
+variable "reader_object_id" {
+  description = "Object ID allowed to read application secrets, normally the AKS CSI identity."
+  type        = string
+}
+
 variable "soft_delete_retention_days" {
   description = "Number of days to retain deleted Key Vault objects."
   type        = number

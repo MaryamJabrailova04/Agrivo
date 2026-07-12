@@ -7,7 +7,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/MaryamJabrailova04/Agrivo.git
-    targetRevision: devops/helm-charts
+    targetRevision: main
     path: gitops/apps/dev
   destination:
     server: https://kubernetes.default.svc

@@ -9,7 +9,7 @@ spec:
   project: default
   source:
     repoURL: https://github.com/MaryamJabrailova04/Agrivo.git
-    targetRevision: devops/helm-charts
+    targetRevision: main
     path: k8s/helm/monitoring
   destination:
     server: https://kubernetes.default.svc

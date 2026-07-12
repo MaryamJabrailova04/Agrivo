@@ -1,0 +1,55 @@
+name: Bootstrap AKS Platform
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        required: true
+        type: choice
+        options: [dev, prod]
+
+concurrency:
+  group: platform-bootstrap-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/use-kubelogin@v1
+        with:
+          kubelogin-version: latest
+      - uses: azure/setup-helm@v4
+      - name: Connect to AKS
+        run: az aks get-credentials -g "${{ vars.AKS_RESOURCE_GROUP }}" -n "${{ vars.AKS_CLUSTER_NAME }}" --overwrite-existing
+      - name: Install and upgrade platform controllers
+        run: |
+          helm repo add argo https://argoproj.github.io/argo-helm
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+          helm repo add jetstack https://charts.jetstack.io
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+          helm repo update
+          helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace --wait --timeout 15m
+          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace --wait --timeout 15m
+          helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --set crds.enabled=true --wait --timeout 15m
+          helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring --create-namespace --wait --timeout 20m
+      - name: Bootstrap Argo CD app-of-apps
+        run: kubectl apply -f "gitops/argocd/root-app-${{ inputs.environment }}.yaml"
+      - name: Verify platform
+        run: |
+          kubectl -n argocd rollout status deployment/argocd-server --timeout=10m
+          kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=10m
+          kubectl -n cert-manager rollout status deployment/cert-manager --timeout=10m
+          kubectl get applications -n argocd
+          kubectl get nodes

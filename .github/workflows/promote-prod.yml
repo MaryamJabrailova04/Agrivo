@@ -1,92 +1,93 @@
-name: Promote Image To Production
-
+name: Promote and Verify Production
 on:
   workflow_dispatch:
     inputs:
       component:
-        description: "Component to promote"
+        description: Component to promote
         required: true
         type: choice
-        options:
-          - frontend
-          - backend
+        options: [frontend, backend, both]
       image_tag:
-        description: "Immutable image tag to promote, usually a Git SHA"
+        description: Existing immutable 40-character Git SHA from dev
         required: true
         type: string
-
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
 permissions:
   contents: write
-
+  packages: read
+  id-token: write
+env:
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/agrivo
 jobs:
   promote:
-    name: Promote image to production
     runs-on: ubuntu-latest
     environment: prod
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Validate component
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Validate tag and image existence
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COMPONENT: ${{ inputs.component }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
-          if [ "${{ github.event.inputs.component }}" != "frontend" ] && [ "${{ github.event.inputs.component }}" != "backend" ]; then
-            echo "Invalid component"
-            exit 1
-          fi
-
-      - name: Update production Helm image tag
+          [[ "$IMAGE_TAG" =~ ^[0-9a-f]{40}$ ]] || { echo 'image_tag must be a full Git SHA'; exit 1; }
+          echo "$GH_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          for c in frontend backend; do
+            if [ "$COMPONENT" = both ] || [ "$COMPONENT" = "$c" ]; then
+              docker buildx imagetools inspect "${IMAGE_PREFIX}-${c}:${IMAGE_TAG}" >/dev/null
+            fi
+          done
+      - name: Update production GitOps state
+        env:
+          COMPONENT: ${{ inputs.component }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
         run: |
-          COMPONENT="${{ github.event.inputs.component }}"
-          IMAGE_TAG="${{ github.event.inputs.image_tag }}"
-          FILE="k8s/helm/${COMPONENT}/values/prod.yaml"
-
-          python3 - <<'PY'
-          import os
-          from pathlib import Path
-
-          component = os.environ["COMPONENT"]
-          image_tag = os.environ["IMAGE_TAG"]
-          path = Path(os.environ["FILE"])
-
-          text = path.read_text()
-          lines = text.splitlines()
-          updated = []
-          in_image_block = False
-          changed = False
-
-          for line in lines:
-              stripped = line.strip()
-
-              if stripped == "image:":
-                  in_image_block = True
-                  updated.append(line)
-                  continue
-
-              if in_image_block and stripped.startswith("tag:"):
-                  indent = line[: len(line) - len(line.lstrip())]
-                  updated.append(f'{indent}tag: "{image_tag}"')
-                  in_image_block = False
-                  changed = True
-                  continue
-
-              updated.append(line)
-
-          if not changed:
-              raise SystemExit(f"Could not find image.tag in {path}")
-
-          path.write_text("\n".join(updated) + "\n")
-          print(f"Updated {component} production image tag to {image_tag}")
-          PY
-
-      - name: Commit production promotion
+          for c in frontend backend; do
+            if [ "$COMPONENT" = both ] || [ "$COMPONENT" = "$c" ]; then
+              sed -i -E "s|tag: \".*\"|tag: \"${IMAGE_TAG}\"|" "k8s/helm/${c}/values/prod.yaml"
+            fi
+          done
+      - uses: azure/setup-helm@v4
+      - name: Validate release manifests
         run: |
-          COMPONENT="${{ github.event.inputs.component }}"
-          IMAGE_TAG="${{ github.event.inputs.image_tag }}"
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-
-          git add "k8s/helm/${COMPONENT}/values/prod.yaml"
-          git commit -m "Promote ${COMPONENT} image ${IMAGE_TAG} to production" || echo "No production image tag changes to commit"
-          git push
+          helm lint k8s/helm/frontend -f k8s/helm/frontend/values/prod.yaml
+          helm lint k8s/helm/backend -f k8s/helm/backend/values/prod.yaml
+          helm template agrivo-frontend k8s/helm/frontend -f k8s/helm/frontend/values/prod.yaml >/dev/null
+          helm template agrivo-backend k8s/helm/backend -f k8s/helm/backend/values/prod.yaml >/dev/null
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(gitops): promote ${{ inputs.component }} ${{ inputs.image_tag }} to prod [skip ci]"
+          file_pattern: k8s/helm/*/values/prod.yaml
+  verify-and-rollback:
+    needs: promote
+    runs-on: ubuntu-latest
+    environment: prod
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - uses: azure/use-kubelogin@v1
+        with:
+          kubelogin-version: latest
+      - name: Connect to AKS
+        run: az aks get-credentials -g "${{ vars.AKS_RESOURCE_GROUP }}" -n "${{ vars.AKS_CLUSTER_NAME }}" --overwrite-existing
+      - name: Wait for rollout
+        id: rollout
+        continue-on-error: true
+        run: |
+          if [ "${{ inputs.component }}" = both ] || [ "${{ inputs.component }}" = backend ]; then kubectl -n agrivo-prod rollout status deployment/agrivo-backend --timeout=10m; fi
+          if [ "${{ inputs.component }}" = both ] || [ "${{ inputs.component }}" = frontend ]; then kubectl -n agrivo-prod rollout status deployment/agrivo-frontend --timeout=10m; fi
+      - name: Roll back failed rollout
+        if: steps.rollout.outcome == 'failure'
+        run: |
+          if [ "${{ inputs.component }}" = both ] || [ "${{ inputs.component }}" = backend ]; then kubectl -n agrivo-prod rollout undo deployment/agrivo-backend || true; fi
+          if [ "${{ inputs.component }}" = both ] || [ "${{ inputs.component }}" = frontend ]; then kubectl -n agrivo-prod rollout undo deployment/agrivo-frontend || true; fi
+          exit 1
+      - name: Deployment summary
+        run: kubectl -n agrivo-prod get deployments,pods,services

@@ -23,6 +23,14 @@ resource "azurerm_kubernetes_cluster" "this" {
     type = "SystemAssigned"
   }
 
+  oidc_issuer_enabled       = true
+  workload_identity_enabled = true
+
+  key_vault_secrets_provider {
+    secret_rotation_enabled  = true
+    secret_rotation_interval = "2m"
+  }
+
   network_profile {
     network_plugin    = "azure"
     network_policy    = "azure"
@@ -31,6 +39,10 @@ resource "azurerm_kubernetes_cluster" "this" {
   }
 
   role_based_access_control_enabled = true
+
+  lifecycle {
+    ignore_changes = [default_node_pool[0].node_count]
+  }
 
   tags = var.tags
 }
