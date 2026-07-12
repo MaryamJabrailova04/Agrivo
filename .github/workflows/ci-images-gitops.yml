@@ -74,10 +74,6 @@ jobs:
 
   build:
     needs: changes
-    if: |
-      github.event_name == 'schedule' ||
-      (matrix.component == 'frontend' && needs.changes.outputs.frontend == 'true') ||
-      (matrix.component == 'backend' && needs.changes.outputs.backend == 'true')
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
