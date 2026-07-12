@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: 20.255.57.122/agrivo/frontend
-  tag: "32c1b859dd5a37cbaebc574670c38bcc3587cdfb"
+  tag: "5dea01290b0789d257b593eef697c92f569db1b2"
   pullPolicy: IfNotPresent
 
 ingress:
