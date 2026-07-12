@@ -1,5 +1,6 @@
 replicaCount: 2
-
+imagePullSecrets:
+  - name: harbor-registry-secret
 image:
   repository: harbor.example.com/agrivo/frontend
   tag: dev
