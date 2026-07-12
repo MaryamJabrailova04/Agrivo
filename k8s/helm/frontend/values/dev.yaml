@@ -1,7 +1,7 @@
 replicaCount: 1
 
 image:
-  repository: harbor.example.com/agrivo/frontend
+  repository: 20.255.57.122/agrivo/frontend
   tag: dev
   pullPolicy: IfNotPresent
 
