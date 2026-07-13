@@ -79,8 +79,6 @@ jobs:
           SITE_HOSTNAME: ${{ vars.SITE_HOSTNAME }}
           LETSENCRYPT_EMAIL: ${{ vars.LETSENCRYPT_EMAIL }}
         run: |
-          test -n "$SITE_HOSTNAME"
-          test -n "$LETSENCRYPT_EMAIL"
           CLIENT_ID=$(terraform output -raw key_vault_csi_client_id)
           KEY_VAULT=$(terraform output -raw key_vault_name)
           BACKEND_FILE="../../../k8s/helm/backend/values/${ENVIRONMENT}.yaml"
@@ -89,9 +87,17 @@ jobs:
           sed -i -E "s|^  name: .*|  name: ${KEY_VAULT}|" "$BACKEND_FILE"
           sed -i -E "s|^  tenantId: .*|  tenantId: \"${TF_VAR_tenant_id}\"|" "$BACKEND_FILE"
           sed -i -E "s|^  clientId: .*|  clientId: \"${CLIENT_ID}\"|" "$BACKEND_FILE"
-          sed -i -E "s|^  frontendUrl: .*|  frontendUrl: https://${SITE_HOSTNAME}|" "$BACKEND_FILE"
-          sed -i -E "s|^  host: .*|  host: ${SITE_HOSTNAME}|" "$FRONTEND_FILE"
-          sed -i -E "s|^  email: .*|  email: ${LETSENCRYPT_EMAIL}|" "$INGRESS_FILE"
+          if [ -n "$SITE_HOSTNAME" ]; then
+            sed -i -E "s|^  frontendUrl: .*|  frontendUrl: https://${SITE_HOSTNAME}|" "$BACKEND_FILE"
+            sed -i -E "s|^  host: .*|  host: ${SITE_HOSTNAME}|" "$FRONTEND_FILE"
+          else
+            echo "SITE_HOSTNAME is not set; preserving the current GitOps hostname."
+          fi
+          if [ -n "$LETSENCRYPT_EMAIL" ]; then
+            sed -i -E "s|^  email: .*|  email: ${LETSENCRYPT_EMAIL}|" "$INGRESS_FILE"
+          else
+            echo "LETSENCRYPT_EMAIL is not set; preserving the current issuer email."
+          fi
 
       - name: Commit generated GitOps identity configuration
         uses: stefanzweifel/git-auto-commit-action@v5
