@@ -13,6 +13,10 @@ spec:
         app: agrivo-backend
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
+{{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+{{- end }}
       securityContext:
 {{ toYaml .Values.podSecurityContext | indent 8 }}
       containers:
