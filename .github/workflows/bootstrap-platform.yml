@@ -45,7 +45,9 @@ jobs:
           helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace --wait --timeout 15m
           helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace --wait --timeout 15m
           helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --set crds.enabled=true --wait --timeout 15m
-          helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring --create-namespace --wait --timeout 20m
+          # Monitoring runs on every node. Do not block the core platform when
+          # an autoscaled node is still joining; Helm/Kubernetes will converge.
+          helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring --create-namespace --wait=false
       - name: Bootstrap Argo CD app-of-apps
         run: kubectl apply -f "gitops/argocd/root-app-${{ inputs.environment }}.yaml"
       - name: Verify platform
