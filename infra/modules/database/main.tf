@@ -36,6 +36,12 @@ resource "azurerm_postgresql_flexible_server" "this" {
   depends_on = [azurerm_private_dns_zone_virtual_network_link.this]
 
   tags = var.tags
+
+  lifecycle {
+    # Azure assigns a zone when none is requested. Treat that platform choice
+    # as stable so unrelated updates do not attempt an invalid zone removal.
+    ignore_changes = [zone]
+  }
 }
 
 resource "azurerm_postgresql_flexible_server_database" "this" {
