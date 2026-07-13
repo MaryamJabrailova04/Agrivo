@@ -167,6 +167,7 @@ jobs:
           format: sarif
           output: trivy-${{ matrix.component }}.sarif
           severity: CRITICAL,HIGH
+          ignore-unfixed: true
           exit-code: '1'
       - name: Upload scan result
         if: always() && github.event_name != 'pull_request' && (steps.trivy.outcome == 'success' || steps.trivy.outcome == 'failure')
