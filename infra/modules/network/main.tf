@@ -2,11 +2,17 @@ resource "azurerm_resource_group" "this" {
   name     = "rg-${var.project_name}-${var.environment}"
   location = var.location
   tags     = var.tags
+
+  lifecycle {
+    # Resource groups can contain resources from other Azure regions. Keep an
+    # existing group in place when the workload region must be changed.
+    ignore_changes = [location]
+  }
 }
 
 resource "azurerm_virtual_network" "this" {
   name                = "vnet-${var.project_name}-${var.environment}"
-  location            = azurerm_resource_group.this.location
+  location            = var.location
   resource_group_name = azurerm_resource_group.this.name
   address_space       = var.address_space
   tags                = var.tags
