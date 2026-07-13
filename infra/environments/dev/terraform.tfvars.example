@@ -20,13 +20,9 @@ node_count         = 1
 min_node_count     = 1
 max_node_count     = 3
 
-tenant_id       = "00000000-0000-0000-0000-000000000000"
-admin_object_id = "00000000-0000-0000-0000-000000000000"
-
 postgres_admin_username = "agrivoadmin"
-postgres_admin_password = "REPLACE_WITH_SECURE_PASSWORD"
 postgres_sku_name       = "B_Standard_B1ms"
 postgres_storage_mb     = 32768
 
-database_url = "postgresql://agrivoadmin:REPLACE_WITH_SECURE_PASSWORD@psql-agrivo-dev.postgres.database.azure.com:5432/agrivo_db?schema=public&sslmode=require"
-jwt_secret   = "REPLACE_WITH_LONG_RANDOM_JWT_SECRET"
+# tenant_id, admin_object_id, postgres_admin_password, database_url and
+# jwt_secret are supplied through TF_VAR_* environment variables in CI/CD.
