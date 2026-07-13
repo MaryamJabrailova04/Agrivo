@@ -12,6 +12,7 @@ import {
   Truck,
   XCircle,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import {
   getBuyerOrderDetail,
@@ -21,8 +22,18 @@ import {
 } from "../../data/buyerDashboard";
 import { BuyerOrderStatusBadge } from "./BuyerOrderStatusBadge";
 import { ProductImage } from "../products/ProductImage";
+import { DeliveryTrackingTimeline } from "../delivery/DeliveryTrackingTimeline";
 import { Button } from "../ui/button";
 import { cn } from "../ui/utils";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import { translateDeliveryMethod } from "../../../i18n/deliveryHelpers";
+import {
+  cancelDeliveryTracking,
+  getDeliveryTracking,
+  rateDeliveryTracking,
+} from "../../utils/deliveryTrackingStorage";
+import { updatePlacedOrderStatus } from "../../utils/buyerPlacedOrdersStorage";
+import type { DeliveryMethod } from "../../data/deliveryTypes";
 
 interface BuyerOrderDetailPageProps {
   orderId: string;
@@ -289,9 +300,65 @@ function RoutePreviewCard({ order }: { order: BuyerOrderDetail }) {
 }
 
 function OrderDetailContent({ order }: { order: BuyerOrderDetail }) {
+  const { t } = useLanguage();
+  const { user } = useAuth();
   const heroActions = getHeroActions(order.status);
   const isDelivered = order.status === "Delivered";
   const isCancelled = order.status === "Cancelled";
+  const [trackingVersion, setTrackingVersion] = useState(0);
+  const [actionMessage, setActionMessage] = useState<string | null>(null);
+
+  const trackingRecord = useMemo(() => {
+    void trackingVersion;
+    return getDeliveryTracking(order.orderId);
+  }, [order.orderId, trackingVersion]);
+
+  const handleCancelDelivery = () => {
+    const updated = cancelDeliveryTracking(order.orderId);
+    if (!updated) {
+      setActionMessage(t("delivery.cancelTooLate", "This delivery can no longer be cancelled."));
+      return;
+    }
+    if (user?.id) {
+      updatePlacedOrderStatus(user.id, order.orderId, "Cancelled");
+    }
+    setActionMessage(t("delivery.cancelled", "Delivery cancelled"));
+    setTrackingVersion((value) => value + 1);
+  };
+
+  const handleRateDelivery = () => {
+    rateDeliveryTracking(order.orderId, 5, "Great delivery");
+    setActionMessage(t("delivery.ratingSaved", "Thanks for your rating."));
+    setTrackingVersion((value) => value + 1);
+  };
+
+  const handleDownloadReceipt = () => {
+    const methodLabel = trackingRecord
+      ? translateDeliveryMethod(t, trackingRecord.method)
+      : order.deliveryMethod
+        ? translateDeliveryMethod(t, order.deliveryMethod as DeliveryMethod)
+        : "Delivery";
+    const content = [
+      "Agrivo Receipt",
+      `Order: ${order.orderId}`,
+      `Product: ${order.product}`,
+      `Quantity: ${order.quantity}`,
+      `Farmer: ${order.farmer}`,
+      `Method: ${methodLabel}`,
+      `Delivery fee: ${trackingRecord?.deliveryFee ?? order.deliveryFee ?? 0} AZN`,
+      `Total: ${order.grandTotal ?? order.subtotal}`,
+      trackingRecord?.pickupCode ? `Pickup code: ${trackingRecord.pickupCode}` : "",
+    ]
+      .filter(Boolean)
+      .join("\n");
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = `agrivo-receipt-${order.orderId}.txt`;
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="agrivo-buyer-order-detail">
@@ -439,10 +506,62 @@ function OrderDetailContent({ order }: { order: BuyerOrderDetail }) {
           </section>
 
           <section className="agrivo-dashboard-panel" id="order-tracking">
-            <h3 className="agrivo-heading text-lg font-bold text-[#102018]">Order Tracking</h3>
-            <div className="mt-4">
-              <OrderTrackingTimeline order={order} />
-            </div>
+            <h3 className="agrivo-heading text-lg font-bold text-[#102018]">
+              {t("delivery.trackShipment", "Track Shipment")}
+            </h3>
+            {trackingRecord ? (
+              <div className="mt-4 space-y-4">
+                <p className="text-sm text-[#5F6F64]">
+                  {translateDeliveryMethod(t, trackingRecord.method)}
+                  {trackingRecord.pickupCode
+                    ? ` · ${t("delivery.pickupCode", "Pickup Code")}: ${trackingRecord.pickupCode}`
+                    : ""}
+                </p>
+                <DeliveryTrackingTimeline events={trackingRecord.events} />
+                <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                  {trackingRecord.cancellable ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-full border-[#fecaca] text-[#b91c1c] hover:bg-[#fef2f2]"
+                      onClick={handleCancelDelivery}
+                    >
+                      <XCircle className="mr-2 h-4 w-4" />
+                      {t("delivery.cancelDelivery", "Cancel Delivery")}
+                    </Button>
+                  ) : null}
+                  {trackingRecord.status === "delivered" && !trackingRecord.rating ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
+                      onClick={handleRateDelivery}
+                    >
+                      <Star className="mr-2 h-4 w-4" />
+                      {t("delivery.rateDelivery", "Rate Delivery")}
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
+                    onClick={handleDownloadReceipt}
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    {t("delivery.downloadReceipt", "Download Receipt")}
+                  </Button>
+                </div>
+                {actionMessage ? (
+                  <p className="rounded-xl border border-[#bbf7d0] bg-[#ecfdf5] px-3 py-2 text-sm text-[#166534]">
+                    {actionMessage}
+                  </p>
+                ) : null}
+              </div>
+            ) : (
+              <div className="mt-4">
+                <OrderTrackingTimeline order={order} />
+              </div>
+            )}
           </section>
 
           <section className="agrivo-dashboard-panel">

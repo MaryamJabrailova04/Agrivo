@@ -106,13 +106,28 @@ export async function updateDeliveryStatus(deliveryId, user, status) {
     throw forbidden("You do not have permission to update this delivery.");
   }
 
-  return prisma.delivery.update({
-    where: { id: deliveryId },
-    data: {
-      status,
-      ...(status === "delivered" ? { completedAt: new Date(), progress: 100 } : {}),
-    },
-    include: deliveryInclude,
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.delivery.update({
+      where: { id: deliveryId },
+      data: {
+        status,
+        ...(status === "delivered" ? { completedAt: new Date(), progress: 100 } : {}),
+      },
+      include: {
+        ...deliveryInclude,
+        trackingEvents: { orderBy: { createdAt: "asc" } },
+      },
+    });
+
+    await tx.trackingEvent.create({
+      data: {
+        deliveryId,
+        stepId: status,
+        label: String(status).replaceAll("_", " "),
+      },
+    });
+
+    return updated;
   });
 }
 

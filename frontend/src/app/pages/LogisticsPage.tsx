@@ -23,6 +23,8 @@ import { AgrivoNavbar } from "../components/AgrivoNavbar";
 import { useLanguage } from "../../i18n/LanguageContext";
 import type { TranslateFn } from "../../i18n/LanguageContext";
 import { LogisticsHeroVisual } from "../components/logistics/LogisticsHeroVisual";
+import { DeliveryTrackingTimeline } from "../components/delivery/DeliveryTrackingTimeline";
+import type { TrackingEvent } from "../data/deliveryTypes";
 import {
   Accordion,
   AccordionContent,
@@ -81,6 +83,57 @@ const TRACKING_STEP_KEYS = [
   "logisticsPage.status.inTransit",
   "logisticsPage.status.delivered",
 ] as const;
+
+const DEMO_TRACKING_EVENTS: TrackingEvent[] = [
+  {
+    id: "1",
+    stepId: "order_confirmed",
+    labelKey: "delivery.timeline.order_confirmed",
+    at: "",
+    complete: true,
+    current: false,
+  },
+  {
+    id: "2",
+    stepId: "preparing",
+    labelKey: "delivery.timeline.preparing",
+    at: "",
+    complete: true,
+    current: false,
+  },
+  {
+    id: "3",
+    stepId: "courier_assigned",
+    labelKey: "delivery.timeline.courier_assigned",
+    at: "",
+    complete: true,
+    current: false,
+  },
+  {
+    id: "4",
+    stepId: "picked_up",
+    labelKey: "delivery.timeline.picked_up",
+    at: "",
+    complete: true,
+    current: false,
+  },
+  {
+    id: "5",
+    stepId: "on_the_way",
+    labelKey: "delivery.timeline.on_the_way",
+    at: "",
+    complete: false,
+    current: true,
+  },
+  {
+    id: "6",
+    stepId: "delivered",
+    labelKey: "delivery.timeline.delivered",
+    at: "",
+    complete: false,
+    current: false,
+  },
+];
 
 const CURRENT_TRACKING_INDEX = 3;
 
@@ -441,50 +494,85 @@ export default function LogisticsPage() {
                     ))}
                   </div>
 
-                  <div className="agrivo-logistics-timeline mt-8">
-                    {TRACKING_STEP_KEYS.map((stepKey, index) => {
-                      const isComplete = index < CURRENT_TRACKING_INDEX;
-                      const isCurrent = index === CURRENT_TRACKING_INDEX;
-                      const isPending = index > CURRENT_TRACKING_INDEX;
+                  <div className="mt-8 grid gap-6 lg:grid-cols-2">
+                    <div>
+                      <p className="mb-3 text-sm font-semibold text-[#102018]">
+                        {t("delivery.trackShipment", "Track Shipment")}
+                      </p>
+                      <DeliveryTrackingTimeline events={DEMO_TRACKING_EVENTS} />
+                    </div>
+                    <div className="agrivo-logistics-timeline">
+                      {TRACKING_STEP_KEYS.map((stepKey, index) => {
+                        const isComplete = index < CURRENT_TRACKING_INDEX;
+                        const isCurrent = index === CURRENT_TRACKING_INDEX;
+                        const isPending = index > CURRENT_TRACKING_INDEX;
 
-                      return (
-                        <div
-                          key={stepKey}
-                          className={`agrivo-logistics-timeline-item ${isComplete ? "agrivo-logistics-timeline-item--done" : ""}`}
-                        >
-                          <div className="agrivo-logistics-timeline-marker-wrap">
-                            <span
-                              className={`agrivo-logistics-timeline-marker ${
-                                isCurrent
-                                  ? "agrivo-logistics-timeline-marker--current"
-                                  : isComplete
-                                    ? "agrivo-logistics-timeline-marker--done"
-                                    : "agrivo-logistics-timeline-marker--pending"
-                              }`}
-                            />
-                            {index < TRACKING_STEP_KEYS.length - 1 ? (
+                        return (
+                          <div
+                            key={stepKey}
+                            className={`agrivo-logistics-timeline-item ${isComplete ? "agrivo-logistics-timeline-item--done" : ""}`}
+                          >
+                            <div className="agrivo-logistics-timeline-marker-wrap">
                               <span
-                                className={`agrivo-logistics-timeline-line ${
-                                  isComplete ? "agrivo-logistics-timeline-line--done" : ""
+                                className={`agrivo-logistics-timeline-marker ${
+                                  isCurrent
+                                    ? "agrivo-logistics-timeline-marker--current"
+                                    : isComplete
+                                      ? "agrivo-logistics-timeline-marker--done"
+                                      : "agrivo-logistics-timeline-marker--pending"
                                 }`}
                               />
-                            ) : null}
+                              {index < TRACKING_STEP_KEYS.length - 1 ? (
+                                <span
+                                  className={`agrivo-logistics-timeline-line ${
+                                    isComplete ? "agrivo-logistics-timeline-line--done" : ""
+                                  }`}
+                                />
+                              ) : null}
+                            </div>
+                            <div
+                              className={`agrivo-logistics-timeline-content ${
+                                isCurrent ? "agrivo-logistics-timeline-content--current" : ""
+                              } ${isPending ? "agrivo-logistics-timeline-content--pending" : ""}`}
+                            >
+                              <p className="text-sm font-semibold text-[#102018]">{t(stepKey)}</p>
+                              {isCurrent ? (
+                                <p className="mt-0.5 text-xs font-medium text-[#14532D]">
+                                  {t("delivery.timeline.current", "Current status")}
+                                </p>
+                              ) : null}
+                            </div>
                           </div>
-                          <div
-                            className={`agrivo-logistics-timeline-content ${
-                              isCurrent ? "agrivo-logistics-timeline-content--current" : ""
-                            } ${isPending ? "agrivo-logistics-timeline-content--pending" : ""}`}
-                          >
-                            <p className="text-sm font-semibold text-[#102018]">{t(stepKey)}</p>
-                            {isCurrent ? (
-                              <p className="mt-0.5 text-xs text-[#15803d]">
-                                {t("logisticsPage.visibility.currentStatus")}
-                              </p>
-                            ) : null}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-[18px] border border-[#edf2ea] bg-[#f8faf4] px-4 py-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-[#7a8b80]">
+                        {t("delivery.logistics.coverage")}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-[#102018]">12 regions</p>
+                    </div>
+                    <div className="rounded-[18px] border border-[#edf2ea] bg-[#f8faf4] px-4 py-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-[#7a8b80]">
+                        {t("delivery.logistics.citiesServed")}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-[#102018]">40+ cities</p>
+                    </div>
+                    <div className="rounded-[18px] border border-[#edf2ea] bg-[#f8faf4] px-4 py-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-[#7a8b80]">
+                        {t("delivery.logistics.avgDeliveryTime")}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-[#102018]">2h 40m</p>
+                    </div>
+                    <div className="rounded-[18px] border border-[#edf2ea] bg-[#f8faf4] px-4 py-3">
+                      <p className="text-xs font-medium uppercase tracking-wide text-[#7a8b80]">
+                        {t("delivery.logistics.stats")}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-[#102018]">98% on-time</p>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

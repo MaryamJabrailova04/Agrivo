@@ -51,6 +51,19 @@ enum DeliveryPriority {
   high
 }
 
+enum DeliveryMethodType {
+  farmer_delivery
+  agrivo_logistics
+  self_pickup
+}
+
+enum FarmerVehicleType {
+  motorcycle
+  car
+  pickup
+  truck
+}
+
 model User {
   id           String   @id @default(cuid())
   name         String
@@ -68,6 +81,8 @@ model User {
   buyerOrders      Order[]           @relation("BuyerOrders")
   farmerOrders     Order[]           @relation("FarmerOrders")
   deliveries       Delivery[]        @relation("LogisticsDeliveries")
+  couriers         Courier[]         @relation("LogisticsCouriers")
+  vehicles         Vehicle[]         @relation("LogisticsVehicles")
 }
 
 model FarmerProfile {
@@ -95,6 +110,8 @@ model FarmerProfile {
   updatedAt       DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliverySettings FarmerDeliverySettings?
+  pickupSchedule   PickupSchedule?
 }
 
 model LogisticsProfile {
@@ -149,6 +166,7 @@ model Product {
   farmer     User        @relation("FarmerProducts", fields: [farmerId], references: [id], onDelete: Cascade)
   cartItems  CartItem[]
   orderItems OrderItem[]
+  deliveryOptions ProductDeliveryOptions?
 }
 
 model CartItem {
@@ -172,6 +190,9 @@ model Order {
   status          OrderStatus @default(pending)
   totalAmount     Float
   deliveryMethod  String?
+  deliveryFee     Float       @default(0)
+  pickupCode      String?
+  selectedEtaWindow String?
   deliveryAddress String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
@@ -201,8 +222,12 @@ model Delivery {
   id                 String           @id @default(cuid())
   orderId            String           @unique
   logisticsPartnerId String?
+  courierId          String?
+  vehicleId          String?
+  method             DeliveryMethodType @default(agrivo_logistics)
   driverName         String?
   vehicle            String?
+  pickupCode         String?
   pickupLocation     String?
   dropoffLocation    String?
   pickupTime         DateTime?
@@ -221,4 +246,92 @@ model Delivery {
 
   order            Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
   logisticsPartner User? @relation("LogisticsDeliveries", fields: [logisticsPartnerId], references: [id], onDelete: SetNull)
+  courier          Courier? @relation(fields: [courierId], references: [id], onDelete: SetNull)
+  assignedVehicle  Vehicle? @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  trackingEvents   TrackingEvent[]
+}
+
+model FarmerDeliverySettings {
+  id                     String            @id @default(cuid())
+  farmerProfileId        String            @unique
+  farmerDeliveryEnabled  Boolean           @default(true)
+  deliveryFee            Float             @default(2)
+  radiusKm               Float             @default(20)
+  workingDays            String            @default("monday,tuesday,wednesday,thursday,friday")
+  deliveryHoursStart     String            @default("09:00")
+  deliveryHoursEnd       String            @default("19:00")
+  maxDailyDeliveries     Int               @default(8)
+  vehicleType            FarmerVehicleType @default(pickup)
+  logisticsEnabled       Boolean           @default(true)
+  logisticsFee           Float             @default(3)
+  pickupEnabled          Boolean           @default(true)
+  sameDayAvailable       Boolean           @default(true)
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  farmerProfile FarmerProfile @relation(fields: [farmerProfileId], references: [id], onDelete: Cascade)
+}
+
+model ProductDeliveryOptions {
+  id               String  @id @default(cuid())
+  productId        String  @unique
+  farmerDelivery   Boolean @default(true)
+  agrivoLogistics  Boolean @default(true)
+  selfPickup       Boolean @default(true)
+  farmerFeeOverride Float?
+  logisticsFeeOverride Float?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model PickupSchedule {
+  id              String   @id @default(cuid())
+  farmerProfileId String   @unique
+  address         String?
+  hoursStart      String   @default("08:00")
+  hoursEnd        String   @default("19:00")
+  prepMinutes     Int      @default(25)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  farmerProfile FarmerProfile @relation(fields: [farmerProfileId], references: [id], onDelete: Cascade)
+}
+
+model Courier {
+  id                 String   @id @default(cuid())
+  logisticsPartnerId String
+  name               String
+  phone              String?
+  status             String   @default("available")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  logisticsPartner User       @relation("LogisticsCouriers", fields: [logisticsPartnerId], references: [id], onDelete: Cascade)
+  deliveries       Delivery[]
+}
+
+model Vehicle {
+  id                 String   @id @default(cuid())
+  logisticsPartnerId String
+  label              String
+  plateNumber        String?
+  vehicleType        String   @default("van")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  logisticsPartner User       @relation("LogisticsVehicles", fields: [logisticsPartnerId], references: [id], onDelete: Cascade)
+  deliveries       Delivery[]
+}
+
+model TrackingEvent {
+  id         String   @id @default(cuid())
+  deliveryId String
+  stepId     String
+  label      String
+  note       String?
+  createdAt  DateTime @default(now())
+
+  delivery Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
 }

@@ -42,6 +42,12 @@ import {
 } from "../data/harvestExplorer";
 import { getFarmerBySlug } from "../data/farmers";
 import { buildWhatsAppUrl } from "../utils/whatsapp";
+import { getProductDeliveryCapability } from "../utils/deliveryOptionsStorage";
+import {
+  getFarmerDeliverySettings,
+  isFastDelivery,
+  isFreeDelivery,
+} from "../utils/farmerDeliverySettingsStorage";
 import { districtShortName, districtsMatchGeo } from "../data/harvestExplorerUtils";
 import { isApiMode } from "../../config/dataMode";
 import { getProducts, type ApiProduct } from "../../api/productsApi";
@@ -184,6 +190,11 @@ export default function ProductsPage() {
   const [villageFilter, setVillageFilter] = useState("");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [deliveryOnly, setDeliveryOnly] = useState(false);
+  const [filterFarmerDelivery, setFilterFarmerDelivery] = useState(false);
+  const [filterLogistics, setFilterLogistics] = useState(false);
+  const [filterPickup, setFilterPickup] = useState(false);
+  const [filterFreeDelivery, setFilterFreeDelivery] = useState(false);
+  const [filterFastDelivery, setFilterFastDelivery] = useState(false);
   const [visibleCount, setVisibleCount] = useState(REMAINING_PAGE_SIZE);
   const [mobileVisibleCount, setMobileVisibleCount] = useState(MOBILE_PAGE_SIZE);
   const [isLoading, setIsLoading] = useState(false);
@@ -255,6 +266,18 @@ export default function ProductsPage() {
 
       const matchesVerified = !verifiedOnly || listing.farmerVerified;
       const matchesDelivery = !deliveryOnly || listing.deliveryAvailable;
+      const capability = getProductDeliveryCapability(
+        listing.id,
+        listing.slug,
+        listing.farmerSlug,
+        listing.deliveryAvailable,
+      );
+      const settings = getFarmerDeliverySettings(listing.farmerSlug);
+      const matchesFarmerDelivery = !filterFarmerDelivery || capability.farmerDelivery;
+      const matchesLogistics = !filterLogistics || capability.agrivoLogistics;
+      const matchesPickup = !filterPickup || capability.selfPickup;
+      const matchesFree = !filterFreeDelivery || isFreeDelivery(settings);
+      const matchesFast = !filterFastDelivery || isFastDelivery(settings);
 
       return (
         matchesQuery &&
@@ -264,13 +287,23 @@ export default function ProductsPage() {
         matchesDistrict &&
         matchesVillage &&
         matchesVerified &&
-        matchesDelivery
+        matchesDelivery &&
+        matchesFarmerDelivery &&
+        matchesLogistics &&
+        matchesPickup &&
+        matchesFree &&
+        matchesFast
       );
     });
   }, [
     categoryFilter,
     deliveryOnly,
     districtFilter,
+    filterFarmerDelivery,
+    filterFastDelivery,
+    filterFreeDelivery,
+    filterLogistics,
+    filterPickup,
     productChip,
     regionFilter,
     searchTerm,
@@ -334,14 +367,41 @@ export default function ProductsPage() {
 
       const matchesVerified = !verifiedOnly || listing.farmerVerified;
       const matchesDelivery = !deliveryOnly || listing.deliveryAvailable;
+      const capability = getProductDeliveryCapability(
+        listing.id,
+        listing.slug,
+        listing.farmerSlug,
+        listing.deliveryAvailable,
+      );
+      const settings = getFarmerDeliverySettings(listing.farmerSlug);
+      const matchesFarmerDelivery = !filterFarmerDelivery || capability.farmerDelivery;
+      const matchesLogistics = !filterLogistics || capability.agrivoLogistics;
+      const matchesPickup = !filterPickup || capability.selfPickup;
+      const matchesFree = !filterFreeDelivery || isFreeDelivery(settings);
+      const matchesFast = !filterFastDelivery || isFastDelivery(settings);
 
       return (
-        matchesQuery && matchesChip && matchesCategory && matchesVillage && matchesVerified && matchesDelivery
+        matchesQuery &&
+        matchesChip &&
+        matchesCategory &&
+        matchesVillage &&
+        matchesVerified &&
+        matchesDelivery &&
+        matchesFarmerDelivery &&
+        matchesLogistics &&
+        matchesPickup &&
+        matchesFree &&
+        matchesFast
       );
     });
   }, [
     categoryFilter,
     deliveryOnly,
+    filterFarmerDelivery,
+    filterFastDelivery,
+    filterFreeDelivery,
+    filterLogistics,
+    filterPickup,
     productChip,
     regionFilter,
     searchTerm,
@@ -707,6 +767,35 @@ export default function ProductsPage() {
                   <label className="flex items-center gap-2 rounded-full border border-[#e3ece0] bg-[#f8fbf6] px-4 py-2 text-sm text-[#3f5247]">
                     <Checkbox checked={deliveryOnly} onCheckedChange={(v) => setDeliveryOnly(Boolean(v))} />
                     {t("marketplace.deliveryOnly")}
+                  </label>
+                  <label className="flex items-center gap-2 rounded-full border border-[#e3ece0] bg-[#f8fbf6] px-4 py-2 text-sm text-[#3f5247]">
+                    <Checkbox
+                      checked={filterFarmerDelivery}
+                      onCheckedChange={(v) => setFilterFarmerDelivery(Boolean(v))}
+                    />
+                    {t("delivery.filters.farmer")}
+                  </label>
+                  <label className="flex items-center gap-2 rounded-full border border-[#e3ece0] bg-[#f8fbf6] px-4 py-2 text-sm text-[#3f5247]">
+                    <Checkbox checked={filterLogistics} onCheckedChange={(v) => setFilterLogistics(Boolean(v))} />
+                    {t("delivery.filters.logistics")}
+                  </label>
+                  <label className="flex items-center gap-2 rounded-full border border-[#e3ece0] bg-[#f8fbf6] px-4 py-2 text-sm text-[#3f5247]">
+                    <Checkbox checked={filterPickup} onCheckedChange={(v) => setFilterPickup(Boolean(v))} />
+                    {t("delivery.filters.pickup")}
+                  </label>
+                  <label className="flex items-center gap-2 rounded-full border border-[#e3ece0] bg-[#f8fbf6] px-4 py-2 text-sm text-[#3f5247]">
+                    <Checkbox
+                      checked={filterFreeDelivery}
+                      onCheckedChange={(v) => setFilterFreeDelivery(Boolean(v))}
+                    />
+                    {t("delivery.filters.free")}
+                  </label>
+                  <label className="flex items-center gap-2 rounded-full border border-[#e3ece0] bg-[#f8fbf6] px-4 py-2 text-sm text-[#3f5247]">
+                    <Checkbox
+                      checked={filterFastDelivery}
+                      onCheckedChange={(v) => setFilterFastDelivery(Boolean(v))}
+                    />
+                    {t("delivery.filters.fast")}
                   </label>
                 </div>
               </motion.div>

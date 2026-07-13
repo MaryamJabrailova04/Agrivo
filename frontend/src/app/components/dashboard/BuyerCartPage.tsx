@@ -50,6 +50,15 @@ import {
   localizePriceUnit,
   translateBuyerProductName,
 } from "../../../i18n/buyerDashboardHelpers";
+import { DeliveryMethodPicker } from "../delivery/DeliveryMethodPicker";
+import type { DeliveryMethod } from "../../data/deliveryTypes";
+import {
+  getCartDeliveryMethod,
+  getDeliveryMethodQuotes,
+  setCartDeliveryMethod,
+} from "../../utils/deliveryOptionsStorage";
+import { createDeliveryTracking } from "../../utils/deliveryTrackingStorage";
+import { translateDeliveryMethod } from "../../../i18n/deliveryHelpers";
 
 function CartQuantityControl({
   item,
@@ -407,18 +416,43 @@ function CheckoutDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
   items: CartItem[];
-  onPlaceOrder: (details: { address: string; phone: string; note: string }) => void;
+  onPlaceOrder: (details: {
+    address: string;
+    phone: string;
+    note: string;
+    deliveryMethod: DeliveryMethod;
+    deliveryFee: number;
+  }) => void;
 }) {
   const { t } = useLanguage();
-  const summary = useMemo(() => getCartSummary(items), [items]);
+  const primaryFarmerSlug = items[0]?.farmerSlug ?? null;
+  const quotes = useMemo(
+    () => getDeliveryMethodQuotes("cart", primaryFarmerSlug, items.some((item) => item.deliveryAvailable)),
+    [items, primaryFarmerSlug],
+  );
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | null>(() => {
+    const saved = getCartDeliveryMethod();
+    if (saved && quotes.some((quote) => quote.method === saved && quote.enabled)) return saved;
+    return quotes.find((quote) => quote.enabled)?.method ?? "agrivo_logistics";
+  });
+
+  useEffect(() => {
+    if (deliveryMethod) setCartDeliveryMethod(deliveryMethod);
+  }, [deliveryMethod]);
+
+  const summary = useMemo(() => getCartSummary(items, deliveryMethod), [items, deliveryMethod]);
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
-  const canSubmit = address.trim().length > 5 && phone.trim().length >= 7;
+  const needsAddress = deliveryMethod !== "self_pickup";
+  const canSubmit =
+    Boolean(deliveryMethod) &&
+    phone.trim().length >= 7 &&
+    (!needsAddress || address.trim().length > 5);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="agrivo-buyer-checkout-dialog sm:max-w-lg">
+      <DialogContent className="agrivo-buyer-checkout-dialog max-h-[90vh] overflow-y-auto sm:max-w-xl">
         <DialogHeader>
           <DialogTitle className="agrivo-heading text-xl font-bold text-[#102018]">
             {t("buyerCart.orderSummary.proceedToCheckout")}
@@ -432,16 +466,75 @@ function CheckoutDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          <div className="space-y-2">
-            <Label htmlFor="checkout-address">{t("buyerCart.checkout.deliveryAddress", "Delivery address")}</Label>
-            <Textarea
-              id="checkout-address"
-              value={address}
-              onChange={(event) => setAddress(event.target.value)}
-              placeholder={t("buyerCart.checkout.deliveryAddressPlaceholder", "Street, building, city")}
-              className="min-h-[88px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
-            />
+          <DeliveryMethodPicker
+            quotes={quotes}
+            selected={deliveryMethod}
+            onSelect={setDeliveryMethod}
+            compact
+          />
+
+          <div className="rounded-xl border border-[#edf2ea] bg-[#f8faf4] p-4 text-sm">
+            <div className="flex items-center justify-between gap-3">
+              <span className="text-[#5F6F64]">{t("delivery.products", "Products")}</span>
+              <span className="font-semibold text-[#102018]">
+                {summary.productsSubtotal.toFixed(2)} AZN
+              </span>
+            </div>
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="text-[#5F6F64]">{t("delivery.delivery", "Delivery")}</span>
+              <span className="font-semibold text-[#102018]">
+                {summary.deliveryFee.toFixed(2)} AZN
+              </span>
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#e5efe1] pt-3">
+              <span className="font-semibold text-[#102018]">{t("delivery.total", "Total")}</span>
+              <span className="text-lg font-bold text-[#14532D]">
+                {summary.total.toFixed(2)} AZN
+              </span>
+            </div>
+            {deliveryMethod ? (
+              <p className="mt-2 text-xs text-[#5F6F64]">
+                {translateDeliveryMethod(t, deliveryMethod)}
+              </p>
+            ) : null}
           </div>
+
+          {needsAddress ? (
+            <div className="space-y-2">
+              <Label htmlFor="checkout-address">
+                {t("buyerCart.checkout.deliveryAddress", "Delivery address")}
+              </Label>
+              <Textarea
+                id="checkout-address"
+                value={address}
+                onChange={(event) => setAddress(event.target.value)}
+                placeholder={t(
+                  "buyerCart.checkout.deliveryAddressPlaceholder",
+                  "Street, building, city",
+                )}
+                className="min-h-[88px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
+              />
+            </div>
+          ) : (
+            <div className="rounded-xl border border-[#dbe7d4] bg-white p-4 text-sm text-[#5F6F64]">
+              <p className="font-semibold text-[#14532D]">
+                {t("delivery.methods.self_pickup.title", "Self Pickup")}
+              </p>
+              <p className="mt-1">
+                {t("delivery.farmAddress", "Farm Address")}:{" "}
+                {quotes.find((q) => q.method === "self_pickup")?.meta?.hoursLabel
+                  ? t(
+                      "buyerCart.checkout.pickupHint",
+                      "Collect at the farm during pickup hours. Your pickup code will appear after placing the order.",
+                    )
+                  : t(
+                      "buyerCart.checkout.pickupHint",
+                      "Collect at the farm during pickup hours. Your pickup code will appear after placing the order.",
+                    )}
+              </p>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label htmlFor="checkout-phone">{t("buyerCart.checkout.phoneNumber", "Phone number")}</Label>
             <Input
@@ -454,12 +547,17 @@ function CheckoutDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="checkout-note">{t("buyerCart.checkout.deliveryNoteOptional", "Delivery note (optional)")}</Label>
+            <Label htmlFor="checkout-note">
+              {t("buyerCart.checkout.deliveryNoteOptional", "Delivery note (optional)")}
+            </Label>
             <Textarea
               id="checkout-note"
               value={note}
               onChange={(event) => setNote(event.target.value)}
-              placeholder={t("buyerCart.checkout.deliveryNotePlaceholder", "Gate code, preferred delivery time, etc.")}
+              placeholder={t(
+                "buyerCart.checkout.deliveryNotePlaceholder",
+                "Gate code, preferred delivery time, etc.",
+              )}
               className="min-h-[72px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
             />
           </div>
@@ -467,10 +565,6 @@ function CheckoutDialog({
           <div className="rounded-xl border border-[#edf2ea] bg-[#f8faf4] p-4 text-sm">
             <p className="font-semibold text-[#102018]">{t("buyerCart.orderSummary.paymentMethod")}</p>
             <p className="mt-1 text-[#5F6F64]">{t("buyerCart.orderSummary.cashOnDelivery")}</p>
-            <p className="mt-3 font-semibold text-[#102018]">
-              {t("buyerCart.checkout.orderTotal", "Order total")}:{" "}
-              <span className="text-[#14532D]">{summary.total.toFixed(2)} AZN</span>
-            </p>
           </div>
         </div>
 
@@ -484,10 +578,17 @@ function CheckoutDialog({
           </Button>
           <Button
             className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
-            disabled={!canSubmit}
-            onClick={() =>
-              onPlaceOrder({ address: address.trim(), phone: phone.trim(), note: note.trim() })
-            }
+            disabled={!canSubmit || !deliveryMethod}
+            onClick={() => {
+              if (!deliveryMethod) return;
+              onPlaceOrder({
+                address: address.trim(),
+                phone: phone.trim(),
+                note: note.trim(),
+                deliveryMethod,
+                deliveryFee: summary.deliveryFee,
+              });
+            }}
           >
             {t("buyerCart.checkout.placeOrder", "Place Order")}
           </Button>
@@ -551,7 +652,13 @@ export function BuyerCartPage() {
     };
   }, [t]);
 
-  const handlePlaceOrder = async (details: { address: string; phone: string; note: string }) => {
+  const handlePlaceOrder = async (details: {
+    address: string;
+    phone: string;
+    note: string;
+    deliveryMethod: DeliveryMethod;
+    deliveryFee: number;
+  }) => {
     if (!user?.id || activeCartItems.length === 0) return;
     if (isApiMode) {
       try {
@@ -563,14 +670,24 @@ export function BuyerCartPage() {
           groupedByFarmer.set(key, list);
         });
         for (const [farmerKey, items] of groupedByFarmer.entries()) {
-          await createOrder({
+          const order = await createOrder({
             farmerId: items[0].farmerSlug || farmerKey,
-            deliveryMethod: "Agrivo logistics",
-            deliveryAddress: `${details.address} (${details.phone})${details.note ? ` - ${details.note}` : ""}`,
+            deliveryMethod: details.deliveryMethod,
+            deliveryFee: details.deliveryFee,
+            deliveryAddress:
+              details.deliveryMethod === "self_pickup"
+                ? `Self pickup (${details.phone})${details.note ? ` - ${details.note}` : ""}`
+                : `${details.address} (${details.phone})${details.note ? ` - ${details.note}` : ""}`,
             items: items.map((item) => ({
               productId: item.id,
               quantity: item.selectedQuantity,
             })),
+          });
+          createDeliveryTracking({
+            orderId: order.id,
+            method: details.deliveryMethod,
+            deliveryFee: details.deliveryFee,
+            farmerSlug: items[0].farmerSlug,
           });
         }
         await clearCartApi();
@@ -584,7 +701,21 @@ export function BuyerCartPage() {
       return;
     }
 
-    placeOrdersFromCart(user.id, activeCartItems);
+    const created = placeOrdersFromCart(user.id, activeCartItems, {
+      deliveryMethod: details.deliveryMethod,
+      deliveryFee: details.deliveryFee,
+      address: details.address,
+      phone: details.phone,
+      note: details.note,
+    });
+    created.forEach((order) => {
+      createDeliveryTracking({
+        orderId: order.orderId,
+        method: details.deliveryMethod,
+        deliveryFee: details.deliveryFee,
+        farmerSlug: activeCartItems.find((item) => item.name === order.product)?.farmerSlug,
+      });
+    });
     clearBuyerCart();
     setCheckoutOpen(false);
     sessionStorage.setItem("agrivo_order_success", t("buyerCart.feedback.orderPlaced", "Order placed successfully."));
