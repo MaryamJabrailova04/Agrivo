@@ -1,0 +1,110 @@
+name: Azure Capacity Preflight
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  discover:
+    name: Discover AKS capacity without quota changes
+    runs-on: ubuntu-latest
+    environment: dev
+
+    steps:
+      - name: Azure login with OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Find regions with usable small VM quota
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          regions=(
+            northeurope
+            swedencentral
+            francecentral
+            germanywestcentral
+            uksouth
+            eastus
+            eastus2
+            centralus
+          )
+          sizes=(
+            Standard_B2s
+            Standard_D2s_v3
+            Standard_D2as_v5
+            Standard_D2s_v5
+            Standard_DC2as_v6
+          )
+
+          report="$RUNNER_TEMP/azure-capacity.tsv"
+          printf 'region\tsku\tfamily\tused\tlimit\tremaining\tstatus\n' > "$report"
+
+          for region in "${regions[@]}"; do
+            usage_json=$(az vm list-usage --location "$region" --output json)
+
+            for size in "${sizes[@]}"; do
+              sku_json=$(az vm list-skus \
+                --location "$region" \
+                --size "$size" \
+                --resource-type virtualMachines \
+                --all \
+                --output json)
+
+              sku_count=$(jq 'length' <<< "$sku_json")
+              if [[ "$sku_count" -eq 0 ]]; then
+                printf '%s\t%s\t-\t-\t-\t-\tunavailable\n' "$region" "$size" >> "$report"
+                continue
+              fi
+
+              family=$(jq -r '.[0].family // "unknown"' <<< "$sku_json")
+              restrictions=$(jq '.[0].restrictions | length' <<< "$sku_json")
+
+              usage=$(jq -c --arg family "${family,,}" '
+                first(.[] | select((.name.value // "" | ascii_downcase) == $family)) // {}
+              ' <<< "$usage_json")
+              used=$(jq -r '.currentValue // 0' <<< "$usage")
+              limit=$(jq -r '.limit // 0' <<< "$usage")
+              remaining=$((limit - used))
+
+              if [[ "$restrictions" -eq 0 && "$remaining" -ge 2 ]]; then
+                status=usable
+              elif [[ "$restrictions" -gt 0 ]]; then
+                status=restricted
+              else
+                status=no-quota
+              fi
+
+              printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+                "$region" "$size" "$family" "$used" "$limit" "$remaining" "$status" \
+                >> "$report"
+            done
+          done
+
+          column -t -s $'\t' "$report"
+
+          {
+            echo '## Azure AKS capacity preflight'
+            echo
+            echo 'No quota or resource changes were made.'
+            echo
+            echo '| Region | VM size | Family | Used | Limit | Remaining | Status |'
+            echo '|---|---|---|---:|---:|---:|---|'
+            tail -n +2 "$report" | while IFS=$'\t' read -r region sku family used limit remaining status; do
+              echo "| $region | $sku | $family | $used | $limit | $remaining | $status |"
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          usable=$(awk -F '\t' '$7 == "usable" { count++ } END { print count + 0 }' "$report")
+          if [[ "$usable" -eq 0 ]]; then
+            echo 'No tested region/SKU combination has at least 2 free vCPUs.' >&2
+            exit 2
+          fi
+
