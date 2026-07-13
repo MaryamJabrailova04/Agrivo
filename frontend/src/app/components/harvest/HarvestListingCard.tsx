@@ -1,5 +1,5 @@
-import { useMemo } from "react";
-import { MapPin, MessageCircle } from "lucide-react";
+import { useCallback, useMemo, type KeyboardEvent, type MouseEvent } from "react";
+import { ArrowRight, MapPin, MessageCircle } from "lucide-react";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import {
   localizeHarvestListing,
@@ -40,18 +40,42 @@ export function HarvestListingCard({
 
   const topBadge = rawTopBadge ? translateTag(t, rawTopBadge) : null;
 
-  const detailTags = display.tags
-    .filter((tag) => tag !== topBadge)
-    .slice(0, 2);
+  const detailTags = display.tags.filter((tag) => tag !== topBadge).slice(0, 2);
 
   const locationText = `${listing.economicRegion} > ${districtShortName(listing.district)}${
     listing.village ? ` > ${listing.village}` : ""
   }`;
 
+  const handleCardClick = useCallback(() => {
+    onViewDetails();
+  }, [onViewDetails]);
+
+  const handleCardKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLDivElement>) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      onViewDetails();
+    },
+    [onViewDetails],
+  );
+
+  const stopCardNavigation = useCallback((event: MouseEvent) => {
+    event.stopPropagation();
+  }, []);
+
   return (
     <Card
+      role="link"
+      tabIndex={0}
+      aria-label={t(
+        "marketplace.card.openProduct",
+        { name: display.name },
+        `View details for ${display.name}`,
+      )}
+      onClick={handleCardClick}
+      onKeyDown={handleCardKeyDown}
       className={cn(
-        "agrivo-product-card agrivo-card agrivo-harvest-card agrivo-product-card--interactive flex h-full w-full flex-col overflow-hidden rounded-[30px] border border-[#e5efe1] bg-white shadow-[0_12px_32px_rgba(20,83,45,0.05)]",
+        "agrivo-product-card agrivo-card agrivo-harvest-card agrivo-product-card--interactive flex h-full w-full cursor-pointer flex-col overflow-hidden rounded-[30px] border border-[#e5efe1] bg-white shadow-[0_12px_32px_rgba(20,83,45,0.05)] outline-none",
         compact ? "agrivo-harvest-card--compact min-h-0" : "min-h-[540px]",
         selected && "agrivo-harvest-card--selected border-[#14532D] ring-2 ring-[#14532D]/15",
       )}
@@ -75,12 +99,18 @@ export function HarvestListingCard({
         {topBadge ? (
           <span className="agrivo-product-badge agrivo-product-badge--overlay">{topBadge}</span>
         ) : null}
-        <ProductSaveButton listing={listing} slug={listing.slug} className="agrivo-product-save-btn--overlay" />
+        <div onClick={stopCardNavigation}>
+          <ProductSaveButton
+            listing={listing}
+            slug={listing.slug}
+            className="agrivo-product-save-btn--overlay"
+          />
+        </div>
       </div>
 
       <CardContent className="flex flex-1 flex-col px-5 pb-5 pt-4">
         <p className="agrivo-product-region flex items-center gap-1.5 text-sm text-[#6b7a70]">
-          <MapPin className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
+          <MapPin className="h-3.5 w-3.5 shrink-0 text-[#43A047]" aria-hidden="true" />
           <span className="truncate">{locationText}</span>
         </p>
 
@@ -97,9 +127,7 @@ export function HarvestListingCard({
           <ProductVarietyBadge variety={display.variety} label={t("marketplace.card.variety")} />
         </div>
 
-        <p className="agrivo-product-farmer line-clamp-1 text-sm text-[#6b7a70]">
-          {listing.farmer}
-        </p>
+        <p className="agrivo-product-farmer line-clamp-1 text-sm text-[#6b7a70]">{listing.farmer}</p>
 
         <div className="agrivo-harvest-card-meta mt-3 grid grid-cols-2 gap-x-3">
           <div>
@@ -131,27 +159,39 @@ export function HarvestListingCard({
           </div>
         ) : null}
 
-        <div className="agrivo-harvest-card-footer mt-auto pt-4">
+        <div className="agrivo-harvest-card-actions mt-auto pt-4">
+          <div className="agrivo-harvest-card-footer">
+            <Button
+              type="button"
+              variant="outline"
+              className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--secondary agrivo-harvest-card-btn--details"
+              onClick={(event) => {
+                event.stopPropagation();
+                onViewDetails();
+              }}
+            >
+              <span className="truncate">{t("marketplace.card.viewDetails")}</span>
+              <ArrowRight className="h-4 w-4 shrink-0" aria-hidden="true" />
+            </Button>
+            <ProductAddToCartButton
+              listing={listing}
+              className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--primary agrivo-harvest-card-btn--cart"
+              label={t("marketplace.card.addToCart")}
+            />
+          </div>
+
           <Button
-            variant="outline"
-            className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--secondary agrivo-harvest-card-btn--details h-11 rounded-full text-sm font-semibold"
-            onClick={onViewDetails}
+            type="button"
+            className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--contact"
+            onClick={(event) => {
+              event.stopPropagation();
+              onContactSeller();
+            }}
           >
-            {t("marketplace.card.viewDetails")}
+            <MessageCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="truncate">{t("marketplace.card.contactSeller")}</span>
           </Button>
-          <ProductAddToCartButton
-            listing={listing}
-            className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--primary agrivo-harvest-card-btn--cart h-11 w-full rounded-full bg-[#14532d] text-sm font-semibold text-white hover:bg-[#1b6b3f]"
-            label={t("marketplace.card.addToCart")}
-          />
         </div>
-        <Button
-          className="agrivo-button-soft agrivo-harvest-card-btn agrivo-harvest-card-btn--primary mt-2.5 h-11 w-full rounded-full bg-[#ecfdf5] text-sm font-semibold text-[#14532D] hover:bg-[#d1fae5]"
-          onClick={onContactSeller}
-        >
-          <MessageCircle className="h-4 w-4 shrink-0" />
-          <span className="truncate">{t("marketplace.card.contactSeller")}</span>
-        </Button>
       </CardContent>
     </Card>
   );

@@ -4,10 +4,8 @@ import { useSavedProducts } from "../../context/SavedProductsContext";
 import { useAuth } from "../../auth/AuthContext";
 import { cn } from "../ui/utils";
 import { navigateToHash } from "../../../i18n/localizedRoutes";
-import {
-  savedProductFromListing,
-  type SavedProduct,
-} from "../../utils/savedProductsStorage";
+import { useLanguage } from "../../../i18n/LanguageContext";
+import type { SavedProduct } from "../../utils/savedProductsStorage";
 
 interface ProductSaveButtonProps {
   listing?: HarvestListing;
@@ -24,6 +22,7 @@ export function ProductSaveButton({
   className,
   size = "md",
 }: ProductSaveButtonProps) {
+  const { t } = useLanguage();
   const { isSaved, toggleSaveListing, toggleSaveProduct } = useSavedProducts();
   const { isAuthenticated } = useAuth();
   const saved = isSaved(slug);
@@ -58,7 +57,11 @@ export function ProductSaveButton({
         saved && "agrivo-product-save-btn--saved",
         className,
       )}
-      aria-label={saved ? "Remove from saved products" : "Save product"}
+      aria-label={
+        saved
+          ? t("marketplace.card.unsaveProduct", "Remove from saved products")
+          : t("marketplace.card.saveProduct", "Save product")
+      }
       aria-pressed={saved}
       onClick={handleClick}
       disabled={!listing && !product}

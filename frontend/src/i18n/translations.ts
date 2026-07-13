@@ -20,6 +20,9 @@ export const translations: Record<Language, TranslationTree> = {
       logout: "Logout",
       backToWebsite: "Back to website",
       openMenu: "Open menu",
+      closeMenu: "Close navigation menu",
+      menuTitle: "Navigation menu",
+      menuDescription: "Primary site navigation links and account actions",
     },
     language: {
       en: "English",
@@ -261,6 +264,9 @@ export const translations: Record<Language, TranslationTree> = {
         updated: "Updated",
         inCart: "In cart",
         contactSeller: "Contact seller",
+        openProduct: "View details for {name}",
+        saveProduct: "Save product",
+        unsaveProduct: "Remove from saved products",
       },
       insight: {
         eyebrow: "What grows here?",
@@ -3700,6 +3706,9 @@ export const translations: Record<Language, TranslationTree> = {
       logout: "Çıxış",
       backToWebsite: "Sayta qayıt",
       openMenu: "Menyunu aç",
+      closeMenu: "Naviqasiya menyusunu bağla",
+      menuTitle: "Naviqasiya menyusu",
+      menuDescription: "Əsas sayt naviqasiya keçidləri və hesab əməliyyatları",
     },
     language: {
       en: "English",
@@ -3941,6 +3950,9 @@ export const translations: Record<Language, TranslationTree> = {
         updated: "Yeniləndi",
         inCart: "Səbətdədir",
         contactSeller: "Satıcı ilə əlaqə",
+        openProduct: "{name} üçün ətraflı məlumat",
+        saveProduct: "Məhsulu yadda saxla",
+        unsaveProduct: "Yadda saxlanılanlardan sil",
       },
       insight: {
         eyebrow: "Burada nə yetişir?",
