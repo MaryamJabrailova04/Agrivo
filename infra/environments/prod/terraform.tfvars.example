@@ -15,7 +15,7 @@ tags = {
 }
 
 kubernetes_version = null
-node_vm_size       = "Standard_D4s_v5"
+node_vm_size       = "Standard_DC4as_v6"
 node_count         = 3
 min_node_count     = 3
 max_node_count     = 10
