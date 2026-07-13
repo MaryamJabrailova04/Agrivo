@@ -53,6 +53,18 @@ jobs:
           helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring --create-namespace --wait=false
       - name: Bootstrap Argo CD app-of-apps
         run: kubectl apply -f "gitops/argocd/root-app-${{ inputs.environment }}.yaml"
+      - name: Verify application rollout
+        run: |
+          NAMESPACE="agrivo-${{ inputs.environment }}"
+          for i in {1..60}; do
+            kubectl -n argocd get application "agrivo-backend-${{ inputs.environment }}" >/dev/null 2>&1 && \
+            kubectl -n argocd get application "agrivo-frontend-${{ inputs.environment }}" >/dev/null 2>&1 && break
+            sleep 5
+          done
+          kubectl -n argocd get applications
+          kubectl -n "$NAMESPACE" rollout status deployment/agrivo-backend --timeout=10m
+          kubectl -n "$NAMESPACE" rollout status deployment/agrivo-frontend --timeout=10m
+          kubectl -n "$NAMESPACE" get pods,services,ingress
       - name: Verify platform
         run: |
           kubectl -n argocd rollout status deployment/argocd-server --timeout=10m
