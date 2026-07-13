@@ -15,7 +15,9 @@ spec:
         - namespaceSelector: {}
       ports:
         - protocol: TCP
-          port: 80
+          # NetworkPolicy ports target the selected pod, not the Service port.
+          # The frontend Nginx container listens on 8080.
+          port: 8080
   egress:
     - to:
         - podSelector:
@@ -32,3 +34,4 @@ spec:
         - protocol: TCP
           port: 53
 {{- end }}
+  
