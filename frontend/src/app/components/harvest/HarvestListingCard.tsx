@@ -1,5 +1,5 @@
 import { useCallback, useMemo, type KeyboardEvent, type MouseEvent } from "react";
-import { ArrowRight, MapPin, MessageCircle } from "lucide-react";
+import { ArrowRight, MapPin, MessageCircle, Package, Truck } from "lucide-react";
 import { useLanguage } from "../../../i18n/LanguageContext";
 import {
   localizeHarvestListing,
@@ -15,6 +15,7 @@ import { cn } from "../ui/utils";
 import type { HarvestListing } from "../../data/harvestExplorer";
 import { districtShortName } from "../../data/harvestExplorerUtils";
 import { ProductVarietyBadge } from "../products/ProductVarietyBadge";
+import { getProductDeliveryCapability } from "../../utils/deliveryOptionsStorage";
 
 interface HarvestListingCardProps {
   listing: HarvestListing;
@@ -41,6 +42,31 @@ export function HarvestListingCard({
   const topBadge = rawTopBadge ? translateTag(t, rawTopBadge) : null;
 
   const detailTags = display.tags.filter((tag) => tag !== topBadge).slice(0, 2);
+
+  const capability = useMemo(
+    () =>
+      getProductDeliveryCapability(
+        listing.id,
+        listing.slug,
+        listing.farmerSlug,
+        listing.deliveryAvailable,
+      ),
+    [listing.id, listing.slug, listing.farmerSlug, listing.deliveryAvailable],
+  );
+
+  const deliveryBadges = useMemo(() => {
+    const badges: Array<{ key: string; label: string; icon: typeof Truck }> = [];
+    if (capability.farmerDelivery) {
+      badges.push({ key: "farmer", label: t("delivery.badges.farmer"), icon: Truck });
+    }
+    if (capability.agrivoLogistics) {
+      badges.push({ key: "logistics", label: t("delivery.badges.logistics"), icon: Package });
+    }
+    if (capability.selfPickup) {
+      badges.push({ key: "pickup", label: t("delivery.badges.pickup"), icon: MapPin });
+    }
+    return badges.slice(0, 3);
+  }, [capability, t]);
 
   const locationText = `${listing.economicRegion} > ${districtShortName(listing.district)}${
     listing.village ? ` > ${listing.village}` : ""
@@ -156,6 +182,20 @@ export function HarvestListingCard({
                 {tag}
               </span>
             ))}
+          </div>
+        ) : null}
+
+        {deliveryBadges.length > 0 ? (
+          <div className="agrivo-delivery-badges mt-2.5">
+            {deliveryBadges.map((badge) => {
+              const Icon = badge.icon;
+              return (
+                <span key={badge.key} className="agrivo-delivery-badge">
+                  <Icon className="h-3 w-3" aria-hidden="true" />
+                  {badge.label}
+                </span>
+              );
+            })}
           </div>
         ) : null}
 

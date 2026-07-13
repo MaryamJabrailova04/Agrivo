@@ -95,16 +95,59 @@ export async function createOrder(buyerId, input) {
     });
   }
 
-  return prisma.order.create({
-    data: {
-      buyerId,
-      farmerId,
-      totalAmount,
-      deliveryMethod: body.deliveryMethod || null,
-      deliveryAddress: body.deliveryAddress || null,
-      items: { create: itemsData },
-    },
-    include: orderInclude,
+  const deliveryMethod = body.deliveryMethod || "agrivo_logistics";
+  const deliveryFee = Number(body.deliveryFee || 0);
+  const pickupCode =
+    deliveryMethod === "self_pickup"
+      ? Array.from({ length: 6 }, () => "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"[Math.floor(Math.random() * 32)]).join("")
+      : null;
+
+  const methodEnum = ["farmer_delivery", "agrivo_logistics", "self_pickup"].includes(deliveryMethod)
+    ? deliveryMethod
+    : "agrivo_logistics";
+
+  return prisma.$transaction(async (tx) => {
+    const order = await tx.order.create({
+      data: {
+        buyerId,
+        farmerId,
+        totalAmount: totalAmount + deliveryFee,
+        deliveryMethod: methodEnum,
+        deliveryFee,
+        pickupCode,
+        selectedEtaWindow: body.selectedEtaWindow || null,
+        deliveryAddress: body.deliveryAddress || null,
+        items: { create: itemsData },
+      },
+      include: orderInclude,
+    });
+
+    const delivery = await tx.delivery.create({
+      data: {
+        orderId: order.id,
+        method: methodEnum,
+        pickupCode,
+        dropoffLocation: body.deliveryAddress || null,
+        status: "assigned",
+        progress: 5,
+      },
+    });
+
+    await tx.trackingEvent.create({
+      data: {
+        deliveryId: delivery.id,
+        stepId: "order_confirmed",
+        label: "Order Confirmed",
+      },
+    });
+
+    return tx.order.findUnique({
+      where: { id: order.id },
+      include: {
+        ...orderInclude,
+        delivery: { include: { trackingEvents: true } },
+      },
+    });
   });
 }
 

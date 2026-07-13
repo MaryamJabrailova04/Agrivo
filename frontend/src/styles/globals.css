@@ -5260,6 +5260,22 @@ video {
 }
 
 /* Product detail page */
+.agrivo-product-detail-page .agrivo-container {
+  width: min(100% - 1rem, 1280px);
+}
+
+@media (min-width: 640px) {
+  .agrivo-product-detail-page .agrivo-container {
+    width: min(100% - 2rem, 1280px);
+  }
+}
+
+@media (min-width: 1440px) {
+  .agrivo-product-detail-page .agrivo-container {
+    width: min(100% - 2.5rem, 1400px);
+  }
+}
+
 .agrivo-product-detail-back {
   display: inline-flex;
   align-items: center;
@@ -5274,17 +5290,285 @@ video {
   color: #1d6a3b;
 }
 
+.agrivo-product-detail-hero {
+  overflow: hidden;
+}
+
 .agrivo-product-detail-hero-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(1.25rem, 2.5vw, 2rem);
+  align-items: start;
 }
 
 @media (min-width: 1024px) {
   .agrivo-product-detail-hero-grid {
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
-    align-items: start;
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   }
+}
+
+@media (min-width: 1280px) {
+  .agrivo-product-detail-hero-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+    gap: 2rem;
+  }
+}
+
+.agrivo-product-detail-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+  width: 100%;
+}
+
+@media (min-width: 1280px) {
+  .agrivo-product-detail-gallery {
+    position: sticky;
+    top: calc(var(--agrivo-header-offset, 5.5rem) + 0.75rem);
+  }
+}
+
+.agrivo-product-detail-gallery__stage {
+  position: relative;
+  min-width: 0;
+}
+
+.agrivo-product-detail-gallery__main {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 1.25rem;
+  border: 1px solid #edf2ea;
+  background: #f8faf4;
+}
+
+.agrivo-product-detail-gallery__image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+}
+
+.agrivo-product-detail-gallery__main:hover .agrivo-product-detail-gallery__image {
+  transform: scale(1.06);
+}
+
+.agrivo-product-detail-gallery__thumbs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.625rem;
+}
+
+.agrivo-product-detail-gallery__thumb {
+  position: relative;
+  overflow: hidden;
+  aspect-ratio: 1 / 1;
+  border-radius: 0.875rem;
+  border: 1.5px solid #e5efe1;
+  background: #f8faf4;
+  padding: 0;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.agrivo-product-detail-gallery__thumb:hover {
+  border-color: #c8dcc4;
+}
+
+.agrivo-product-detail-gallery__thumb:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(67, 160, 71, 0.28);
+  border-color: #14532d;
+}
+
+.agrivo-product-detail-gallery__thumb--active {
+  border-color: #14532d;
+  box-shadow: 0 0 0 1px rgba(20, 83, 45, 0.2);
+}
+
+.agrivo-product-detail-gallery__thumb-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.agrivo-product-detail-hero-panel {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(1rem, 2vw, 1.25rem);
+  min-width: 0;
+}
+
+.agrivo-product-detail-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.agrivo-product-detail-title {
+  margin: 0.25rem 0 0;
+  font-size: clamp(1.5rem, 2.4vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #102018;
+  overflow-wrap: anywhere;
+}
+
+.agrivo-product-detail-location {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.375rem;
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #5f6f64;
+}
+
+.agrivo-product-detail-seller {
+  margin-top: 0.5rem;
+}
+
+.agrivo-product-detail-price-row {
+  margin-top: 0.75rem;
+}
+
+.agrivo-product-detail-price {
+  margin: 0;
+  font-size: clamp(1.5rem, 2.2vw, 1.875rem);
+  font-weight: 700;
+  color: #14532d;
+  line-height: 1.2;
+}
+
+.agrivo-product-detail-quick-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  align-items: stretch;
+}
+
+@media (min-width: 480px) {
+  .agrivo-product-detail-quick-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .agrivo-product-detail-quick-meta {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.agrivo-product-detail-quick-stat {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: 4.5rem;
+  height: 100%;
+  border-radius: 0.875rem;
+  border: 1px solid #edf2ea;
+  background: #f8faf4;
+  padding: 0.75rem 0.875rem;
+  box-sizing: border-box;
+}
+
+.agrivo-product-detail-quick-stat__label {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7a70;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agrivo-product-detail-quick-stat__value {
+  margin: 0.375rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #102018;
+  overflow-wrap: anywhere;
+}
+
+.agrivo-product-detail-cart-note {
+  margin: 0;
+  border-radius: 0.875rem;
+  border: 1px solid #bbf7d0;
+  background: #ecfdf5;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #166534;
+}
+
+.agrivo-product-detail-delivery {
+  min-width: 0;
+}
+
+.agrivo-product-detail-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.agrivo-product-detail-actions__primary,
+.agrivo-product-detail-actions__secondary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+}
+
+@media (min-width: 480px) {
+  .agrivo-product-detail-actions__secondary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.agrivo-product-detail-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+
+.agrivo-product-detail-btn--primary {
+  background: #14532d;
+  color: #ffffff;
+}
+
+.agrivo-product-detail-btn--primary:hover {
+  background: #1d6a3b;
+  color: #ffffff;
+}
+
+.agrivo-product-detail-btn--secondary {
+  border: 1.5px solid #dbe7d4;
+  background: #ffffff;
+  color: #14532d;
+}
+
+.agrivo-product-detail-btn--secondary:hover {
+  background: #eaf7ec;
+  color: #14532d;
 }
 
 .agrivo-product-detail-image-wrap {
@@ -5294,13 +5578,6 @@ video {
   background: #f8faf4;
   min-height: 280px;
   position: relative;
-}
-
-.agrivo-product-detail-quick-stat {
-  border-radius: 0.875rem;
-  border: 1px solid #edf2ea;
-  background: #f8faf4;
-  padding: 0.75rem;
 }
 
 .agrivo-product-detail-layout {
@@ -11467,4 +11744,368 @@ video {
   flex-direction: column;
   gap: 0.5rem;
   margin-top: 0.5rem;
+}
+
+/* Delivery Options System — method picker */
+.agrivo-delivery-method-picker {
+  width: 100%;
+  min-width: 0;
+  container-type: inline-size;
+  container-name: delivery-picker;
+}
+
+.agrivo-delivery-method-picker__subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--agrivo-muted-text, #5f6f64);
+}
+
+.agrivo-delivery-method-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 0.875rem;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+
+@container delivery-picker (min-width: 420px) {
+  .agrivo-delivery-method-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+}
+
+@container delivery-picker (min-width: 640px) {
+  .agrivo-delivery-method-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+
+/* Fallback when container queries are unsupported */
+@supports not (container-type: inline-size) {
+  @media (min-width: 640px) and (max-width: 1023px) {
+    .agrivo-delivery-method-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .agrivo-delivery-method-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1.5rem;
+    }
+  }
+}
+
+.agrivo-delivery-method-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
+  padding: 0.875rem;
+  border: 1.5px solid #e5efe1;
+  border-radius: 1rem;
+  background: var(--agrivo-white, #ffffff);
+  text-align: left;
+  cursor: pointer;
+  outline: none;
+  overflow: hidden;
+  box-sizing: border-box;
+  transition:
+    border-color 250ms ease,
+    box-shadow 250ms ease,
+    background-color 250ms ease,
+    transform 250ms ease;
+}
+
+.agrivo-delivery-method-picker--compact .agrivo-delivery-method-card {
+  padding: 0.75rem;
+}
+
+.agrivo-delivery-method-card:hover:not(.agrivo-delivery-method-card--disabled) {
+  border-color: #c8dcc4;
+  box-shadow: 0 8px 20px rgba(20, 83, 45, 0.06);
+  transform: translateY(-1px);
+}
+
+.agrivo-delivery-method-card:focus-visible {
+  box-shadow:
+    0 0 0 3px rgba(67, 160, 71, 0.28),
+    0 8px 20px rgba(20, 83, 45, 0.06);
+  border-color: var(--agrivo-deep-green, #14532d);
+}
+
+.agrivo-delivery-method-card--selected {
+  border-color: var(--agrivo-deep-green, #14532d);
+  background: var(--agrivo-soft-green, #eaf7ec);
+  box-shadow: 0 8px 20px rgba(20, 83, 45, 0.1);
+}
+
+.agrivo-delivery-method-card--selected:hover:not(.agrivo-delivery-method-card--disabled) {
+  border-color: var(--agrivo-deep-green, #14532d);
+  box-shadow: 0 10px 24px rgba(20, 83, 45, 0.12);
+}
+
+.agrivo-delivery-method-card--disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  pointer-events: none;
+}
+
+.agrivo-delivery-method-card__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.agrivo-delivery-method-card__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 9999px;
+  background: #ecfdf5;
+  color: var(--agrivo-deep-green, #14532d);
+  flex-shrink: 0;
+}
+
+.agrivo-delivery-method-picker--compact .agrivo-delivery-method-card__icon {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.agrivo-delivery-method-card--selected .agrivo-delivery-method-card__icon {
+  background: #dcfce7;
+}
+
+.agrivo-delivery-method-card__icon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.agrivo-delivery-method-card__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  flex-shrink: 0;
+  max-width: 100%;
+  border-radius: 9999px;
+  border: 1px solid #bbf7d0;
+  background: #ffffff;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--agrivo-deep-green, #14532d);
+  white-space: nowrap;
+}
+
+.agrivo-delivery-method-card__badge-icon {
+  width: 0.7rem;
+  height: 0.7rem;
+  flex-shrink: 0;
+}
+
+.agrivo-delivery-method-card__body {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-top: 0.625rem;
+}
+
+.agrivo-delivery-method-card__title {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--agrivo-text-dark, #102018);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agrivo-delivery-method-card__description {
+  margin: 0.25rem 0 0;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  color: var(--agrivo-muted-text, #5f6f64);
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.agrivo-delivery-method-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin: 0.625rem 0 0;
+  padding: 0.625rem 0 0;
+  border-top: 1px solid #e5efe1;
+}
+
+.agrivo-delivery-method-card--selected .agrivo-delivery-method-card__meta {
+  border-top-color: #c8e6c9;
+}
+
+.agrivo-delivery-method-card__meta-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: baseline;
+  column-gap: 0.5rem;
+  min-width: 0;
+}
+
+.agrivo-delivery-method-card__meta-row dt {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #6b7a70;
+  white-space: nowrap;
+}
+
+.agrivo-delivery-method-card__meta-row dd {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--agrivo-deep-green, #14532d);
+  text-align: right;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.agrivo-delivery-method-card__footer {
+  margin-top: 0.75rem;
+}
+
+.agrivo-delivery-method-card__action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  width: 100%;
+  min-height: 2.25rem;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border: 1.5px solid #dbe7d4;
+  border-radius: 9999px;
+  background: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--agrivo-deep-green, #14532d);
+  box-sizing: border-box;
+  white-space: nowrap;
+  transition:
+    background-color 250ms ease,
+    border-color 250ms ease,
+    color 250ms ease,
+    box-shadow 250ms ease;
+}
+
+.agrivo-delivery-method-card__action--selected {
+  border-color: var(--agrivo-deep-green, #14532d);
+  background: var(--agrivo-deep-green, #14532d);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(20, 83, 45, 0.16);
+}
+
+.agrivo-delivery-method-card__action-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  flex-shrink: 0;
+}
+
+.agrivo-delivery-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.agrivo-delivery-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 9999px;
+  border: 1px solid #dbe7d4;
+  background: #f6fbf4;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #14532d;
+}
+
+.agrivo-delivery-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.agrivo-delivery-timeline__item {
+  display: flex;
+  gap: 0.75rem;
+  min-height: 3rem;
+}
+
+.agrivo-delivery-timeline__marker {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 1.25rem;
+  color: #9aa89e;
+}
+
+.agrivo-delivery-timeline__item--complete .agrivo-delivery-timeline__marker,
+.agrivo-delivery-timeline__item--current .agrivo-delivery-timeline__marker {
+  color: #14532d;
+}
+
+.agrivo-delivery-timeline__line {
+  flex: 1;
+  width: 2px;
+  min-height: 1.25rem;
+  margin-top: 0.25rem;
+  background: #dbe7d4;
+}
+
+.agrivo-delivery-timeline__item--complete .agrivo-delivery-timeline__line {
+  background: #14532d;
+}
+
+.agrivo-delivery-timeline__content {
+  padding-bottom: 1rem;
+}
+
+.agrivo-delivery-timeline__item--current .agrivo-delivery-timeline__content p:first-child {
+  color: #14532d;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agrivo-delivery-method-card,
+  .agrivo-delivery-method-card__action,
+  .agrivo-delivery-timeline__item,
+  .agrivo-product-detail-gallery__image {
+    transition: none;
+    transform: none;
+  }
+
+  .agrivo-product-detail-gallery__main:hover .agrivo-product-detail-gallery__image {
+    transform: none;
+  }
 }

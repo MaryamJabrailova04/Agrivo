@@ -73,6 +73,7 @@ export const FARMER_DASHBOARD: DashboardRoleConfig = {
     { id: "products", label: "My Products", icon: Package },
     { id: "add-product", label: "Add Product", icon: PackagePlus },
     { id: "orders", label: "Orders", icon: ClipboardList },
+    { id: "delivery-settings", label: "Delivery Settings", icon: Truck },
     { id: "farm-jobs", label: "Farm Jobs", icon: Briefcase, externalHash: "dashboard/jobs" },
     { id: "create-job", label: "Create Job Post", icon: Briefcase, externalHash: "dashboard/jobs/new" },
     { id: "profile", label: "Profile", icon: UserRound },

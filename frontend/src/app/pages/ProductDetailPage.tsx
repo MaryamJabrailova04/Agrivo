@@ -15,10 +15,9 @@ import { useAuth } from "../auth/AuthContext";
 import { useCart } from "../context/CartContext";
 import { AgrivoNavbar } from "../components/AgrivoNavbar";
 import { HarvestListingCard } from "../components/harvest/HarvestListingCard";
-import { ProductSaveButton } from "../components/products/ProductSaveButton";
 import { ProductAddToCartButton } from "../components/products/ProductAddToCartButton";
 import { ProductVarietyBadge } from "../components/products/ProductVarietyBadge";
-import { ProductImage } from "../components/products/ProductImage";
+import { ProductDetailGallery } from "../components/products/ProductDetailGallery";
 import { ImageWithFallback } from "../components/figma/ImageWithFallback";
 import { Button } from "../components/ui/button";
 import {
@@ -46,6 +45,13 @@ import {
 } from "../../i18n/productDetailHelpers";
 import { isApiMode } from "../../config/dataMode";
 import { getProductById, getProducts, type ApiProduct } from "../../api/productsApi";
+import { DeliveryMethodPicker } from "../components/delivery/DeliveryMethodPicker";
+import type { DeliveryMethod } from "../data/deliveryTypes";
+import {
+  getDeliveryMethodQuotes,
+  getProductDeliveryMethod,
+  setProductDeliveryMethod,
+} from "../utils/deliveryOptionsStorage";
 
 interface ProductDetailPageProps {
   slug: string;
@@ -285,6 +291,24 @@ function ProductDetailContent({
     ? buildWhatsAppUrl(product.farmerWhatsapp, product.farmerDisplayName)
     : null;
 
+  const deliveryQuotes = useMemo(
+    () => getDeliveryMethodQuotes(product.slug, product.farmerSlug, product.deliveryAvailable),
+    [product.slug, product.farmerSlug, product.deliveryAvailable],
+  );
+
+  const [selectedDeliveryMethod, setSelectedDeliveryMethod] = useState<DeliveryMethod | null>(() => {
+    const saved = getProductDeliveryMethod(product.slug);
+    if (saved && deliveryQuotes.some((quote) => quote.method === saved && quote.enabled)) {
+      return saved;
+    }
+    return deliveryQuotes.find((quote) => quote.enabled)?.method ?? null;
+  });
+
+  useEffect(() => {
+    if (!selectedDeliveryMethod) return;
+    setProductDeliveryMethod(product.slug, selectedDeliveryMethod);
+  }, [product.slug, selectedDeliveryMethod]);
+
   const handleContactSeller = () => {
     if (whatsappUrl) {
       window.open(whatsappUrl, "_blank", "noopener,noreferrer");
@@ -310,137 +334,146 @@ function ProductDetailContent({
 
         <section className="agrivo-product-detail-hero agrivo-dashboard-panel mt-4">
           <div className="agrivo-product-detail-hero-grid">
-            <div className="agrivo-product-detail-image-wrap">
-              <ProductImage
-                name={display.name}
-                src={product.image}
-                category={product.productType}
-                alt={`${display.name} product image`}
-                className="min-h-[280px] h-full w-full"
-              />
-              <ProductSaveButton slug={product.slug} className="agrivo-product-save-btn--overlay" />
-            </div>
+            <ProductDetailGallery
+              slug={product.slug}
+              name={display.name}
+              src={product.image}
+              category={product.productType}
+            />
 
             <div className="agrivo-product-detail-hero-panel">
-              <span className="agrivo-product-badge inline-flex rounded-full border border-[#bbf7d0] bg-[#ecfdf5] px-3 py-1 text-xs font-semibold text-[#166534]">
-                {display.badge}
-              </span>
+              <div className="agrivo-product-detail-summary">
+                <span className="agrivo-product-badge inline-flex rounded-full border border-[#bbf7d0] bg-[#ecfdf5] px-3 py-1 text-xs font-semibold text-[#166534]">
+                  {display.badge}
+                </span>
 
-              <h1 className="agrivo-heading mt-3 text-3xl font-bold text-[#102018] sm:text-4xl">
-                {display.name}
-              </h1>
+                <h1 className="agrivo-heading agrivo-product-detail-title">
+                  {display.name}
+                </h1>
 
-              <ProductVarietyBadge
-                variety={display.variety}
-                label={t("productDetail.hero.variety")}
-                size="md"
-                className="mt-2"
-              />
+                <ProductVarietyBadge
+                  variety={display.variety}
+                  label={t("productDetail.hero.variety")}
+                  size="md"
+                  className="mt-2"
+                />
 
-              <p className="mt-2 flex items-start gap-1.5 text-sm text-[#5F6F64]">
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#43A047]" />
-                {product.locationPath}
-              </p>
-
-              <div className="mt-4">
-                <p className="text-sm text-[#5F6F64]">
-                  {t("productDetail.hero.farmer")}:{" "}
-                  <span className="font-semibold text-[#102018]">{product.farmer}</span>
+                <p className="agrivo-product-detail-location">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#43A047]" />
+                  <span>{product.locationPath}</span>
                 </p>
-                {product.farmerVerified ? (
-                  <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-[#166534]">
-                    <BadgeCheck className="h-3.5 w-3.5" />
-                    {t("productDetail.hero.verifiedFarmer")}
+
+                <div className="agrivo-product-detail-seller">
+                  <p className="text-sm text-[#5F6F64]">
+                    {t("productDetail.hero.farmer")}:{" "}
+                    <span className="font-semibold text-[#102018]">{product.farmer}</span>
                   </p>
-                ) : null}
+                  {product.farmerVerified ? (
+                    <p className="mt-1 flex items-center gap-1 text-xs font-semibold text-[#166534]">
+                      <BadgeCheck className="h-3.5 w-3.5" />
+                      {t("productDetail.hero.verifiedFarmer")}
+                    </p>
+                  ) : null}
+                </div>
+
+                <div className="agrivo-product-detail-price-row">
+                  <p className="agrivo-heading agrivo-product-detail-price">{product.priceDisplay}</p>
+                </div>
               </div>
 
-              <div className="agrivo-product-detail-price-row mt-5">
-                <p className="agrivo-heading text-2xl font-bold text-[#14532D] sm:text-3xl">
-                  {product.priceDisplay}
-                </p>
-              </div>
-
-              <div className="agrivo-product-detail-quick-meta mt-4 grid grid-cols-2 gap-3">
+              <div className="agrivo-product-detail-quick-meta">
                 <div className="agrivo-product-detail-quick-stat">
-                  <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">
+                  <p className="agrivo-product-detail-quick-stat__label">
                     {t("productDetail.hero.availableQuantity")}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-[#102018]">{product.quantity}</p>
+                  <p className="agrivo-product-detail-quick-stat__value">{product.quantity}</p>
                 </div>
                 <div className="agrivo-product-detail-quick-stat">
-                  <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">
+                  <p className="agrivo-product-detail-quick-stat__label">
                     {t("productDetail.hero.harvested")}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-[#102018]">{display.harvestDate}</p>
+                  <p className="agrivo-product-detail-quick-stat__value">{display.harvestDate}</p>
                 </div>
-                <div className="agrivo-product-detail-quick-stat col-span-2">
-                  <p className="text-xs font-medium uppercase tracking-wide text-[#6b7a70]">
+                <div className="agrivo-product-detail-quick-stat">
+                  <p className="agrivo-product-detail-quick-stat__label">
                     {t("productDetail.hero.deliveryAvailability")}
                   </p>
-                  <p className="mt-1 text-sm font-semibold text-[#102018]">
+                  <p className="agrivo-product-detail-quick-stat__value">
                     {display.deliveryAvailableLabel}
                   </p>
                 </div>
               </div>
 
               {cartCount > 0 ? (
-                <p className="mt-4 rounded-xl border border-[#bbf7d0] bg-[#ecfdf5] px-3 py-2 text-sm font-medium text-[#166534]">
+                <p className="agrivo-product-detail-cart-note">
                   {formatCartSummary(t, cartCount)}
                 </p>
               ) : null}
 
-              <div className="agrivo-product-detail-actions mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-                {isBuyer ? (
-                  <>
-                    <ProductAddToCartButton
-                      slug={product.slug}
-                      className="agrivo-button-soft h-11 rounded-full bg-[#14532D] text-sm font-semibold text-white hover:bg-[#1D6A3B] sm:flex-1"
-                      label={t("productDetail.hero.addToCart")}
-                    />
+              <div className="agrivo-product-detail-delivery">
+                <DeliveryMethodPicker
+                  quotes={deliveryQuotes}
+                  selected={selectedDeliveryMethod}
+                  onSelect={setSelectedDeliveryMethod}
+                  compact
+                />
+              </div>
+
+              <div className="agrivo-product-detail-actions">
+                <div className="agrivo-product-detail-actions__primary">
+                  {isBuyer ? (
+                    <>
+                      <ProductAddToCartButton
+                        slug={product.slug}
+                        className="agrivo-product-detail-btn agrivo-product-detail-btn--primary"
+                        label={t("productDetail.hero.addToCart")}
+                      />
+                      <Button
+                        variant="outline"
+                        className="agrivo-product-detail-btn agrivo-product-detail-btn--secondary"
+                        onClick={() => navigate("dashboard/buyer/cart")}
+                      >
+                        {t("productDetail.hero.orderNow")}
+                      </Button>
+                    </>
+                  ) : !isAuthenticated ? (
+                    <Button
+                      className="agrivo-product-detail-btn agrivo-product-detail-btn--primary"
+                      onClick={() => navigate("login")}
+                    >
+                      {t("product.loginToOrder")}
+                    </Button>
+                  ) : isFarmer ? (
                     <Button
                       variant="outline"
-                      className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC] sm:flex-1"
-                      onClick={() => navigate("dashboard/buyer/cart")}
+                      className="agrivo-product-detail-btn agrivo-product-detail-btn--secondary"
+                      onClick={() => navigate("dashboard/farmer")}
                     >
-                      {t("productDetail.hero.orderNow")}
+                      {t("productDetail.goToFarmerDashboard")}
                     </Button>
-                  </>
-                ) : !isAuthenticated ? (
-                  <Button
-                    className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B] sm:flex-1"
-                    onClick={() => navigate("login")}
-                  >
-                    {t("product.loginToOrder")}
-                  </Button>
-                ) : isFarmer ? (
+                  ) : null}
+                </div>
+
+                <div className="agrivo-product-detail-actions__secondary">
                   <Button
                     variant="outline"
-                    className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC] sm:flex-1"
-                    onClick={() => navigate("dashboard/farmer")}
+                    className="agrivo-product-detail-btn agrivo-product-detail-btn--secondary"
+                    onClick={handleContactSeller}
                   >
-                    {t("productDetail.goToFarmerDashboard")}
+                    <MessageCircle className="mr-2 h-4 w-4" />
+                    {t("productDetail.hero.contactSeller")}
                   </Button>
-                ) : null}
 
-                <Button
-                  variant="outline"
-                  className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC] sm:flex-1"
-                  onClick={handleContactSeller}
-                >
-                  <MessageCircle className="mr-2 h-4 w-4" />
-                  {t("productDetail.hero.contactSeller")}
-                </Button>
-
-                {product.farmerSlug ? (
-                  <Button
-                    variant="outline"
-                    className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC] sm:flex-1"
-                    onClick={() => navigate(`farmers/${product.farmerSlug}`)}
-                  >
-                    {t("productDetail.hero.viewFarmerProfile")}
-                  </Button>
-                ) : null}
+                  {product.farmerSlug ? (
+                    <Button
+                      variant="outline"
+                      className="agrivo-product-detail-btn agrivo-product-detail-btn--secondary"
+                      onClick={() => navigate(`farmers/${product.farmerSlug}`)}
+                    >
+                      {t("productDetail.hero.viewFarmerProfile")}
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             </div>
           </div>
@@ -522,7 +555,10 @@ function ProductDetailContent({
                 </div>
                 <div className="flex items-start justify-between gap-4">
                   <dt className="text-[#5F6F64]">{t("productDetail.delivery.estimatedDelivery")}</dt>
-                  <dd className="font-semibold text-[#102018]">{display.estimatedDelivery}</dd>
+                  <dd className="font-semibold text-[#102018]">
+                    {deliveryQuotes.find((q) => q.method === selectedDeliveryMethod)?.estimatedTimeLabel ??
+                      display.estimatedDelivery}
+                  </dd>
                 </div>
                 <div className="flex items-start justify-between gap-4">
                   <dt className="text-[#5F6F64]">{t("productDetail.delivery.logisticsSupport")}</dt>
@@ -532,6 +568,31 @@ function ProductDetailContent({
                   <dt className="text-[#5F6F64]">{t("productDetail.delivery.pickupFromFarm")}</dt>
                   <dd className="font-semibold text-[#102018]">{display.pickupAvailableLabel}</dd>
                 </div>
+                {selectedDeliveryMethod === "self_pickup" ? (
+                  <>
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-[#5F6F64]">{t("delivery.pickupHours", "Pickup Hours")}</dt>
+                      <dd className="font-semibold text-[#102018]">
+                        {deliveryQuotes.find((q) => q.method === "self_pickup")?.meta?.hoursLabel}
+                      </dd>
+                    </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <dt className="text-[#5F6F64]">{t("delivery.pickupReadyIn", "Pickup ready in")}</dt>
+                      <dd className="font-semibold text-[#102018]">
+                        {deliveryQuotes.find((q) => q.method === "self_pickup")?.meta?.prepMinutes}{" "}
+                        {t("delivery.minutes", "min")}
+                      </dd>
+                    </div>
+                  </>
+                ) : null}
+                {selectedDeliveryMethod === "farmer_delivery" ? (
+                  <div className="flex items-start justify-between gap-4">
+                    <dt className="text-[#5F6F64]">{t("delivery.radius", "Radius")}</dt>
+                    <dd className="font-semibold text-[#102018]">
+                      {deliveryQuotes.find((q) => q.method === "farmer_delivery")?.meta?.radiusKm} km
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
             </section>
           </div>

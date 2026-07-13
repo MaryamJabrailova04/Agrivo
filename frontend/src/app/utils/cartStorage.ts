@@ -1,6 +1,8 @@
 import type { HarvestListing } from "../data/harvestExplorer";
+import type { DeliveryMethod } from "../data/deliveryTypes";
 import { districtShortName } from "../data/harvestExplorerUtils";
 import type { SavedProduct } from "./savedProductsStorage";
+import { calculateCartDeliveryFee } from "./deliveryOptionsStorage";
 
 export interface CartItem {
   id: string;
@@ -189,11 +191,21 @@ export function removeCartItem(userId: string, slug: string): CartItem[] {
   return next;
 }
 
-export function getCartSummary(items: CartItem[]) {
+export function getCartSummary(items: CartItem[], deliveryMethod?: DeliveryMethod | null) {
   const productsSubtotal = items.reduce((sum, item) => sum + getCartItemSubtotal(item), 0);
-  const deliveryFee = items.length > 0 ? 6 + Math.max(0, items.length - 1) * 2 : 0;
-  const serviceFee = 0;
   const farmerCount = new Set(items.map((item) => item.farmer)).size;
+
+  let deliveryFee = 0;
+  if (items.length > 0) {
+    deliveryFee = deliveryMethod
+      ? calculateCartDeliveryFee(
+          deliveryMethod,
+          items.map((item) => item.farmerSlug),
+        )
+      : 6 + Math.max(0, items.length - 1) * 2;
+  }
+
+  const serviceFee = 0;
 
   return {
     itemCount: items.length,

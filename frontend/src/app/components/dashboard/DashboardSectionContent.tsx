@@ -12,6 +12,7 @@ import { FarmerAddProductPage } from "./FarmerAddProductPage";
 import { FarmerEditProductPage } from "./FarmerEditProductPage";
 import { FarmerOrdersPage } from "./FarmerOrdersPage";
 import { FarmerDashboardProfilePage } from "./FarmerDashboardProfilePage";
+import { FarmerDeliverySettingsPage } from "./FarmerDeliverySettingsPage";
 import { AssignedDeliveriesPage } from "./AssignedDeliveriesPage";
 import { CompletedDeliveriesPage } from "./CompletedDeliveriesPage";
 import { InTransitPage } from "./InTransitPage";
@@ -123,6 +124,10 @@ export function DashboardSectionContent({ config, sectionId }: DashboardSectionC
 
   if (sectionId === "orders" && config.role === "farmer") {
     return <FarmerOrdersPage />;
+  }
+
+  if (sectionId === "delivery-settings" && config.role === "farmer") {
+    return <FarmerDeliverySettingsPage />;
   }
 
   if (sectionId === "orders" && config.role === "buyer") {

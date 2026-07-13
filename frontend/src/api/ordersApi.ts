@@ -60,6 +60,7 @@ export async function getOrderById(id: string): Promise<ApiOrder> {
 export async function createOrder(payload: {
   farmerId: string;
   deliveryMethod?: string;
+  deliveryFee?: number;
   deliveryAddress?: string;
   items: { productId: string; quantity: number }[];
 }): Promise<ApiOrder> {

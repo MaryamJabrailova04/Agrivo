@@ -1,4 +1,5 @@
 import type { BuyerOrder, BuyerOrderStatus } from "../data/buyerDashboard";
+import type { DeliveryMethod } from "../data/deliveryTypes";
 import type { CartItem } from "./cartStorage";
 import { formatQuantity, getCartItemSubtotal } from "./cartStorage";
 
@@ -27,11 +28,28 @@ function generateOrderId(existingIds: Set<string>): string {
   return `AGR-${attempt}`;
 }
 
-function cartItemToOrder(item: CartItem, orderId: string, orderDate: Date): BuyerOrder {
+export interface PlaceOrderOptions {
+  deliveryMethod: DeliveryMethod;
+  deliveryFee: number;
+  address?: string;
+  phone?: string;
+  note?: string;
+}
+
+function cartItemToOrder(
+  item: CartItem,
+  orderId: string,
+  orderDate: Date,
+  options: PlaceOrderOptions,
+): BuyerOrder {
   const subtotal = getCartItemSubtotal(item);
   const routeParts = item.location.split(">").map((part) => part.trim());
   const route =
     routeParts.length >= 2 ? `${routeParts[0]} → ${routeParts[routeParts.length - 1]}` : item.location;
+  const deliveryTo =
+    options.deliveryMethod === "self_pickup"
+      ? "Farm self pickup"
+      : options.address?.trim() || "Buyer delivery address";
 
   return {
     id: `placed-${orderId}`,
@@ -39,9 +57,9 @@ function cartItemToOrder(item: CartItem, orderId: string, orderDate: Date): Buye
     product: item.name,
     quantity: formatQuantity(item.selectedQuantity, item.unit),
     farmer: item.farmer,
-    total: `${subtotal.toFixed(0)} AZN`,
+    total: `${(subtotal + options.deliveryFee / Math.max(1, 1)).toFixed(0)} AZN`,
     route,
-    deliveryTo: "Buyer delivery address",
+    deliveryTo,
     status: "Pending" as BuyerOrderStatus,
     orderDate: orderDate.toLocaleDateString("en-US", {
       month: "long",
@@ -57,17 +75,27 @@ function cartItemToOrder(item: CartItem, orderId: string, orderDate: Date): Buye
     ),
     image: item.image,
     timelineIndex: 0,
+    deliveryMethod: options.deliveryMethod,
+    deliveryFee: options.deliveryFee,
   };
 }
 
-export function placeOrdersFromCart(userId: string, items: CartItem[]): BuyerOrder[] {
+export function placeOrdersFromCart(
+  userId: string,
+  items: CartItem[],
+  options: PlaceOrderOptions = {
+    deliveryMethod: "agrivo_logistics",
+    deliveryFee: 0,
+  },
+): BuyerOrder[] {
   const existing = getPlacedOrders(userId);
   const existingIds = new Set(existing.map((order) => order.orderId));
   const now = new Date();
+  const feeShare = items.length > 0 ? options.deliveryFee / items.length : 0;
   const created = items.map((item) => {
     const orderId = generateOrderId(existingIds);
     existingIds.add(orderId);
-    return cartItemToOrder(item, orderId, now);
+    return cartItemToOrder(item, orderId, now, { ...options, deliveryFee: feeShare });
   });
   const next = [...created, ...existing];
   setPlacedOrders(userId, next);
@@ -78,4 +106,19 @@ export function findPlacedOrder(userId: string, orderId: string): BuyerOrder | u
   return getPlacedOrders(userId).find(
     (order) => order.orderId.toLowerCase() === orderId.toLowerCase(),
   );
+}
+
+export function updatePlacedOrderStatus(
+  userId: string,
+  orderId: string,
+  status: BuyerOrderStatus,
+): BuyerOrder | undefined {
+  const existing = getPlacedOrders(userId);
+  const index = existing.findIndex((order) => order.orderId.toLowerCase() === orderId.toLowerCase());
+  if (index < 0) return undefined;
+  const updated = { ...existing[index], status };
+  const next = [...existing];
+  next[index] = updated;
+  setPlacedOrders(userId, next);
+  return updated;
 }

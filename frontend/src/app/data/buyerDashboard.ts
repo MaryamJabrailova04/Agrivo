@@ -35,6 +35,8 @@ export interface BuyerOrder {
   deliveredDate?: string;
   image?: string;
   timelineIndex: number;
+  deliveryMethod?: import("./deliveryTypes").DeliveryMethod;
+  deliveryFee?: number;
 }
 
 export interface BuyerTrackingStep {
