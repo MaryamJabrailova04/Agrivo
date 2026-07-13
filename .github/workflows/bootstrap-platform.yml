@@ -44,7 +44,10 @@ jobs:
           helm repo update
           helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace --wait --timeout 15m
           helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace --wait --timeout 15m
-          helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --set crds.enabled=true --wait --timeout 15m
+          # AKS admissionsenforcer owns part of the webhook namespaceSelector.
+          # Client-side apply preserves that mutation and avoids Helm 4 SSA
+          # field-manager conflicts on repeatable bootstrap runs.
+          helm upgrade --install cert-manager jetstack/cert-manager -n cert-manager --create-namespace --set crds.enabled=true --server-side=false --wait --timeout 15m
           # Monitoring runs on every node. Do not block the core platform when
           # an autoscaled node is still joining; Helm/Kubernetes will converge.
           helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack -n monitoring --create-namespace --wait=false
