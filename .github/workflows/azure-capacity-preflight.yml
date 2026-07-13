@@ -49,14 +49,14 @@ jobs:
 
           for region in "${regions[@]}"; do
             usage_json=$(az vm list-usage --location "$region" --output json)
+            region_skus=$(az vm list-skus \
+              --location "$region" \
+              --resource-type virtualMachines \
+              --all \
+              --output json)
 
             for size in "${sizes[@]}"; do
-              sku_json=$(az vm list-skus \
-                --location "$region" \
-                --size "$size" \
-                --resource-type virtualMachines \
-                --all \
-                --output json)
+              sku_json=$(jq -c --arg size "$size" '[.[] | select(.name == $size)]' <<< "$region_skus")
 
               sku_count=$(jq 'length' <<< "$sku_json")
               if [[ "$sku_count" -eq 0 ]]; then
@@ -107,4 +107,3 @@ jobs:
             echo 'No tested region/SKU combination has at least 2 free vCPUs.' >&2
             exit 2
           fi
-
