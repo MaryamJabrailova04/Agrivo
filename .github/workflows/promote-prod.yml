@@ -19,7 +19,7 @@ permissions:
   packages: read
   id-token: write
 env:
-  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}/agrivo
+  IMAGE_PREFIX: ghcr.io/maryamjabrailova04/agrivo
 jobs:
   promote:
     runs-on: ubuntu-latest

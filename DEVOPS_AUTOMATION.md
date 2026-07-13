@@ -8,7 +8,7 @@ This repository no longer depends on the deleted Harbor VM. Images are rebuilt f
 ## Automated flow
 
 1. Pull requests run dependency audit, frontend build, backend database smoke tests, Docker build, Helm render and Terraform validation.
-2. A merge to `main` builds only changed components.
+2. A merge to `main` validates the platform and rebuilds both application images from source.
 3. Images receive immutable Git SHA tags, SBOM/provenance metadata, a keyless Cosign signature and a blocking Trivy HIGH/CRITICAL scan.
 4. Successful images update the dev Helm values automatically.
 5. Argo CD watches `main`, prunes drift and self-heals the dev cluster.
@@ -40,6 +40,12 @@ Add these Environment variables:
 | `AZURE_ADMIN_OBJECT_ID` | Key Vault administrator object ID |
 | `AKS_RESOURCE_GROUP` | AKS resource group used by rollout verification |
 | `AKS_CLUSTER_NAME` | AKS cluster used by rollout verification |
+| `AZURE_LOCATION` | Azure region, for example `westeurope` |
+| `TFSTATE_RESOURCE_GROUP` | Shared Terraform-state resource group |
+| `TFSTATE_STORAGE_ACCOUNT` | Globally unique lowercase storage account name |
+| `TFSTATE_CONTAINER` | Terraform-state blob container, normally `tfstate` |
+| `SITE_HOSTNAME` | Environment hostname without `https://` |
+| `LETSENCRYPT_EMAIL` | Real email used for ACME certificates |
 
 Configure Azure workload identity federation for the repository and each GitHub Environment. No Azure client secret is required.
 
@@ -47,12 +53,14 @@ After the first successful image push, set both GHCR packages to **Public**. Pub
 
 ## First deployment
 
-1. Run `Terraform Apply` for `dev`.
-2. Run `Bootstrap AKS Platform` for `dev`; it installs/upgrades Argo CD, ingress-nginx, cert-manager and kube-prometheus-stack and applies the root app.
-3. No manual `kubectl` bootstrap is required.
-4. Merge an application change to `main`; CI will create both images and update dev GitOps values.
-5. Verify dev, then run `Promote and Verify Production` with the successful 40-character Git SHA.
-6. Apply `gitops/argocd/root-app-prod.yaml` once for the production cluster.
+1. Run `Bootstrap Terraform State` once after configuring the `dev` Environment.
+2. Run `Terraform Apply` for `dev`.
+3. Run `Bootstrap AKS Platform` for `dev`; it installs/upgrades Argo CD, ingress-nginx, cert-manager and kube-prometheus-stack and applies the root app.
+4. No manual `kubectl` bootstrap is required. Argo CD runs the Prisma migration hook before the backend rollout.
+5. Merge an application change to `main`; CI will create both images and update dev GitOps values.
+6. Point the environment DNS record to the ingress controller public IP.
+7. Verify dev, then run `Promote and Verify Production` with the successful 40-character Git SHA.
+8. Run `Bootstrap AKS Platform` for `prod`; it applies `gitops/argocd/root-app-prod.yaml` and starts the automated production GitOps applications.
 
 ## What remains intentionally manual
 

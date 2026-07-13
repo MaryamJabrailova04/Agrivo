@@ -54,6 +54,8 @@ module "database" {
   environment             = var.environment
   location                = var.location
   resource_group_name     = module.network.resource_group_name
+  virtual_network_id      = module.network.virtual_network_id
+  delegated_subnet_id     = module.network.database_subnet_id
   postgres_admin_username = var.postgres_admin_username
   postgres_admin_password = var.postgres_admin_password
   postgres_sku_name       = var.postgres_sku_name

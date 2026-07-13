@@ -11,6 +11,9 @@ spec:
     repoURL: https://github.com/MaryamJabrailova04/Agrivo.git
     targetRevision: main
     path: k8s/helm/ingress
+    helm:
+      valueFiles:
+        - values/dev.yaml
   destination:
     server: https://kubernetes.default.svc
     namespace: ingress-system

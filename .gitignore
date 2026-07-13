@@ -132,6 +132,6 @@ scripts/data/
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
-.terraform.lock.hcl
+# Commit .terraform.lock.hcl so CI and operators use the same provider build.
 crash.log
 crash.*.log

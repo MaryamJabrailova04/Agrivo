@@ -14,7 +14,7 @@ tags = {
   managed_by  = "terraform"
 }
 
-kubernetes_version = "1.29.7"
+kubernetes_version = null
 node_vm_size       = "Standard_B2s"
 node_count         = 1
 min_node_count     = 1

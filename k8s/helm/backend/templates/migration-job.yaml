@@ -1,0 +1,64 @@
+{{- if .Values.migrations.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: agrivo-backend-migrate-{{ .Values.image.tag | lower | replace "_" "-" | trunc 12 }}
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "-1"
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  backoffLimit: {{ .Values.migrations.backoffLimit }}
+  activeDeadlineSeconds: {{ .Values.migrations.activeDeadlineSeconds }}
+  template:
+    metadata:
+      labels:
+        app: agrivo-backend-migration
+    spec:
+      restartPolicy: Never
+      serviceAccountName: {{ .Values.serviceAccount.name }}
+{{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      securityContext:
+{{ toYaml .Values.podSecurityContext | indent 8 }}
+      containers:
+        - name: migrate
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+{{- if .Values.keyVault.enabled }}
+          command: ["sh", "-c"]
+          args:
+            - export DATABASE_URL="$(cat /mnt/secrets-store/DATABASE_URL)"; exec node node_modules/prisma/build/index.js migrate deploy
+{{- else }}
+          command: ["node", "node_modules/prisma/build/index.js"]
+          args: ["migrate", "deploy"]
+{{- end }}
+          securityContext:
+{{ toYaml .Values.containerSecurityContext | indent 12 }}
+          envFrom:
+            - configMapRef:
+                name: agrivo-backend-config
+{{- if not .Values.keyVault.enabled }}
+            - secretRef:
+                name: agrivo-backend-secret
+{{- end }}
+          resources:
+{{ toYaml .Values.migrations.resources | indent 12 }}
+{{- if .Values.keyVault.enabled }}
+          volumeMounts:
+            - name: secrets-store
+              mountPath: /mnt/secrets-store
+              readOnly: true
+{{- end }}
+{{- if .Values.keyVault.enabled }}
+      volumes:
+        - name: secrets-store
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: agrivo-backend-keyvault
+{{- end }}
+{{- end }}

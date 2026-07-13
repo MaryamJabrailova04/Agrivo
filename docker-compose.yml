@@ -18,6 +18,29 @@ services:
     networks:
       - agrivo-network
 
+  database-init:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: agrivo-database-init
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/agrivo_db?schema=public
+      JWT_SECRET: change_this_secret_for_local_docker_only
+      JWT_EXPIRES_IN: 7d
+      FRONTEND_URL: http://localhost:8090
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - sh
+      - -c
+      - node node_modules/prisma/build/index.js migrate deploy && node prisma/seed.js
+    restart: "no"
+    networks:
+      - agrivo-network
+
   backend:
     build:
       context: .
@@ -33,9 +56,8 @@ services:
     ports:
       - "5001:5000"
     depends_on:
-      postgres:
-        condition: service_healthy
-    command: sh -c "npx prisma migrate deploy && npm run seed && npm start"
+      database-init:
+        condition: service_completed_successfully
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://localhost:5000/api/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
       interval: 10s
@@ -54,12 +76,12 @@ services:
         VITE_DATA_MODE: api
     container_name: agrivo-frontend
     ports:
-      - "8090:80"
+      - "8090:8080"
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null 2>&1 || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/ >/dev/null 2>&1 || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5

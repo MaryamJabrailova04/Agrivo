@@ -30,6 +30,10 @@ jobs:
       TF_VAR_postgres_admin_password: ${{ secrets.POSTGRES_ADMIN_PASSWORD }}
       TF_VAR_database_url: ${{ secrets.DATABASE_URL }}
       TF_VAR_jwt_secret: ${{ secrets.JWT_SECRET }}
+      TFSTATE_RESOURCE_GROUP: ${{ vars.TFSTATE_RESOURCE_GROUP }}
+      TFSTATE_STORAGE_ACCOUNT: ${{ vars.TFSTATE_STORAGE_ACCOUNT }}
+      TFSTATE_CONTAINER: ${{ vars.TFSTATE_CONTAINER }}
+      ENVIRONMENT: ${{ github.event.inputs.environment }}
 
     defaults:
       run:
@@ -56,7 +60,12 @@ jobs:
         run: terraform fmt -check -recursive ../../
 
       - name: Terraform init
-        run: terraform init
+        run: |
+          terraform init \
+            -backend-config="resource_group_name=${TFSTATE_RESOURCE_GROUP}" \
+            -backend-config="storage_account_name=${TFSTATE_STORAGE_ACCOUNT}" \
+            -backend-config="container_name=${TFSTATE_CONTAINER}" \
+            -backend-config="key=${ENVIRONMENT}.terraform.tfstate"
 
       - name: Terraform validate
         run: terraform validate
@@ -67,16 +76,25 @@ jobs:
       - name: Export infrastructure identity into Helm values
         env:
           ENVIRONMENT: ${{ github.event.inputs.environment }}
+          SITE_HOSTNAME: ${{ vars.SITE_HOSTNAME }}
+          LETSENCRYPT_EMAIL: ${{ vars.LETSENCRYPT_EMAIL }}
         run: |
+          test -n "$SITE_HOSTNAME"
+          test -n "$LETSENCRYPT_EMAIL"
           CLIENT_ID=$(terraform output -raw key_vault_csi_client_id)
           KEY_VAULT=$(terraform output -raw key_vault_name)
-          FILE="../../../k8s/helm/backend/values/${ENVIRONMENT}.yaml"
-          sed -i -E "s|^  name: .*|  name: ${KEY_VAULT}|" "$FILE"
-          sed -i -E "s|^  tenantId: .*|  tenantId: \"${TF_VAR_tenant_id}\"|" "$FILE"
-          sed -i -E "s|^  clientId: .*|  clientId: \"${CLIENT_ID}\"|" "$FILE"
+          BACKEND_FILE="../../../k8s/helm/backend/values/${ENVIRONMENT}.yaml"
+          FRONTEND_FILE="../../../k8s/helm/frontend/values/${ENVIRONMENT}.yaml"
+          INGRESS_FILE="../../../k8s/helm/ingress/values/${ENVIRONMENT}.yaml"
+          sed -i -E "s|^  name: .*|  name: ${KEY_VAULT}|" "$BACKEND_FILE"
+          sed -i -E "s|^  tenantId: .*|  tenantId: \"${TF_VAR_tenant_id}\"|" "$BACKEND_FILE"
+          sed -i -E "s|^  clientId: .*|  clientId: \"${CLIENT_ID}\"|" "$BACKEND_FILE"
+          sed -i -E "s|^  frontendUrl: .*|  frontendUrl: https://${SITE_HOSTNAME}|" "$BACKEND_FILE"
+          sed -i -E "s|^  host: .*|  host: ${SITE_HOSTNAME}|" "$FRONTEND_FILE"
+          sed -i -E "s|^  email: .*|  email: ${LETSENCRYPT_EMAIL}|" "$INGRESS_FILE"
 
       - name: Commit generated GitOps identity configuration
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore(gitops): sync ${{ github.event.inputs.environment }} infrastructure outputs [skip ci]"
-          file_pattern: k8s/helm/backend/values/${{ github.event.inputs.environment }}.yaml
+          file_pattern: k8s/helm/*/values/${{ github.event.inputs.environment }}.yaml

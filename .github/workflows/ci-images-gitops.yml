@@ -64,8 +64,18 @@ jobs:
           helm lint k8s/helm/frontend -f k8s/helm/frontend/values/prod.yaml
           helm lint k8s/helm/backend -f k8s/helm/backend/values/dev.yaml
           helm lint k8s/helm/backend -f k8s/helm/backend/values/prod.yaml
+          helm lint k8s/helm/ingress -f k8s/helm/ingress/values/dev.yaml
+          helm lint k8s/helm/ingress -f k8s/helm/ingress/values/prod.yaml
+          helm lint k8s/helm/monitoring
+          helm lint k8s/helm/security
           helm template agrivo-frontend k8s/helm/frontend -f k8s/helm/frontend/values/dev.yaml >/dev/null
+          helm template agrivo-frontend k8s/helm/frontend -f k8s/helm/frontend/values/prod.yaml >/dev/null
           helm template agrivo-backend k8s/helm/backend -f k8s/helm/backend/values/dev.yaml >/dev/null
+          helm template agrivo-backend k8s/helm/backend -f k8s/helm/backend/values/prod.yaml >/dev/null
+          helm template agrivo-ingress k8s/helm/ingress -f k8s/helm/ingress/values/dev.yaml >/dev/null
+          helm template agrivo-ingress k8s/helm/ingress -f k8s/helm/ingress/values/prod.yaml >/dev/null
+          helm template agrivo-monitoring k8s/helm/monitoring >/dev/null
+          helm template agrivo-security k8s/helm/security >/dev/null
       - name: Validate Terraform
         run: |
           terraform fmt -check -recursive infra
@@ -101,7 +111,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: ${{ matrix.component }}/package-lock.json
       - name: Install dependencies
@@ -185,8 +195,10 @@ jobs:
           ref: main
       - name: Update immutable dev tags
         env:
-          FRONTEND_CHANGED: ${{ needs.changes.outputs.frontend }}
-          BACKEND_CHANGED: ${{ needs.changes.outputs.backend }}
+          # Manual and scheduled recovery must repoint both workloads even if
+          # paths-filter reports no source changes.
+          FRONTEND_CHANGED: ${{ needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
+          BACKEND_CHANGED: ${{ needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' }}
         run: |
           if [ "$FRONTEND_CHANGED" = true ]; then
             sed -i -E 's|tag: ".*"|tag: "${{ github.sha }}"|' k8s/helm/frontend/values/dev.yaml

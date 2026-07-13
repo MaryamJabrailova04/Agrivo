@@ -6,6 +6,18 @@ image:
   tag: dev
   pullPolicy: IfNotPresent
 
+migrations:
+  enabled: true
+  backoffLimit: 3
+  activeDeadlineSeconds: 600
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
 service:
   type: ClusterIP
   port: 5000

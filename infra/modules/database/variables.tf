@@ -18,6 +18,16 @@ variable "resource_group_name" {
   type        = string
 }
 
+variable "virtual_network_id" {
+  description = "Virtual network linked to the PostgreSQL private DNS zone."
+  type        = string
+}
+
+variable "delegated_subnet_id" {
+  description = "Subnet delegated to PostgreSQL Flexible Server."
+  type        = string
+}
+
 variable "postgres_admin_username" {
   description = "PostgreSQL administrator username."
   type        = string

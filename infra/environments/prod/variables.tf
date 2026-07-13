@@ -35,8 +35,10 @@ variable "tags" {
 }
 
 variable "kubernetes_version" {
-  description = "AKS Kubernetes version."
+  description = "Optional AKS Kubernetes version. Null uses Azure's current regional default."
   type        = string
+  default     = null
+  nullable    = true
 }
 
 variable "node_vm_size" {

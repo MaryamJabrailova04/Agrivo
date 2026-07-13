@@ -11,9 +11,8 @@ RUN apt-get update \
 COPY backend/package*.json ./
 COPY backend/prisma ./prisma/
 
-RUN npm ci \
-  && npx prisma generate \
-  && npm prune --omit=dev \
+RUN npm ci --omit=dev \
+  && node node_modules/prisma/build/index.js generate \
   && rm -rf /root/.npm /usr/local/lib/node_modules/npm \
   && rm -f /usr/local/bin/npm /usr/local/bin/npx
 

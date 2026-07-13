@@ -19,8 +19,10 @@ variable "resource_group_name" {
 }
 
 variable "kubernetes_version" {
-  description = "AKS Kubernetes version."
+  description = "Optional AKS Kubernetes version. Null lets Azure select the current regional default."
   type        = string
+  default     = null
+  nullable    = true
 }
 
 variable "dns_prefix" {

@@ -24,6 +24,11 @@ output "aks_subnet_id" {
 }
 
 output "private_endpoint_subnet_id" {
-  description = "ID of the private endpoint subnet."
-  value       = azurerm_subnet.private_endpoints.id
+  description = "Deprecated alias for the PostgreSQL delegated subnet."
+  value       = azurerm_subnet.database.id
+}
+
+output "database_subnet_id" {
+  description = "ID of the subnet delegated to PostgreSQL Flexible Server."
+  value       = azurerm_subnet.database.id
 }

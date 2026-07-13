@@ -1,0 +1,3 @@
+certManager:
+  enabled: true
+  email: devops@example.com
