@@ -23,6 +23,12 @@ resource "azurerm_subnet" "aks" {
   resource_group_name  = azurerm_resource_group.this.name
   virtual_network_name = azurerm_virtual_network.this.name
   address_prefixes     = var.aks_subnet_address_prefixes
+
+  lifecycle {
+    # Recreate child subnets when a regional VNet replacement occurs. Azure
+    # removes them with the old VNet even if their Terraform arguments match.
+    replace_triggered_by = [azurerm_virtual_network.this.id]
+  }
 }
 
 resource "azurerm_subnet" "database" {
@@ -38,5 +44,11 @@ resource "azurerm_subnet" "database" {
       name    = "Microsoft.DBforPostgreSQL/flexibleServers"
       actions = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
     }
+  }
+
+  lifecycle {
+    # See the AKS subnet note above; this also prevents PostgreSQL from being
+    # started against a stale subnet ID after a region migration.
+    replace_triggered_by = [azurerm_virtual_network.this.id]
   }
 }
