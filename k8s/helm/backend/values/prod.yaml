@@ -36,10 +36,10 @@ keyVault:
   usePodIdentity: "false"
   useVMManagedIdentity: "true"
   secrets:
-    - objectName: DATABASE_URL
+    - objectName: DATABASE-URL
       objectType: secret
       envName: DATABASE_URL
-    - objectName: JWT_SECRET
+    - objectName: JWT-SECRET
       objectType: secret
       envName: JWT_SECRET
 monitoring:
@@ -50,3 +50,4 @@ monitoring:
     release: kube-prometheus-stack
   alerts:
     enabled: true
+  
