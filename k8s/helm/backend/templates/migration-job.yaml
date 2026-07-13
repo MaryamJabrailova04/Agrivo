@@ -30,7 +30,7 @@ spec:
 {{- if .Values.keyVault.enabled }}
           command: ["sh", "-c"]
           args:
-            - export DATABASE_URL="$(cat /mnt/secrets-store/DATABASE_URL)"; exec node node_modules/prisma/build/index.js migrate deploy
+            - export DATABASE_URL="$(cat /mnt/secrets-store/DATABASE-URL)"; exec node node_modules/prisma/build/index.js migrate deploy
 {{- else }}
           command: ["node", "node_modules/prisma/build/index.js"]
           args: ["migrate", "deploy"]
@@ -62,3 +62,4 @@ spec:
               secretProviderClass: agrivo-backend-keyvault
 {{- end }}
 {{- end }}
+  
