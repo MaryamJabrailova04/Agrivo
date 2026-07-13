@@ -1,4 +1,5 @@
 replicaCount: 2
+imagePullSecrets: []
 
 image:
   repository: ghcr.io/maryamjabrailova04/agrivo-backend
