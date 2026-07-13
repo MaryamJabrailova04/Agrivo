@@ -39,8 +39,8 @@ module "keyvault" {
   reader_object_id    = module.aks.key_vault_secrets_provider_object_id
 
   secrets = {
-    DATABASE_URL = var.database_url
-    JWT_SECRET   = var.jwt_secret
+    "DATABASE-URL" = var.database_url
+    "JWT-SECRET"   = var.jwt_secret
   }
 
   tags = var.tags
@@ -62,3 +62,4 @@ module "database" {
   postgres_storage_mb     = var.postgres_storage_mb
   tags                    = var.tags
 }
+  
