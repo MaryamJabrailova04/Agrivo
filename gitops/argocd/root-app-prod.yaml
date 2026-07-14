@@ -10,7 +10,7 @@ spec:
     targetRevision: main
     path: gitops/apps/prod
     directory:
-    recurse: true
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: argocd
