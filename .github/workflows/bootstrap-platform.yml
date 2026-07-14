@@ -67,7 +67,7 @@ jobs:
           recover_release kube-prometheus-stack monitoring
 
           helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace --wait --timeout 15m
-          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace --wait --timeout 15m
+          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace --set-string controller.service.annotations."service\.beta\.kubernetes\.io/azure-load-balancer-health-probe-request-path"="/healthz" --wait --timeout 15m
           # AKS admissionsenforcer owns part of the webhook namespaceSelector.
           # Client-side apply preserves that mutation and avoids Helm 4 SSA
           # field-manager conflicts on repeatable bootstrap runs.
