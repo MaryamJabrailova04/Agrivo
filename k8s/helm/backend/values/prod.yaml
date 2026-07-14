@@ -2,7 +2,7 @@ replicaCount: 3
 
 image:
   repository: ghcr.io/maryamjabrailova04/agrivo-backend
-  tag: CHANGE_ME_IMMUTABLE_GIT_SHA
+  tag: "9a6d2006ab9383cd5a0d4bc5ea7ca22deee58698"
   pullPolicy: IfNotPresent
 
 config:
