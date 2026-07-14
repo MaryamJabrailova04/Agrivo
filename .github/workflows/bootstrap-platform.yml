@@ -42,6 +42,30 @@ jobs:
           helm repo add jetstack https://charts.jetstack.io
           helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
           helm repo update
+
+          recover_release() {
+            release="$1"
+            namespace="$2"
+            status=$(helm status "$release" -n "$namespace" -o json 2>/dev/null | jq -r '.info.status // empty' || true)
+            case "$status" in
+              pending-*)
+                revision=$(helm history "$release" -n "$namespace" -o json | jq -r '[.[] | select(.status == "deployed")][-1].revision // empty')
+                if [ -n "$revision" ]; then
+                  echo "Recovering $release from $status by rolling back to revision $revision"
+                  helm rollback "$release" "$revision" -n "$namespace" --wait --timeout 10m
+                else
+                  echo "Recovering $release from $status by removing the incomplete release"
+                  helm uninstall "$release" -n "$namespace"
+                fi
+                ;;
+            esac
+          }
+
+          recover_release argocd argocd
+          recover_release ingress-nginx ingress-nginx
+          recover_release cert-manager cert-manager
+          recover_release kube-prometheus-stack monitoring
+
           helm upgrade --install argocd argo/argo-cd -n argocd --create-namespace --wait --timeout 15m
           helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx -n ingress-nginx --create-namespace --wait --timeout 15m
           # AKS admissionsenforcer owns part of the webhook namespaceSelector.
