@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/maryamjabrailova04/agrivo-frontend
-  tag: "d41fc254b3e35379adf7762bcd309fb19812712b"
+  tag: "9a6d2006ab9383cd5a0d4bc5ea7ca22deee58698"
   pullPolicy: IfNotPresent
 
 ingress:
