@@ -30,6 +30,7 @@ export interface ApiOrder {
   status: ApiOrderStatus;
   totalAmount: number;
   deliveryMethod: string | null;
+  deliveryFee?: number;
   deliveryAddress: string | null;
   createdAt: string;
   updatedAt: string;
@@ -64,7 +65,13 @@ export async function createOrder(payload: {
   deliveryAddress?: string;
   items: { productId: string; quantity: number }[];
 }): Promise<ApiOrder> {
+  if (import.meta.env.DEV) {
+    console.log("CREATE ORDER PAYLOAD:", payload);
+  }
   const res = await apiPost<OrderResponse>("/orders", payload);
+  if (!res?.success || !res.order) {
+    throw new Error("Invalid order response from server.");
+  }
   return res.order;
 }
 

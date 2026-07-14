@@ -28,7 +28,6 @@ export function SidebarNav({
         const Icon = item.icon;
         const targetHash = item.externalHash ?? getDashboardSectionHash(config.baseHash, item.id);
         const isActive = activeNavId === item.id;
-        const showCartBadge = item.id === "cart" && cartCount > 0;
 
         return (
           <button
@@ -43,7 +42,7 @@ export function SidebarNav({
             <Icon className="h-4 w-4 shrink-0" strokeWidth={2} />
             <span>
               {item.label}
-              {showCartBadge ? ` (${cartCount})` : ""}
+              {item.id === "cart" ? ` (${cartCount ?? 0})` : ""}
             </span>
           </button>
         );

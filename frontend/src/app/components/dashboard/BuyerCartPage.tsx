@@ -1,37 +1,22 @@
 import { navigateToHash } from "../../../i18n/localizedRoutes";
 import {
   Info,
-  MapPin,
-  MessageCircle,
-  Minus,
   Package,
-  Plus,
   ShoppingBag,
-  Trash2,
   Truck,
   Users,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "../../auth/AuthContext";
 import { useCart } from "../../context/CartContext";
-import { getProductDetailHash } from "../../data/harvestExplorer";
 import { placeOrdersFromCart } from "../../utils/buyerPlacedOrdersStorage";
 import { isApiMode } from "../../../config/dataMode";
-import {
-  clearCartApi,
-  getCartItemsApi,
-  removeCartItemApi,
-  type ApiCartItem,
-  updateCartItemApi,
-} from "../../../api/cartApi";
 import { createOrder } from "../../../api/ordersApi";
 import {
-  formatQuantity,
-  getCartItemSubtotal,
   getCartSummary,
   type CartItem,
 } from "../../utils/cartStorage";
-import { ProductImage } from "../products/ProductImage";
+import { CartProductCard } from "../cart/CartProductCard";
 import { Button } from "../ui/button";
 import {
   Dialog,
@@ -45,11 +30,6 @@ import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
 import { useLanguage } from "../../../i18n/LanguageContext";
-import {
-  formatLocalizedQuantity,
-  localizePriceUnit,
-  translateBuyerProductName,
-} from "../../../i18n/buyerDashboardHelpers";
 import { DeliveryMethodPicker } from "../delivery/DeliveryMethodPicker";
 import type { DeliveryMethod } from "../../data/deliveryTypes";
 import {
@@ -59,275 +39,15 @@ import {
 } from "../../utils/deliveryOptionsStorage";
 import { createDeliveryTracking } from "../../utils/deliveryTrackingStorage";
 import { translateDeliveryMethod } from "../../../i18n/deliveryHelpers";
-
-function CartQuantityControl({
-  item,
-  onUpdate,
-}: {
-  item: CartItem;
-  onUpdate: (slug: string, quantity: number) => void;
-}) {
-  const { t, language } = useLanguage();
-  const [inputValue, setInputValue] = useState(String(item.selectedQuantity));
-  const [validationMsg, setValidationMsg] = useState<string | null>(null);
-
-  useEffect(() => {
-    setInputValue(String(item.selectedQuantity));
-    setValidationMsg(null);
-  }, [item.selectedQuantity]);
-
-  const applyQuantity = (raw: number) => {
-    if (!Number.isFinite(raw)) {
-      setInputValue(String(item.selectedQuantity));
-      return;
-    }
-
-    const rounded = Math.round(raw);
-
-    if (rounded > item.availableQuantity) {
-      const corrected = item.availableQuantity;
-      setValidationMsg(
-        `${t("buyerCart.item.available")}: ${formatLocalizedQuantity(
-          t,
-          language,
-          formatQuantity(corrected, item.unit),
-        )}`,
-      );
-      onUpdate(item.slug, corrected);
-      setInputValue(String(corrected));
-      return;
-    }
-
-    if (rounded < item.minimumOrder) {
-      const corrected = item.minimumOrder;
-      setValidationMsg(
-        `${t("buyerCart.item.minimumOrder")}: ${formatLocalizedQuantity(
-          t,
-          language,
-          formatQuantity(corrected, item.unit),
-        )}`,
-      );
-      onUpdate(item.slug, corrected);
-      setInputValue(String(corrected));
-      return;
-    }
-
-    setValidationMsg(null);
-    onUpdate(item.slug, rounded);
-    setInputValue(String(rounded));
-  };
-
-  const handleDecrement = () => {
-    if (item.selectedQuantity <= item.minimumOrder) {
-      setValidationMsg(
-        `${t("buyerCart.item.minimumOrder")}: ${formatLocalizedQuantity(
-          t,
-          language,
-          formatQuantity(item.minimumOrder, item.unit),
-        )}`,
-      );
-      return;
-    }
-    applyQuantity(item.selectedQuantity - 1);
-  };
-
-  const handleIncrement = () => {
-    if (item.selectedQuantity >= item.availableQuantity) {
-      setValidationMsg(
-        `${t("buyerCart.item.available")}: ${formatLocalizedQuantity(
-          t,
-          language,
-          formatQuantity(item.availableQuantity, item.unit),
-        )}`,
-      );
-      return;
-    }
-    applyQuantity(item.selectedQuantity + 1);
-  };
-
-  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = event.target.value;
-    if (value === "" || /^\d+$/.test(value)) {
-      setInputValue(value);
-      setValidationMsg(null);
-    }
-  };
-
-  const commitInput = () => {
-    if (inputValue === "") {
-      setInputValue(String(item.selectedQuantity));
-      return;
-    }
-    applyQuantity(Number.parseInt(inputValue, 10));
-  };
-
-  return (
-    <div className="agrivo-buyer-cart-item-qty-group">
-      <div className="agrivo-buyer-cart-stepper">
-        <button
-          type="button"
-          className="agrivo-buyer-cart-stepper-btn"
-          aria-label={t("buyerCart.quantity.decrease", "Decrease quantity by 1")}
-          onClick={handleDecrement}
-          disabled={item.selectedQuantity <= item.minimumOrder}
-        >
-          <Minus className="h-3.5 w-3.5" />
-        </button>
-        <input
-          type="text"
-          inputMode="numeric"
-          pattern="[0-9]*"
-          className="agrivo-buyer-cart-stepper-input"
-          value={inputValue}
-          aria-label={`${t("buyerCart.item.selected")} ${t("common.kg", item.unit)}`}
-          onChange={handleInputChange}
-          onBlur={commitInput}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.currentTarget.blur();
-            }
-          }}
-        />
-        <span className="agrivo-buyer-cart-stepper-unit">{t("common.kg", item.unit)}</span>
-        <button
-          type="button"
-          className="agrivo-buyer-cart-stepper-btn"
-          aria-label={t("buyerCart.quantity.increase", "Increase quantity by 1")}
-          onClick={handleIncrement}
-          disabled={item.selectedQuantity >= item.availableQuantity}
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <p className="agrivo-buyer-cart-qty-hint">
-        {t("buyerCart.item.minimumOrder")}:{" "}
-        {formatLocalizedQuantity(t, language, formatQuantity(item.minimumOrder, item.unit))} ·{" "}
-        {t("buyerCart.item.available")}: {formatLocalizedQuantity(t, language, item.availableQuantityLabel)}
-      </p>
-      {validationMsg ? <p className="agrivo-buyer-cart-qty-error">{validationMsg}</p> : null}
-    </div>
-  );
-}
-
-function CartItemCard({
-  item,
-  onUpdate,
-  onRemove,
-}: {
-  item: CartItem;
-  onUpdate: (slug: string, quantity: number) => void;
-  onRemove: (slug: string) => void;
-}) {
-  const { t, language } = useLanguage();
-  const subtotal = getCartItemSubtotal(item);
-  const locationDisplay = item.location.replace(/>/g, " → ");
-
-  return (
-    <article className="agrivo-buyer-cart-item">
-      <div className="agrivo-buyer-cart-item-thumb">
-        <ProductImage
-          name={translateBuyerProductName(t, item.name)}
-          src={item.image}
-          alt={translateBuyerProductName(t, item.name)}
-          className="h-full w-full"
-        />
-      </div>
-
-      <div className="agrivo-buyer-cart-item-main">
-        <div className="agrivo-buyer-cart-item-top">
-          <div className="agrivo-buyer-cart-item-info">
-            <h3 className="agrivo-buyer-cart-item-name">{translateBuyerProductName(t, item.name)}</h3>
-            <p className="agrivo-buyer-cart-item-farmer">
-              {t("buyerCart.item.farmer")}: <strong>{item.farmer === "Farmer" ? t("buyerCart.item.farmer") : item.farmer}</strong>
-            </p>
-            <p className="agrivo-buyer-cart-item-location">
-              <MapPin className="h-3.5 w-3.5 shrink-0 text-[#43A047]" />
-              <span>{locationDisplay}</span>
-            </p>
-          </div>
-
-          <div className="agrivo-buyer-cart-item-subtotal-block">
-            <p className="agrivo-buyer-cart-item-subtotal-label">{t("buyerCart.item.subtotal")}</p>
-            <p className="agrivo-buyer-cart-item-subtotal-value">{subtotal.toFixed(2)} AZN</p>
-          </div>
-        </div>
-
-        <div className="agrivo-buyer-cart-item-details">
-          <div className="agrivo-buyer-cart-item-detail">
-            <span className="agrivo-buyer-cart-item-detail-label">{t("buyerCart.item.price")}</span>
-            <span className="agrivo-buyer-cart-item-detail-value">
-              {localizePriceUnit(t, language, item.price)}
-              {item.unit ? ` / ${t("common.kg", item.unit)}` : ""}
-            </span>
-          </div>
-          <div className="agrivo-buyer-cart-item-detail">
-            <span className="agrivo-buyer-cart-item-detail-label">{t("buyerCart.item.available")}</span>
-            <span className="agrivo-buyer-cart-item-detail-value">
-              {formatLocalizedQuantity(t, language, item.availableQuantityLabel)}
-            </span>
-          </div>
-          <div className="agrivo-buyer-cart-item-detail">
-            <span className="agrivo-buyer-cart-item-detail-label">{t("buyerCart.item.selected")}</span>
-            <span className="agrivo-buyer-cart-item-detail-value">
-              {formatLocalizedQuantity(t, language, formatQuantity(item.selectedQuantity, item.unit))}
-            </span>
-          </div>
-          <div className="agrivo-buyer-cart-item-detail">
-            {item.deliveryAvailable ? (
-              <span className="agrivo-buyer-cart-delivery-badge">
-                <Truck className="h-3 w-3" />
-                {t("buyerCart.item.deliveryAvailable")}
-              </span>
-            ) : (
-              <span className="agrivo-buyer-cart-pickup-badge">{t("product.pickupOnly")}</span>
-            )}
-          </div>
-        </div>
-
-        <div className="agrivo-buyer-cart-item-controls">
-          <CartQuantityControl item={item} onUpdate={onUpdate} />
-
-          <div className="agrivo-buyer-cart-item-actions">
-            <Button
-              variant="outline"
-              size="sm"
-              className="agrivo-buyer-cart-action-btn"
-              onClick={() => {
-                navigateToHash(getProductDetailHash(item.slug));
-              }}
-            >
-              {t("buyerCart.item.viewProduct")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="agrivo-buyer-cart-action-btn"
-              onClick={() => {
-                if (item.farmerSlug) {
-                  navigateToHash(`farmers/${item.farmerSlug}`);
-                } else {
-                  navigateToHash("login");
-                }
-              }}
-            >
-              <MessageCircle className="mr-1.5 h-3.5 w-3.5" />
-              {t("buyerCart.item.contactFarmer")}
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="agrivo-buyer-cart-action-btn agrivo-buyer-cart-action-btn--remove"
-              onClick={() => onRemove(item.slug)}
-            >
-              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-              {t("buyerCart.item.remove")}
-            </Button>
-          </div>
-        </div>
-      </div>
-    </article>
-  );
-}
+import { AnimatePresence, motion } from "framer-motion";
+import { OrderSuccessView } from "../checkout/OrderSuccessView";
+import { OrderTrackingView } from "../checkout/OrderTrackingView";
+import { PlaceOrderButton } from "../checkout/PlaceOrderButton";
+import {
+  formatDisplayOrderNumber,
+  type CheckoutStep,
+  type OrderConfirmationPayload,
+} from "../checkout/orderConfirmationTypes";
 
 function OrderSummaryCard({
   items,
@@ -342,21 +62,25 @@ function OrderSummaryCard({
 }) {
   const { t } = useLanguage();
   const summary = useMemo(() => getCartSummary(items), [items]);
+  const [coupon, setCoupon] = useState("");
+  const [couponMessage, setCouponMessage] = useState<string | null>(null);
+
+  const handleApplyCoupon = () => {
+    const code = coupon.trim();
+    if (!code) {
+      setCouponMessage(t("buyerCart.orderSummary.couponEmpty", "Enter a coupon code."));
+      return;
+    }
+    setCouponMessage(
+      t("buyerCart.orderSummary.couponUnavailable", "This coupon code is not available yet."),
+    );
+  };
 
   return (
     <aside className="agrivo-buyer-cart-summary">
       <h3 className="agrivo-buyer-cart-summary-title">{t("buyerCart.orderSummary.title")}</h3>
 
       <dl className="agrivo-buyer-cart-summary-lines">
-        <div className="agrivo-buyer-cart-summary-row">
-          <dt>{t("buyerCart.orderSummary.items")}</dt>
-          <dd>{summary.itemCount}</dd>
-        </div>
-        <div className="agrivo-buyer-cart-summary-row">
-          <dt>{t("buyerCart.orderSummary.farmers")}</dt>
-          <dd>{summary.farmerCount}</dd>
-        </div>
-        <div className="agrivo-buyer-cart-summary-divider" />
         <div className="agrivo-buyer-cart-summary-row">
           <dt>{t("buyerCart.orderSummary.productsSubtotal")}</dt>
           <dd>{summary.productsSubtotal.toFixed(2)} AZN</dd>
@@ -369,12 +93,39 @@ function OrderSummaryCard({
           <dt>{t("buyerCart.orderSummary.serviceFee")}</dt>
           <dd>{summary.serviceFee.toFixed(2)} AZN</dd>
         </div>
-        <div className="agrivo-buyer-cart-summary-divider" />
+        <div className="agrivo-buyer-cart-summary-divider" role="presentation" />
         <div className="agrivo-buyer-cart-summary-row agrivo-buyer-cart-summary-row--total">
           <dt>{t("buyerCart.orderSummary.total")}</dt>
           <dd>{summary.total.toFixed(2)} AZN</dd>
         </div>
       </dl>
+
+      <div className="agrivo-buyer-cart-coupon">
+        <Label htmlFor="cart-coupon" className="agrivo-buyer-cart-coupon-label">
+          {t("buyerCart.orderSummary.coupon", "Coupon code")}
+        </Label>
+        <div className="agrivo-buyer-cart-coupon-row">
+          <Input
+            id="cart-coupon"
+            value={coupon}
+            onChange={(event) => {
+              setCoupon(event.target.value);
+              setCouponMessage(null);
+            }}
+            placeholder={t("buyerCart.orderSummary.couponPlaceholder", "Enter code")}
+            className="agrivo-buyer-cart-coupon-input"
+          />
+          <Button
+            type="button"
+            variant="outline"
+            className="agrivo-buyer-cart-coupon-btn"
+            onClick={handleApplyCoupon}
+          >
+            {t("buyerCart.orderSummary.applyCoupon", "Apply")}
+          </Button>
+        </div>
+        {couponMessage ? <p className="agrivo-buyer-cart-coupon-message">{couponMessage}</p> : null}
+      </div>
 
       <div className="agrivo-buyer-cart-payment">
         <p className="agrivo-buyer-cart-payment-label">{t("buyerCart.orderSummary.paymentMethod")}</p>
@@ -383,7 +134,7 @@ function OrderSummaryCard({
 
       {multiFarmer ? (
         <div className="agrivo-buyer-cart-multi-note">
-          <Info className="h-4 w-4 shrink-0" />
+          <Info className="h-4 w-4 shrink-0" aria-hidden="true" />
           <p>
             {t(
               "buyerCart.orderSummary.multiFarmerHint",
@@ -412,6 +163,7 @@ function CheckoutDialog({
   onOpenChange,
   items,
   onPlaceOrder,
+  onClearCartAfterSuccess,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -422,9 +174,12 @@ function CheckoutDialog({
     note: string;
     deliveryMethod: DeliveryMethod;
     deliveryFee: number;
-  }) => void;
+  }) => Promise<OrderConfirmationPayload | null>;
+  onClearCartAfterSuccess: () => Promise<void>;
 }) {
   const { t } = useLanguage();
+  const submittingRef = useRef(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
   const primaryFarmerSlug = items[0]?.farmerSlug ?? null;
   const quotes = useMemo(
     () => getDeliveryMethodQuotes("cart", primaryFarmerSlug, items.some((item) => item.deliveryAvailable)),
@@ -444,155 +199,310 @@ function CheckoutDialog({
   const [address, setAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [note, setNote] = useState("");
+  const [checkoutStep, setCheckoutStep] = useState<CheckoutStep>("checkout");
+  const [confirmation, setConfirmation] = useState<OrderConfirmationPayload | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const needsAddress = deliveryMethod !== "self_pickup";
   const canSubmit =
     Boolean(deliveryMethod) &&
     phone.trim().length >= 7 &&
     (!needsAddress || address.trim().length > 5);
+  const isProcessing = checkoutStep === "processing";
+  const isPostCheckout =
+    checkoutStep === "success" || checkoutStep === "tracking";
+
+  // Reset local checkout state only when the modal closes — never during submit.
+  useEffect(() => {
+    if (open) return;
+
+    submittingRef.current = false;
+    setCheckoutStep("checkout");
+    setConfirmation(null);
+    setSubmitError(null);
+    setAddress("");
+    setPhone("");
+    setNote("");
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (checkoutStep !== "success") return;
+    bodyRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+  }, [checkoutStep]);
+
+  const handleContinueShopping = () => {
+    onOpenChange(false);
+    navigateToHash("products");
+  };
+
+  const handleViewOrders = () => {
+    onOpenChange(false);
+    navigateToHash("dashboard/buyer/orders");
+  };
+
+  const handleClose = () => {
+    if (isProcessing) return;
+    onOpenChange(false);
+  };
+
+  const handlePlaceOrderClick = () => {
+    if (!deliveryMethod || checkoutStep !== "checkout") return;
+    if (!canSubmit || submittingRef.current) return;
+
+    submittingRef.current = true;
+    setSubmitError(null);
+    setCheckoutStep("processing");
+
+    void (async () => {
+      try {
+        const result = await onPlaceOrder({
+          address: address.trim(),
+          phone: phone.trim(),
+          note: note.trim(),
+          deliveryMethod,
+          deliveryFee: summary.deliveryFee,
+        });
+
+        if (!result) {
+          setCheckoutStep("checkout");
+          setSubmitError(
+            t("buyerCart.feedback.failedPlaceOrder", "Failed to place order."),
+          );
+          return;
+        }
+
+        // Success UI first — keep this modal instance mounted before clearing cart.
+        setConfirmation(result);
+        setCheckoutStep("success");
+
+        try {
+          await onClearCartAfterSuccess();
+        } catch (clearError) {
+          console.error("CLEAR CART AFTER ORDER FAILED:", clearError);
+        }
+      } catch (error) {
+        console.error("ORDER API FAILED", error);
+        setCheckoutStep("checkout");
+        setSubmitError(
+          error instanceof Error
+            ? error.message
+            : t("buyerCart.feedback.failedPlaceOrder", "Failed to place order."),
+        );
+        // Preserve address / phone / note / delivery method.
+      } finally {
+        submittingRef.current = false;
+      }
+    })();
+  };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="agrivo-buyer-checkout-dialog max-h-[90vh] overflow-y-auto sm:max-w-xl">
-        <DialogHeader>
-          <DialogTitle className="agrivo-heading text-xl font-bold text-[#102018]">
-            {t("buyerCart.orderSummary.proceedToCheckout")}
-          </DialogTitle>
-          <DialogDescription className="text-sm text-[#5F6F64]">
-            {t(
-              "buyerCart.checkout.subtitle",
-              "Confirm delivery details and place your order. Payment is collected on delivery.",
-            )}
-          </DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 py-2">
-          <DeliveryMethodPicker
-            quotes={quotes}
-            selected={deliveryMethod}
-            onSelect={setDeliveryMethod}
-            compact
-          />
-
-          <div className="rounded-xl border border-[#edf2ea] bg-[#f8faf4] p-4 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-[#5F6F64]">{t("delivery.products", "Products")}</span>
-              <span className="font-semibold text-[#102018]">
-                {summary.productsSubtotal.toFixed(2)} AZN
-              </span>
-            </div>
-            <div className="mt-2 flex items-center justify-between gap-3">
-              <span className="text-[#5F6F64]">{t("delivery.delivery", "Delivery")}</span>
-              <span className="font-semibold text-[#102018]">
-                {summary.deliveryFee.toFixed(2)} AZN
-              </span>
-            </div>
-            <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#e5efe1] pt-3">
-              <span className="font-semibold text-[#102018]">{t("delivery.total", "Total")}</span>
-              <span className="text-lg font-bold text-[#14532D]">
-                {summary.total.toFixed(2)} AZN
-              </span>
-            </div>
-            {deliveryMethod ? (
-              <p className="mt-2 text-xs text-[#5F6F64]">
-                {translateDeliveryMethod(t, deliveryMethod)}
-              </p>
-            ) : null}
-          </div>
-
-          {needsAddress ? (
-            <div className="space-y-2">
-              <Label htmlFor="checkout-address">
-                {t("buyerCart.checkout.deliveryAddress", "Delivery address")}
-              </Label>
-              <Textarea
-                id="checkout-address"
-                value={address}
-                onChange={(event) => setAddress(event.target.value)}
-                placeholder={t(
-                  "buyerCart.checkout.deliveryAddressPlaceholder",
-                  "Street, building, city",
-                )}
-                className="min-h-[88px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        if (!nextOpen && isProcessing) return;
+        onOpenChange(nextOpen);
+      }}
+    >
+      <DialogContent
+        className={`agrivo-buyer-checkout-dialog flex max-h-[90vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-[620px] ${
+          isPostCheckout ? "agrivo-buyer-checkout-dialog--post" : ""
+        }`}
+        onInteractOutside={(event) => {
+          if (isProcessing) event.preventDefault();
+        }}
+        onEscapeKeyDown={(event) => {
+          if (isProcessing) event.preventDefault();
+        }}
+        onWheel={(event) => event.stopPropagation()}
+        onTouchMove={(event) => event.stopPropagation()}
+      >
+        <AnimatePresence mode="wait">
+          {checkoutStep === "success" && confirmation ? (
+            <motion.div
+              key="success"
+              ref={bodyRef}
+              className="agrivo-buyer-checkout-pane"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -24 }}
+              transition={{ duration: 0.38, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <OrderSuccessView
+                confirmation={confirmation}
+                onTrackOrder={() => setCheckoutStep("tracking")}
+                onViewOrders={handleViewOrders}
+                onContinueShopping={handleContinueShopping}
               />
-            </div>
+            </motion.div>
+          ) : checkoutStep === "tracking" && confirmation ? (
+            <motion.div
+              key="tracking"
+              className="agrivo-buyer-checkout-pane"
+              initial={{ opacity: 0, x: 28 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: 16 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <OrderTrackingView
+                confirmation={confirmation}
+                onViewOrders={handleViewOrders}
+                onClose={handleClose}
+                onContinueShopping={handleContinueShopping}
+              />
+            </motion.div>
           ) : (
-            <div className="rounded-xl border border-[#dbe7d4] bg-white p-4 text-sm text-[#5F6F64]">
-              <p className="font-semibold text-[#14532D]">
-                {t("delivery.methods.self_pickup.title", "Self Pickup")}
-              </p>
-              <p className="mt-1">
-                {t("delivery.farmAddress", "Farm Address")}:{" "}
-                {quotes.find((q) => q.method === "self_pickup")?.meta?.hoursLabel
-                  ? t(
-                      "buyerCart.checkout.pickupHint",
-                      "Collect at the farm during pickup hours. Your pickup code will appear after placing the order.",
-                    )
-                  : t(
-                      "buyerCart.checkout.pickupHint",
-                      "Collect at the farm during pickup hours. Your pickup code will appear after placing the order.",
+            <div key="checkout" className="agrivo-buyer-checkout-shell">
+              <header className="agrivo-buyer-checkout-header">
+                <DialogHeader className="space-y-1 text-left">
+                  <DialogTitle className="agrivo-heading pr-8 text-xl font-bold text-[#102018]">
+                    {t("buyerCart.orderSummary.proceedToCheckout")}
+                  </DialogTitle>
+                  <DialogDescription className="text-sm text-[#5F6F64]">
+                    {t(
+                      "buyerCart.checkout.subtitle",
+                      "Confirm delivery details and place your order. Payment is collected on delivery.",
                     )}
-              </p>
+                  </DialogDescription>
+                </DialogHeader>
+              </header>
+
+              <div className="agrivo-buyer-checkout-body">
+                <div className="space-y-4">
+                  <DeliveryMethodPicker
+                    quotes={quotes}
+                    selected={deliveryMethod}
+                    onSelect={setDeliveryMethod}
+                    compact
+                  />
+
+                  <div className="rounded-xl border border-[#edf2ea] bg-[#f8faf4] p-4 text-sm">
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-[#5F6F64]">{t("delivery.products", "Products")}</span>
+                      <span className="font-semibold text-[#102018]">
+                        {summary.productsSubtotal.toFixed(2)} AZN
+                      </span>
+                    </div>
+                    <div className="mt-2 flex items-center justify-between gap-3">
+                      <span className="text-[#5F6F64]">{t("delivery.delivery", "Delivery")}</span>
+                      <span className="font-semibold text-[#102018]">
+                        {summary.deliveryFee.toFixed(2)} AZN
+                      </span>
+                    </div>
+                    <div className="mt-3 flex items-center justify-between gap-3 border-t border-[#e5efe1] pt-3">
+                      <span className="font-semibold text-[#102018]">{t("delivery.total", "Total")}</span>
+                      <span className="text-lg font-bold text-[#14532D]">
+                        {summary.total.toFixed(2)} AZN
+                      </span>
+                    </div>
+                    {deliveryMethod ? (
+                      <p className="mt-2 text-xs text-[#5F6F64]">
+                        {translateDeliveryMethod(t, deliveryMethod)}
+                      </p>
+                    ) : null}
+                  </div>
+
+                  {needsAddress ? (
+                    <div className="space-y-2">
+                      <Label htmlFor="checkout-address">
+                        {t("buyerCart.checkout.deliveryAddress", "Delivery address")}
+                      </Label>
+                      <Textarea
+                        id="checkout-address"
+                        value={address}
+                        onChange={(event) => setAddress(event.target.value)}
+                        placeholder={t(
+                          "buyerCart.checkout.deliveryAddressPlaceholder",
+                          "Street, building, city",
+                        )}
+                        className="min-h-[88px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
+                        disabled={isProcessing}
+                      />
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-[#dbe7d4] bg-white p-4 text-sm text-[#5F6F64]">
+                      <p className="font-semibold text-[#14532D]">
+                        {t("delivery.methods.self_pickup.title", "Self Pickup")}
+                      </p>
+                      <p className="mt-1">
+                        {t(
+                          "buyerCart.checkout.pickupHint",
+                          "Collect at the farm during pickup hours. Your pickup code will appear after placing the order.",
+                        )}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="checkout-phone">
+                      {t("buyerCart.checkout.phoneNumber", "Phone number")}
+                    </Label>
+                    <Input
+                      id="checkout-phone"
+                      type="tel"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                      placeholder="+994 50 000 00 00"
+                      className="h-11 rounded-full border-[#DEECE0] bg-[#F7FBF5]"
+                      disabled={isProcessing}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="checkout-note">
+                      {t("buyerCart.checkout.deliveryNoteOptional", "Delivery note (optional)")}
+                    </Label>
+                    <Textarea
+                      id="checkout-note"
+                      value={note}
+                      onChange={(event) => setNote(event.target.value)}
+                      placeholder={t(
+                        "buyerCart.checkout.deliveryNotePlaceholder",
+                        "Gate code, preferred delivery time, etc.",
+                      )}
+                      className="min-h-[72px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
+                      disabled={isProcessing}
+                    />
+                  </div>
+
+                  <div className="rounded-xl border border-[#edf2ea] bg-[#f8faf4] p-4 text-sm">
+                    <p className="font-semibold text-[#102018]">
+                      {t("buyerCart.orderSummary.paymentMethod")}
+                    </p>
+                    <p className="mt-1 text-[#5F6F64]">{t("buyerCart.orderSummary.cashOnDelivery")}</p>
+                  </div>
+
+                  {submitError ? (
+                    <p className="rounded-xl border border-[#fecaca] bg-[#fff1f2] px-3 py-2 text-sm text-[#b91c1c]">
+                      {submitError}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+
+              <footer className="agrivo-buyer-checkout-footer">
+                <DialogFooter className="gap-2 sm:flex-row sm:justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
+                    onClick={handleClose}
+                    disabled={isProcessing}
+                  >
+                    {t("common.cancel")}
+                  </Button>
+                  <PlaceOrderButton
+                    disabled={!canSubmit || !deliveryMethod}
+                    processing={isProcessing}
+                    idleLabel={t("buyerCart.checkout.placeOrder", "Place Order")}
+                    processingLabel={t(
+                      "buyerCart.checkout.placingOrder",
+                      "Placing Order...",
+                    )}
+                    onPlaceOrder={handlePlaceOrderClick}
+                  />
+                </DialogFooter>
+              </footer>
             </div>
           )}
-
-          <div className="space-y-2">
-            <Label htmlFor="checkout-phone">{t("buyerCart.checkout.phoneNumber", "Phone number")}</Label>
-            <Input
-              id="checkout-phone"
-              type="tel"
-              value={phone}
-              onChange={(event) => setPhone(event.target.value)}
-              placeholder="+994 50 000 00 00"
-              className="h-11 rounded-full border-[#DEECE0] bg-[#F7FBF5]"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="checkout-note">
-              {t("buyerCart.checkout.deliveryNoteOptional", "Delivery note (optional)")}
-            </Label>
-            <Textarea
-              id="checkout-note"
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              placeholder={t(
-                "buyerCart.checkout.deliveryNotePlaceholder",
-                "Gate code, preferred delivery time, etc.",
-              )}
-              className="min-h-[72px] rounded-xl border-[#DEECE0] bg-[#F7FBF5]"
-            />
-          </div>
-
-          <div className="rounded-xl border border-[#edf2ea] bg-[#f8faf4] p-4 text-sm">
-            <p className="font-semibold text-[#102018]">{t("buyerCart.orderSummary.paymentMethod")}</p>
-            <p className="mt-1 text-[#5F6F64]">{t("buyerCart.orderSummary.cashOnDelivery")}</p>
-          </div>
-        </div>
-
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button
-            variant="outline"
-            className="rounded-full border-[#dbe7d4] text-[#14532D] hover:bg-[#EAF7EC]"
-            onClick={() => onOpenChange(false)}
-          >
-            {t("common.cancel")}
-          </Button>
-          <Button
-            className="rounded-full bg-[#14532D] text-white hover:bg-[#1D6A3B]"
-            disabled={!canSubmit || !deliveryMethod}
-            onClick={() => {
-              if (!deliveryMethod) return;
-              onPlaceOrder({
-                address: address.trim(),
-                phone: phone.trim(),
-                note: note.trim(),
-                deliveryMethod,
-                deliveryFee: summary.deliveryFee,
-              });
-            }}
-          >
-            {t("buyerCart.checkout.placeOrder", "Place Order")}
-          </Button>
-        </DialogFooter>
+        </AnimatePresence>
       </DialogContent>
     </Dialog>
   );
@@ -600,25 +510,41 @@ function CheckoutDialog({
 
 function CartPageStats({ itemCount, farmerCount }: { itemCount: number; farmerCount: number }) {
   const { t } = useLanguage();
+  const deliveryLabel = t("buyerCart.summary.estimatedDelivery").replace(
+    "{days}",
+    farmerCount > 1 ? "3–5" : "2–3",
+  );
+
   return (
     <div className="agrivo-buyer-cart-stats">
       <div className="agrivo-buyer-cart-stat">
-        <Package className="h-4 w-4 text-[#43A047]" />
-        <span>
-          {t("buyerCart.summary.items").replace("{count}", String(itemCount))}
+        <span className="agrivo-buyer-cart-stat-icon" aria-hidden="true">
+          <Package className="h-4 w-4" />
         </span>
+        <div className="agrivo-buyer-cart-stat-copy">
+          <p className="agrivo-buyer-cart-stat-label">{t("buyerCart.orderSummary.items")}</p>
+          <p className="agrivo-buyer-cart-stat-value">{itemCount}</p>
+        </div>
       </div>
       <div className="agrivo-buyer-cart-stat">
-        <Users className="h-4 w-4 text-[#43A047]" />
-        <span>
-          {t("buyerCart.summary.farmers").replace("{count}", String(farmerCount))}
+        <span className="agrivo-buyer-cart-stat-icon" aria-hidden="true">
+          <Users className="h-4 w-4" />
         </span>
+        <div className="agrivo-buyer-cart-stat-copy">
+          <p className="agrivo-buyer-cart-stat-label">{t("buyerCart.orderSummary.farmers")}</p>
+          <p className="agrivo-buyer-cart-stat-value">{farmerCount}</p>
+        </div>
       </div>
       <div className="agrivo-buyer-cart-stat">
-        <Truck className="h-4 w-4 text-[#43A047]" />
-        <span>
-          {t("buyerCart.summary.estimatedDelivery").replace("{days}", farmerCount > 1 ? "3–5" : "2–3")}
+        <span className="agrivo-buyer-cart-stat-icon" aria-hidden="true">
+          <Truck className="h-4 w-4" />
         </span>
+        <div className="agrivo-buyer-cart-stat-copy">
+          <p className="agrivo-buyer-cart-stat-label">
+            {t("buyerCart.summary.deliveryLabel", "Delivery")}
+          </p>
+          <p className="agrivo-buyer-cart-stat-value agrivo-buyer-cart-stat-value--text">{deliveryLabel}</p>
+        </div>
       </div>
     </div>
   );
@@ -628,29 +554,11 @@ export function BuyerCartPage() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const { cartItems, removeFromCart, updateQuantity, clearBuyerCart } = useCart();
-  const [apiCartItems, setApiCartItems] = useState<CartItem[]>([]);
-  const [apiError, setApiError] = useState<string | null>(null);
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const activeCartItems = isApiMode ? apiCartItems : cartItems;
-  const summary = useMemo(() => getCartSummary(activeCartItems), [activeCartItems]);
+  const [checkoutItems, setCheckoutItems] = useState<CartItem[]>([]);
+  const summary = useMemo(() => getCartSummary(cartItems), [cartItems]);
   const multiFarmer = summary.farmerCount > 1;
-
-  useEffect(() => {
-    if (!isApiMode) return;
-    let mounted = true;
-    getCartItemsApi()
-      .then((items) => {
-        if (!mounted) return;
-        setApiCartItems(items.map(mapApiCartItemToCartItem));
-      })
-      .catch((error) => {
-        if (!mounted) return;
-        setApiError(error instanceof Error ? error.message : t("buyerCart.feedback.failedLoad", "Failed to load cart."));
-      });
-    return () => {
-      mounted = false;
-    };
-  }, [t]);
 
   const handlePlaceOrder = async (details: {
     address: string;
@@ -658,50 +566,103 @@ export function BuyerCartPage() {
     note: string;
     deliveryMethod: DeliveryMethod;
     deliveryFee: number;
-  }) => {
-    if (!user?.id || activeCartItems.length === 0) return;
+  }): Promise<OrderConfirmationPayload | null> => {
+    // Use the immutable checkout snapshot — never depend on live cart during submit.
+    const orderItems = checkoutItems;
+    if (!user?.id || orderItems.length === 0) return null;
+
+    const buildConfirmation = (
+      orderId: string,
+      totalPaid: number,
+      farmerName: string,
+    ): OrderConfirmationPayload => {
+      const methodLabel = translateDeliveryMethod(t, details.deliveryMethod);
+      const deliveryAddress =
+        details.deliveryMethod === "self_pickup"
+          ? t("buyerCart.confirmation.farmPickup", "Farm pickup location")
+          : details.address || t("buyerCart.confirmation.deliveryAddressFallback", "Delivery address");
+
+      return {
+        orderNumber: orderId,
+        displayOrderNumber: formatDisplayOrderNumber(orderId),
+        totalPaid,
+        paymentLabel: t("buyerCart.orderSummary.cashOnDelivery"),
+        deliveryAddress,
+        farmerLabel:
+          details.deliveryMethod === "farmer_delivery"
+            ? methodLabel
+            : farmerName || methodLabel,
+        deliveryMethodLabel: methodLabel,
+        etaLabel: t("buyerCart.confirmation.etaToday", "Today • 30–45 min"),
+        primaryOrderId: orderId,
+      };
+    };
+
     if (isApiMode) {
-      try {
-        const groupedByFarmer = new Map<string, CartItem[]>();
-        activeCartItems.forEach((item) => {
-          const key = item.farmerSlug || item.farmer;
-          const list = groupedByFarmer.get(key) ?? [];
-          list.push(item);
-          groupedByFarmer.set(key, list);
-        });
-        for (const [farmerKey, items] of groupedByFarmer.entries()) {
-          const order = await createOrder({
-            farmerId: items[0].farmerSlug || farmerKey,
-            deliveryMethod: details.deliveryMethod,
-            deliveryFee: details.deliveryFee,
-            deliveryAddress:
-              details.deliveryMethod === "self_pickup"
-                ? `Self pickup (${details.phone})${details.note ? ` - ${details.note}` : ""}`
-                : `${details.address} (${details.phone})${details.note ? ` - ${details.note}` : ""}`,
-            items: items.map((item) => ({
-              productId: item.id,
-              quantity: item.selectedQuantity,
-            })),
-          });
-          createDeliveryTracking({
-            orderId: order.id,
-            method: details.deliveryMethod,
-            deliveryFee: details.deliveryFee,
-            farmerSlug: items[0].farmerSlug,
-          });
+      const cartSummary = getCartSummary(orderItems, details.deliveryMethod);
+      const groupedByFarmer = new Map<string, CartItem[]>();
+      orderItems.forEach((item) => {
+        const key = item.farmerSlug || item.farmer;
+        const list = groupedByFarmer.get(key) ?? [];
+        list.push(item);
+        groupedByFarmer.set(key, list);
+      });
+      let primaryOrderId = "";
+      let primaryFarmer = orderItems[0]?.farmer ?? "Farmer";
+      let placedTotal = cartSummary.total;
+      for (const [, farmerItems] of groupedByFarmer.entries()) {
+        const farmerId = farmerItems[0].farmerSlug;
+        if (!farmerId) {
+          throw new Error(
+            t(
+              "buyerCart.feedback.missingFarmer",
+              "One or more products are missing farmer information.",
+            ),
+          );
         }
-        await clearCartApi();
-        setApiCartItems([]);
-        setCheckoutOpen(false);
-        sessionStorage.setItem("agrivo_order_success", t("buyerCart.feedback.orderPlaced", "Order placed successfully."));
-        navigateToHash("dashboard/buyer/orders");
-      } catch (error) {
-        setApiError(error instanceof Error ? error.message : t("buyerCart.feedback.failedPlaceOrder", "Failed to place order."));
+
+        const orderPayload = {
+          farmerId,
+          deliveryMethod: details.deliveryMethod,
+          deliveryFee: details.deliveryFee,
+          deliveryAddress:
+            details.deliveryMethod === "self_pickup"
+              ? `Self pickup (${details.phone})${details.note ? ` - ${details.note}` : ""}`
+              : `${details.address} (${details.phone})${details.note ? ` - ${details.note}` : ""}`,
+          items: farmerItems.map((item) => ({
+            productId: item.id,
+            quantity: Number(item.selectedQuantity),
+          })),
+        };
+
+        const order = await createOrder(orderPayload);
+        placedTotal = Number(order.totalAmount ?? placedTotal);
+        if (!primaryOrderId) {
+          primaryOrderId = order.id;
+          primaryFarmer = farmerItems[0].farmer;
+        }
+        createDeliveryTracking({
+          orderId: order.id,
+          method: details.deliveryMethod,
+          deliveryFee: order.deliveryFee ?? details.deliveryFee,
+          farmerSlug: farmerItems[0].farmerSlug,
+        });
       }
-      return;
+
+      // Do NOT clear cart here — clearing would remount empty-cart UI and wipe the modal.
+      sessionStorage.setItem(
+        "agrivo_order_success",
+        t("buyerCart.feedback.orderPlaced", "Order placed successfully."),
+      );
+      return buildConfirmation(
+        primaryOrderId || `AGR-${Date.now().toString().slice(-4)}`,
+        placedTotal,
+        primaryFarmer,
+      );
     }
 
-    const created = placeOrdersFromCart(user.id, activeCartItems, {
+    const cartSummary = getCartSummary(orderItems, details.deliveryMethod);
+    const created = placeOrdersFromCart(user.id, orderItems, {
       deliveryMethod: details.deliveryMethod,
       deliveryFee: details.deliveryFee,
       address: details.address,
@@ -713,24 +674,50 @@ export function BuyerCartPage() {
         orderId: order.orderId,
         method: details.deliveryMethod,
         deliveryFee: details.deliveryFee,
-        farmerSlug: activeCartItems.find((item) => item.name === order.product)?.farmerSlug,
+        farmerSlug: orderItems.find((item) => item.name === order.product)?.farmerSlug,
       });
     });
-    clearBuyerCart();
-    setCheckoutOpen(false);
-    sessionStorage.setItem("agrivo_order_success", t("buyerCart.feedback.orderPlaced", "Order placed successfully."));
-    navigateToHash("dashboard/buyer/orders");
+
+    sessionStorage.setItem(
+      "agrivo_order_success",
+      t("buyerCart.feedback.orderPlaced", "Order placed successfully."),
+    );
+
+    const primary = created[0];
+    if (!primary) return null;
+    return buildConfirmation(primary.orderId, cartSummary.total, primary.farmer);
   };
 
-  if (activeCartItems.length === 0) {
-    return (
-      <section className="agrivo-buyer-cart">
-        <div className="agrivo-dashboard-page-header">
-          <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">{t("buyerCart.title")}</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-            {t("buyerCart.subtitle")}
-          </p>
-        </div>
+  const handleClearCartAfterSuccess = async () => {
+    await clearBuyerCart();
+  };
+
+  const checkoutDialog = (
+    <CheckoutDialog
+      open={checkoutOpen}
+      onOpenChange={(open) => {
+        setCheckoutOpen(open);
+        if (!open) {
+          setCheckoutItems([]);
+          setCheckoutError(null);
+        }
+      }}
+      items={checkoutItems}
+      onPlaceOrder={handlePlaceOrder}
+      onClearCartAfterSuccess={handleClearCartAfterSuccess}
+    />
+  );
+
+  return (
+    <section className="agrivo-buyer-cart">
+      <div className="agrivo-dashboard-page-header">
+        <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">{t("buyerCart.title")}</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
+          {t("buyerCart.subtitle")}
+        </p>
+      </div>
+
+      {cartItems.length === 0 ? (
         <div className="agrivo-buyer-cart-empty">
           <div className="agrivo-buyer-cart-empty-icon">
             <ShoppingBag className="h-7 w-7 text-[#14532D]" />
@@ -748,118 +735,53 @@ export function BuyerCartPage() {
             {t("buyerCart.empty.browseMarketplace")}
           </Button>
         </div>
-      </section>
-    );
-  }
+      ) : (
+        <>
+          <CartPageStats itemCount={summary.itemCount} farmerCount={summary.farmerCount} />
 
-  return (
-    <section className="agrivo-buyer-cart">
-      <div className="agrivo-dashboard-page-header">
-        <h2 className="agrivo-heading text-2xl font-bold text-[#102018] sm:text-3xl">{t("buyerCart.title")}</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-[#5F6F64] sm:text-base">
-          {t("buyerCart.subtitle")}
-        </p>
-      </div>
+          <div className="agrivo-buyer-cart-layout">
+            <div className="agrivo-buyer-cart-items-col">
+              <p className="agrivo-buyer-cart-items-label">
+                {t("buyerCart.productsInCart").replace("{count}", String(summary.itemCount))}
+              </p>
+              <div className="agrivo-buyer-cart-items">
+                {cartItems.map((item) => (
+                  <CartProductCard
+                    key={item.slug}
+                    item={item}
+                    onUpdate={(slug, quantity) => {
+                      updateQuantity(slug, quantity);
+                    }}
+                    onRemove={(slug) => {
+                      removeFromCart(slug);
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
 
-      <CartPageStats itemCount={summary.itemCount} farmerCount={summary.farmerCount} />
-
-      <div className="agrivo-buyer-cart-layout">
-        <div className="agrivo-buyer-cart-items-col">
-          <p className="agrivo-buyer-cart-items-label">
-            {t("buyerCart.productsInCart").replace("{count}", String(summary.itemCount))}
-          </p>
-          <div className="agrivo-buyer-cart-items">
-            {activeCartItems.map((item) => (
-              <CartItemCard
-                key={item.slug}
-                item={item}
-                onUpdate={(slug, quantity) => {
-                  if (!isApiMode) {
-                    updateQuantity(slug, quantity);
-                    return;
-                  }
-                  const target = apiCartItems.find((i) => i.slug === slug);
-                  if (!target) return;
-                  updateCartItemApi(target.slug, quantity)
-                    .then(() =>
-                      setApiCartItems((prev) =>
-                        prev.map((item) =>
-                          item.slug === slug ? { ...item, selectedQuantity: quantity } : item,
-                        ),
-                      ),
-                    )
-                    .catch((error) =>
-                      setApiError(error instanceof Error ? error.message : t("buyerCart.feedback.failedUpdateItem", "Failed to update cart item.")),
-                    );
-                }}
-                onRemove={(slug) => {
-                  if (!isApiMode) {
-                    removeFromCart(slug);
-                    return;
-                  }
-                  removeCartItemApi(slug)
-                    .then(() =>
-                      setApiCartItems((prev) => prev.filter((item) => item.slug !== slug)),
-                    )
-                    .catch((error) =>
-                      setApiError(error instanceof Error ? error.message : t("buyerCart.feedback.failedRemoveItem", "Failed to remove cart item.")),
-                    );
-                }}
-              />
-            ))}
+            <OrderSummaryCard
+              items={cartItems}
+              multiFarmer={multiFarmer}
+              onCheckout={() => {
+                setCheckoutItems(cartItems.map((item) => ({ ...item })));
+                setCheckoutOpen(true);
+              }}
+              onContinueShopping={() => {
+                navigateToHash("products");
+              }}
+            />
           </div>
-        </div>
+        </>
+      )}
 
-        <OrderSummaryCard
-          items={activeCartItems}
-          multiFarmer={multiFarmer}
-          onCheckout={() => setCheckoutOpen(true)}
-          onContinueShopping={() => {
-            navigateToHash("products");
-          }}
-        />
-      </div>
+      {checkoutDialog}
 
-      <CheckoutDialog
-        open={checkoutOpen}
-        onOpenChange={setCheckoutOpen}
-        items={activeCartItems}
-        onPlaceOrder={handlePlaceOrder}
-      />
-      {apiError ? (
+      {checkoutError ? (
         <p className="mt-3 rounded-lg border border-[#fecaca] bg-[#fff1f2] p-3 text-sm text-[#b91c1c]">
-          {apiError}
+          {checkoutError}
         </p>
       ) : null}
     </section>
   );
-}
-
-function mapApiCartItemToCartItem(item: ApiCartItem): CartItem {
-  const unit = item.product.unit || "kg";
-  const quantity = item.product.quantity ?? 0;
-  const pricePerUnit = item.product.price ?? 0;
-  const location = `${item.product.region ?? "Azerbaijan"} > ${item.product.district ?? "District"}${
-    item.product.village ? ` > ${item.product.village}` : ""
-  }`;
-  return {
-    id: item.product.id,
-    slug: item.id,
-    name: item.product.name,
-    category: item.product.category,
-    image: item.product.imageUrl ?? "",
-    farmer: item.product.farmer?.name ?? "Farmer",
-    farmerSlug: item.product.farmer?.id ?? null,
-    location,
-    price: `${pricePerUnit} AZN`,
-    unit,
-    availableQuantity: quantity,
-    availableQuantityLabel: `${quantity} ${unit}`,
-    selectedQuantity: item.quantity,
-    deliveryAvailable: true,
-    minimumOrder: 1,
-    step: 1,
-    pricePerUnit,
-    addedAt: new Date().toISOString(),
-  };
 }

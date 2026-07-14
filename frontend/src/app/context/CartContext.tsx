@@ -29,6 +29,7 @@ import {
   removeCartItem,
   updateCartItemQuantity,
   CART_CHANGED_EVENT,
+  notifyCartChanged,
   type CartItem,
 } from "../utils/cartStorage";
 import type { SavedProduct } from "../utils/savedProductsStorage";
@@ -47,13 +48,16 @@ interface CartToast {
 
 interface CartContextValue {
   cartItems: CartItem[];
+  /** Total selected quantity across all cart lines. */
   cartCount: number;
+  isCartLoading: boolean;
   addListingToCart: (listing: HarvestListing) => CartActionResult;
   addSavedToCart: (product: SavedProduct) => CartActionResult;
   addSlugToCart: (slug: string) => CartActionResult;
   removeFromCart: (slug: string) => void;
   updateQuantity: (slug: string, quantity: number) => void;
-  clearBuyerCart: () => void;
+  clearBuyerCart: () => Promise<void>;
+  refreshCart: () => Promise<void>;
   toast: CartToast | null;
   showCartToast: (message: string, variant?: "success" | "error") => void;
   isInCart: (slug: string) => boolean;
@@ -61,10 +65,15 @@ interface CartContextValue {
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+function getTotalQuantity(items: CartItem[]): number {
+  return items.reduce((total, item) => total + Number(item.selectedQuantity || 0), 0);
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const { user, isAuthenticated } = useAuth();
   const { t } = useLanguage();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isCartLoading, setIsCartLoading] = useState(true);
   const outcomeMessages = useMemo<Record<CartAddOutcome, string>>(
     () => ({
       added: t("marketplace.card.addedToCart", "Product added to cart"),
@@ -77,33 +86,49 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [toast, setToast] = useState<CartToast | null>(null);
   const toastTimerRef = useRef<number | null>(null);
 
-  const refresh = useCallback(() => {
+  const refreshCart = useCallback(async () => {
     if (!user?.id) {
       setCartItems([]);
+      setIsCartLoading(false);
       return;
     }
-    if (isApiMode) {
-      getCartItemsApi()
-        .then((items) => setCartItems(items.map(mapApiCartItemToCartItem)))
-        .catch(() => setCartItems([]));
-      return;
+
+    setIsCartLoading(true);
+    try {
+      if (isApiMode) {
+        const items = await getCartItemsApi();
+        setCartItems(items.map(mapApiCartItemToCartItem));
+      } else {
+        setCartItems(getCartItems(user.id));
+      }
+    } catch {
+      setCartItems([]);
+    } finally {
+      setIsCartLoading(false);
     }
-    setCartItems(getCartItems(user.id));
+  }, [user?.id]);
+
+  // Drop previous user's in-memory cart as soon as auth user changes.
+  useEffect(() => {
+    setCartItems([]);
+    setIsCartLoading(Boolean(user?.id));
   }, [user?.id]);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    void refreshCart();
+  }, [refreshCart]);
 
   useEffect(() => {
-    const handleChange = () => refresh();
+    const handleChange = () => {
+      void refreshCart();
+    };
     window.addEventListener(CART_CHANGED_EVENT, handleChange);
     window.addEventListener("storage", handleChange);
     return () => {
       window.removeEventListener(CART_CHANGED_EVENT, handleChange);
       window.removeEventListener("storage", handleChange);
     };
-  }, [refresh]);
+  }, [refreshCart]);
 
   const showCartToast = useCallback((message: string, variant: "success" | "error" = "success") => {
     if (toastTimerRef.current) {
@@ -161,18 +186,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
               return [mapped, ...prev];
             }),
           )
+          .then(() => notifyCartChanged())
           .catch(() => showCartToast(t("marketplace.card.failedAdd", "Could not add product to cart. Please try again."), "error"));
         const message = outcomeMessages.added;
         showCartToast(message, "success");
-        return { ok: true, message, count: cartItems.length + 1, outcome: "added" };
+        return { ok: true, message, count: getTotalQuantity(cartItems) + base.minimumOrder, outcome: "added" };
       }
       const { items, outcome } = addOrUpdateCartItem(user!.id, base);
       setCartItems(items);
       const message = outcomeMessages[outcome];
       showCartToast(message, outcome === "already_at_max" ? "error" : "success");
-      return { ok: true, message, count: items.length, outcome };
+      return { ok: true, message, count: getTotalQuantity(items), outcome };
     },
-    [cartItems.length, outcomeMessages, showCartToast, t, user],
+    [cartItems, outcomeMessages, showCartToast, t, user],
   );
 
   const addListingToCart = useCallback(
@@ -207,81 +233,110 @@ export function CartProvider({ children }: { children: ReactNode }) {
     (slug: string) => {
       if (!user?.id) return;
       if (isApiMode) {
+        setCartItems((prev) => prev.filter((item) => item.slug !== slug));
         removeCartItemApi(slug)
           .then(() => {
-            setCartItems((prev) => prev.filter((item) => item.slug !== slug));
+            notifyCartChanged();
             showCartToast(t("buyerCart.feedback.productRemoved", "Product removed from cart"));
           })
-          .catch(() => showCartToast(t("buyerCart.feedback.failedRemoveItem", "Could not remove item from cart."), "error"));
+          .catch(() => {
+            void refreshCart();
+            showCartToast(t("buyerCart.feedback.failedRemoveItem", "Could not remove item from cart."), "error");
+          });
         return;
       }
       const next = removeCartItem(user.id, slug);
       setCartItems(next);
       showCartToast(t("buyerCart.feedback.productRemoved", "Product removed from cart"));
     },
-    [showCartToast, t, user?.id],
+    [refreshCart, showCartToast, t, user?.id],
   );
 
   const updateQuantity = useCallback(
     (slug: string, quantity: number) => {
       if (!user?.id) return;
       if (isApiMode) {
+        setCartItems((prev) =>
+          prev.map((entry) =>
+            entry.slug === slug ? { ...entry, selectedQuantity: quantity } : entry,
+          ),
+        );
         updateCartItemApi(slug, quantity)
-          .then((item) =>
+          .then((item) => {
             setCartItems((prev) =>
               prev.map((entry) => (entry.slug === slug ? mapApiCartItemToCartItem(item) : entry)),
-            ),
-          )
-          .then(() => showCartToast(t("buyerCart.feedback.quantityUpdated", "Quantity updated")))
-          .catch(() => showCartToast(t("buyerCart.feedback.failedUpdateItem", "Could not update cart item."), "error"));
+            );
+            notifyCartChanged();
+            showCartToast(t("buyerCart.feedback.quantityUpdated", "Quantity updated"));
+          })
+          .catch(() => {
+            void refreshCart();
+            showCartToast(t("buyerCart.feedback.failedUpdateItem", "Could not update cart item."), "error");
+          });
         return;
       }
       const next = updateCartItemQuantity(user.id, slug, quantity);
       setCartItems(next);
       showCartToast(t("buyerCart.feedback.quantityUpdated", "Quantity updated"));
     },
-    [user?.id, showCartToast, t],
+    [refreshCart, showCartToast, t, user?.id],
   );
 
-  const clearBuyerCart = useCallback(() => {
+  const clearBuyerCart = useCallback(async () => {
     if (!user?.id) return;
-    if (isApiMode) {
-      clearCartApi()
-        .then(() => setCartItems([]))
-        .catch(() => showCartToast(t("buyerCart.feedback.failedClear", "Could not clear cart."), "error"));
-      return;
-    }
-    clearCart(user.id);
+
+    // Keep UI + badge in sync immediately.
     setCartItems([]);
-  }, [user?.id, showCartToast, t]);
+
+    if (isApiMode) {
+      try {
+        // Clear backend first so any refreshCart triggered by storage notify sees [].
+        await clearCartApi();
+      } catch {
+        showCartToast(t("buyerCart.feedback.failedClear", "Could not clear cart."), "error");
+        await refreshCart();
+        return;
+      }
+    }
+
+    // Mock persist clear + wipe any user-scoped localStorage residue in API mode.
+    clearCart(user.id);
+  }, [refreshCart, showCartToast, t, user?.id]);
 
   const isInCart = useCallback(
     (slug: string) => cartItems.some((item) => item.slug === slug),
     [cartItems],
   );
 
+  const cartCount = useMemo(() => getTotalQuantity(cartItems), [cartItems]);
+
   const value = useMemo(
     () => ({
       cartItems,
-      cartCount: cartItems.length,
+      cartCount,
+      isCartLoading,
       addListingToCart,
       addSavedToCart,
       addSlugToCart,
       removeFromCart,
       updateQuantity,
       clearBuyerCart,
+      refreshCart,
       toast,
       showCartToast,
       isInCart,
     }),
     [
       cartItems,
+      cartCount,
+      isCartLoading,
       addListingToCart,
       addSavedToCart,
       addSlugToCart,
       removeFromCart,
       updateQuantity,
       clearBuyerCart,
+      refreshCart,
       toast,
       showCartToast,
       isInCart,

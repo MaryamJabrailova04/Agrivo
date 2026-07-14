@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { navigateToHash } from "../../../i18n/localizedRoutes";
 import { useAuth } from "../../auth/AuthContext";
+import { useCart } from "../../context/CartContext";
 import {
   buyerCurrentDelivery,
   buyerRecentOrders,
@@ -43,6 +44,7 @@ function sectionHash(sectionId: string) {
 
 export function BuyerDashboardOverview() {
   const { user } = useAuth();
+  const { cartCount } = useCart();
   const { t, language } = useLanguage();
   const firstName = user?.name?.split(" ")[0] ?? t("dashboard.roles.buyer");
 
@@ -100,6 +102,7 @@ export function BuyerDashboardOverview() {
       <section className="agrivo-buyer-stats">
         {buyerSummaryStats.map((stat) => {
           const Icon = stat.icon;
+          const value = stat.id === "cart" ? String(cartCount ?? 0) : stat.value;
           return (
             <button
               key={stat.id}
@@ -115,7 +118,7 @@ export function BuyerDashboardOverview() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#ecfdf5]">
                   <Icon className="h-5 w-5 text-[#14532D]" strokeWidth={1.75} />
                 </div>
-                <span className="agrivo-heading text-2xl font-bold text-[#102018]">{stat.value}</span>
+                <span className="agrivo-heading text-2xl font-bold text-[#102018]">{value}</span>
               </div>
               <p className="mt-3 text-sm font-semibold text-[#102018]">
                 {t(`buyerDashboard.stats.${stat.id === "active" ? "activeOrders" : stat.id === "cart" ? "cartItems" : stat.id === "saved" ? "savedProducts" : stat.id === "completed" ? "completedOrders" : "pendingDeliveries"}`)}
