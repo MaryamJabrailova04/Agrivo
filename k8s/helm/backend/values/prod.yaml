@@ -30,9 +30,9 @@ autoscaling:
   targetCPUUtilizationPercentage: 65
 keyVault:
   enabled: true
-  name: kv-agrivo-prod
-  tenantId: "00000000-0000-0000-0000-000000000000"
-  clientId: "00000000-0000-0000-0000-000000000000"
+  name: kv-agrivo-prod-4fe19b
+  tenantId: "cdfc3bf8-f209-418a-8563-7f864d83f183"
+  clientId: "6a05b61c-d40d-40f9-af0b-ba4dafc32c79"
   usePodIdentity: "false"
   useVMManagedIdentity: "true"
   secrets:
