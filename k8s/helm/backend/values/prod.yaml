@@ -9,7 +9,7 @@ config:
   nodeEnv: production
   port: "5000"
   jwtExpiresIn: 7d
-  frontendUrl: https://agrivo.example.com
+  frontendUrl: https://agrivo.site
 
 secret:
   databaseUrl: replace-with-key-vault-csi

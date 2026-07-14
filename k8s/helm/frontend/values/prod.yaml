@@ -8,7 +8,7 @@ image:
 ingress:
   enabled: true
   className: nginx
-  host: agrivo.example.com
+  host: agrivo.site
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
