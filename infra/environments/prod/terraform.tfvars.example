@@ -1,5 +1,5 @@
 environment  = "prod"
-location     = "swedencentral"
+location     = "westeurope"
 project_name = "agrivo"
 
 address_space = ["10.20.0.0/16"]
