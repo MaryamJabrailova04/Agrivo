@@ -48,7 +48,12 @@ jobs:
         run: |
           for c in frontend backend; do
             if [ "$COMPONENT" = both ] || [ "$COMPONENT" = "$c" ]; then
-              sed -i -E "s|tag: \".*\"|tag: \"${IMAGE_TAG}\"|" "k8s/helm/${c}/values/prod.yaml"
+              sed -i -E "s|^([[:space:]]*)tag:[[:space:]]*.*$|\1tag: \"${IMAGE_TAG}\"|" "k8s/helm/${c}/values/prod.yaml"
+              grep -q "tag: \"${IMAGE_TAG}\"" \
+                "k8s/helm/${c}/values/prod.yaml" || {
+                  echo "Failed to update ${c} production image tag"
+                  exit 1
+                }
             fi
           done
       - uses: azure/setup-helm@v4
