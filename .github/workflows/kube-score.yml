@@ -1,37 +1,13 @@
-name: kube-score
+- name: Install kube-score
+  run: |
+    VERSION=1.20.0
 
-on:
-  push:
-    branches:
-      - main
-      - develop
-  pull_request:
-    branches:
-      - main
-      - develop
+    curl -L \
+      -o kube-score.tar.gz \
+      https://github.com/zegl/kube-score/releases/download/v${VERSION}/kube-score_${VERSION}_linux_amd64.tar.gz
 
-permissions:
-  contents: read
+    tar -xzf kube-score.tar.gz
+    chmod +x kube-score
+    sudo mv kube-score /usr/local/bin/
 
-jobs:
-  kube-score:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Install kube-score
-        run: |
-          KUBESCORE_VERSION=v1.20.0
-          curl -L https://github.com/zegl/kube-score/releases/download/${KUBESCORE_VERSION}/kube-score_${KUBESCORE_VERSION}_linux_amd64.tar.gz -o kube-score.tar.gz
-          tar -xzf kube-score.tar.gz
-          chmod +x kube-score
-          sudo mv kube-score /usr/local/bin/
-
-      - name: Check version
-        run: kube-score version
-
-      - name: Run kube-score
-        run: |
-          find . -type f \( -name "*.yaml" -o -name "*.yml" \) | xargs kube-score score || true
+    kube-score version
