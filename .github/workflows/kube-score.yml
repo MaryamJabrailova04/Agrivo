@@ -1,0 +1,38 @@
+name: kube-score
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  kube-score:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kube-score
+        run: |
+          wget https://github.com/zegl/kube-score/releases/latest/download/kube-score_linux_amd64
+          chmod +x kube-score_linux_amd64
+          sudo mv kube-score_linux_amd64 /usr/local/bin/kube-score
+
+      - name: Find Kubernetes Manifests
+        run: |
+          find . -type f \( -name "*.yaml" -o -name "*.yml" \)
+
+      - name: Run kube-score
+        run: |
+          find . -type f \( -name "*.yaml" -o -name "*.yml" \) \
+          | xargs kube-score score || true
