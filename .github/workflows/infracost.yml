@@ -1,0 +1,52 @@
+name: Infracost
+
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+
+  push:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  infracost:
+    runs-on: ubuntu-latest
+
+    env:
+      INFRACOST_API_KEY: ${{ secrets.INFRACOST_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Infracost
+        uses: infracost/actions/setup@v3
+
+      - name: Generate Cost Estimate
+        run: |
+          infracost breakdown \
+            --path=. \
+            --format=json \
+            --out-file=infracost.json || true
+
+      - name: Generate HTML Report
+        run: |
+          infracost output \
+            --path=infracost.json \
+            --format=html \
+            --out-file=infracost.html || true
+
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: infracost-report
+          path: |
+            infracost.json
+            infracost.html
