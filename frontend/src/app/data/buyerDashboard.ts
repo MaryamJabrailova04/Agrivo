@@ -56,7 +56,7 @@ export interface BuyerProductPreview {
 
 export const buyerSummaryStats: BuyerSummaryStat[] = [
   { id: "active", label: "Active Orders", value: "3", hint: "Awaiting delivery", icon: ClipboardList },
-  { id: "cart", label: "Cart Items", value: "5", hint: "Ready to order", icon: ShoppingCart },
+  { id: "cart", label: "Cart Items", value: "0", hint: "Ready to order", icon: ShoppingCart },
   { id: "saved", label: "Saved Products", value: "12", hint: "From verified farmers", icon: Heart },
   { id: "completed", label: "Completed Orders", value: "28", hint: "All time", icon: CheckCircle2 },
   { id: "pending", label: "Pending Deliveries", value: "2", hint: "In transit", icon: Truck },

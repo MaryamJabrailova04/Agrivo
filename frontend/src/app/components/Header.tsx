@@ -2,6 +2,7 @@ import { Search, ShoppingCart, User, Menu } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Sheet, SheetContent, SheetTrigger } from "./ui/sheet";
+import { useCart } from "../context/CartContext";
 
 interface HeaderProps {
   currentPage: string;
@@ -9,6 +10,8 @@ interface HeaderProps {
 }
 
 export default function Header({ currentPage, onNavigate }: HeaderProps) {
+  const { cartCount } = useCart();
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
       <div className="container flex h-16 items-center justify-between px-4">
@@ -57,7 +60,7 @@ export default function Header({ currentPage, onNavigate }: HeaderProps) {
           </button>
           <Button variant="ghost" size="sm" className="text-gray-700 hover:text-green-600">
             <ShoppingCart className="h-4 w-4 mr-1" />
-            Cart (2)
+            Cart ({cartCount ?? 0})
           </Button>
           <Button 
             variant="ghost" 

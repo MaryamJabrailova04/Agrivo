@@ -52,7 +52,7 @@ export const BUYER_DASHBOARD: DashboardRoleConfig = {
   summaryCards: [
     { label: "Active orders", value: "3", hint: "Awaiting delivery" },
     { label: "Saved products", value: "12", hint: "From verified farmers" },
-    { label: "Cart items", value: "5", hint: "Ready to order" },
+    { label: "Cart items", value: "0", hint: "Ready to order" },
     { label: "Completed orders", value: "28", hint: "All time" },
   ],
   mockListTitle: "Recent orders",
