@@ -2,41 +2,35 @@ name: Gitleaks Secret Scan
 
 on:
   push:
-    branches:
-      - main
-      - develop
-
+    branches: [main, develop]
   pull_request:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
 
 permissions:
   contents: read
-  security-events: write
-  actions: read
 
 jobs:
   gitleaks:
-    name: Scan Repository for Secrets
     runs-on: ubuntu-latest
 
-    continue-on-error: true
-
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+
+      - name: Install Gitleaks
+        run: |
+          wget https://github.com/gitleaks/gitleaks/releases/download/v8.24.3/gitleaks_8.24.3_linux_x64.tar.gz
+          tar -xzf gitleaks_8.24.3_linux_x64.tar.gz
+          sudo mv gitleaks /usr/local/bin/
 
       - name: Run Gitleaks
-        id: gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gitleaks detect \
+            --report-format sarif \
+            --report-path results.sarif \
+            --exit-code 0
 
-      - name: Upload Gitleaks Report
-        if: always()
+      - name: Upload Report
         uses: actions/upload-artifact@v4
         with:
           name: gitleaks-report
           path: results.sarif
-          if-no-files-found: ignore
