@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/maryamjabrailova04/agrivo-backend
-  tag: "119659e882d2d84352b1f46e9cb451c899580b90"
+  tag: "1b516129c8a3e0bd1175af9f53d15e1b8c59509f"
   pullPolicy: IfNotPresent
 
 config:
